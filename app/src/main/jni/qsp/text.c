@@ -138,12 +138,18 @@ QSP_BOOL qspIsAnyString(QSP_CHAR *s)
 
 void qspLowerStr(QSP_CHAR *str)
 {
-	while (*str) *str++ = QSP_CHRLWR(*str);
+	while (*str) {
+		*str = QSP_CHRLWR(*str);
+		str++;
+	}
 }
 
 void qspUpperStr(QSP_CHAR *str)
 {
-	while (*str) *str++ = QSP_CHRUPR(*str);
+	while (*str) {
+		*str = QSP_CHRUPR(*str);
+		str++;
+	}
 }
 
 int qspStrsNComp(QSP_CHAR *str1, QSP_CHAR *str2, int maxLen)
