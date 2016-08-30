@@ -7,19 +7,19 @@
 jobject qspCallbackObject;
 JNIEnv* qspCallbackEnv;
 
-void Java_com_qsp_player_QspPlayerStart_QSPInit(JNIEnv * env, jobject this)
+void Java_com_qsp_player_QspPlayerStart_QSPInit(JNIEnv * env, jobject thisObj)
 {
-	//__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]", szLogThis);
-	qspCallbackObject = this;
-	qspCallbackEnv = env;
-	QSPInit();
+    qspCallbackEnv = env;
+    qspCallbackObject = (*env)->NewGlobalRef(env, thisObj);
+    QSPInit();
 }
 
-void Java_com_qsp_player_QspPlayerStart_QSPDeInit(JNIEnv * env, jobject this)
+void Java_com_qsp_player_QspPlayerStart_QSPDeInit(JNIEnv * env, jobject thisObj)
 {
-	QSPDeInit();
-	qspCallbackObject = NULL;
-	qspCallbackEnv = NULL;
+    QSPDeInit();
+    (*qspCallbackEnv)->DeleteGlobalRef(qspCallbackEnv, qspCallbackObject);
+    qspCallbackObject = NULL;
+    qspCallbackEnv = NULL;
 }
 
 jboolean Java_com_qsp_player_QspPlayerStart_QSPIsInCallBack(JNIEnv * env, jobject this)
