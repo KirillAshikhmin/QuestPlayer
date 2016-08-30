@@ -5,6 +5,7 @@
             android:key="interface_screen" android:title="@string/interface_screen" android:summary="@string/interface_scr_sum">
     	<CheckBoxPreference android:title="@string/fullscreenTitle" android:key="fullscreen" android:summaryOff="@string/fullscreen_off" android:summaryOn="@string/fullscreenSum"/>
     	<CheckBoxPreference android:title="@string/opt_big_image" android:key="big_image" android:summary="@string/optdesc_big_image" />
+    	<CheckBoxPreference android:title="@string/opt_image_density" android:key="image_density" android:summary="@string/optdesc_image_density" android:defaultValue="true" />
 		<!-- <ListPreference android:defaultValue="0" android:key="theme" android:title="@string/appTheme" android:entries="@array/themeName" android:entryValues="@array/fontValue"></ListPreference> -->
 		<CheckBoxPreference android:title="@string/opt_show_acts_hot_keys" android:key="acts_hot_keys"/>
 		<CheckBoxPreference android:title="@string/opt_highlight_acts" android:key="highlight_acts" android:summary="@string/optdesc_highlight_acts" android:defaultValue="true"/>

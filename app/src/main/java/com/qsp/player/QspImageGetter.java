@@ -2,28 +2,32 @@ package com.qsp.player;
 
 import android.graphics.drawable.Drawable;
 import android.text.Html.ImageGetter;
-import android.util.Log;
 
 import java.io.File;
 import java.io.IOException;
 
 import pl.droidsonroids.gif.GifDrawable;
 
-public class QspImageGetter implements ImageGetter {
+class QspImageGetter implements ImageGetter {
     private String mDirectory;
     private int mScreenWidth;
     private boolean mFullSize;
+    private float mDensity;
 
-    public void setDirectory(String directory) {
+    void setDirectory(String directory) {
         mDirectory = directory;
     }
 
-    public void setScreenWidth(int width) {
+    void setScreenWidth(int width) {
         mScreenWidth = width;
     }
 
-    public void setFullSize(boolean fullSize) {
+    void setFullSize(boolean fullSize) {
         mFullSize = fullSize;
+    }
+
+    void setDensity(float density) {
+        this.mDensity = density;
     }
 
     @Override
@@ -66,15 +70,17 @@ public class QspImageGetter implements ImageGetter {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+
+
                 if (drawable != null) {
-                    int nWidth = (int) ((int) drawable.getIntrinsicWidth());
-                    int nHeight = (int) ((int) drawable.getIntrinsicHeight());
+                    int nWidth = (int) (drawable.getIntrinsicWidth() * mDensity);
+                    int nHeight = (int) (drawable.getIntrinsicHeight() * mDensity);
 
                     if (mFullSize || nWidth > mScreenWidth) {
                         float k = mScreenWidth;
                         k = k / nWidth;
                         nWidth = mScreenWidth;
-                        nHeight = (int) ((int) nHeight * k);
+                        nHeight = (int) (nHeight * k);
                     }
 
                     drawable.setBounds(0, 0, nWidth, nHeight);

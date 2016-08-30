@@ -106,6 +106,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private boolean sdcard_mounted = false;
     private boolean backAction = false;
     private boolean bigImage;
+    private boolean imageDensity;
 
     @Override
     public void invalidateDrawable(Drawable who) {
@@ -312,6 +313,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         backAction = settings.getBoolean("back_action", false);
         hotKeys = settings.getBoolean("acts_hot_keys", false);
         bigImage = settings.getBoolean("big_image", false);
+        imageDensity = settings.getBoolean("image_density", true);
         highlightActs = settings.getBoolean("highlight_acts", true);
         ApplyViewSettings();
 
@@ -1003,6 +1005,9 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
         TextView tv = (TextView) findViewById(R.id.main_desc);
         int padding = tv.getPaddingLeft() + tv.getPaddingRight();
+        float density = imageDensity ? getResources().getDisplayMetrics().density : 1;
+        imgGetter.setDensity(density);
+        imgGetterDesc.setDensity(density);
         imgGetter.setDirectory(curGameDir);
         imgGetter.setScreenWidth(getWindow().getWindowManager().getDefaultDisplay().getWidth() - padding);
         imgGetterDesc.setDirectory(curGameDir);

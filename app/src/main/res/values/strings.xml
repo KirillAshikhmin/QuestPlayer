@@ -22,9 +22,11 @@
     <string name="opt_highlight_acts">Подсветка действий</string>
     <string name="opt_back_action">Кнопка Назад выполняет 1 действие</string>
     <string name="opt_big_image">Большие изображения</string>
+    <string name="opt_image_density">Изображения в зависимости от экрана</string>
     <string name="optdesc_highlight_acts">Использовать для действий цвет, отличный от цвета описания</string>
     <string name="optdesc_back_action">Нажатие на кнопку "Назад" выполняет первое из доступных действий</string>
     <string name="optdesc_big_image">Растягивать изображения на всю ширину экрана</string>
+    <string name="optdesc_image_density">Растягивать изображения в зависимости от типа экрана</string>
 
     <!-- Меню -->
     <string name="menu_gamestock">Полка игр</string>
