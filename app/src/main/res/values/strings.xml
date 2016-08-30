@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<!-- Настройки  -->
+    <string name="appTheme">Тема оформления</string>
+    <string name="fontSize">Размер шрифта</string>
+    <string name="typeface">Стиль шрифта</string>
+    <string name="fullscreenSum">скрывать строку состояния</string>
+    <string name="fullscreen_off">показывать строку состояния</string>
+    <string name="fullscreenTitle">Полноэкранный режим</string>
+    <string name="gestures_off">смена экрана только тапом иконки</string>
+    <string name="gestures_sum">смена экрана при помощи жестов</string>
+    <string name="using_gestures">Жесты</string>
+    <string name="interface_scr_sum">настройка внешнего вида плеера</string>
+    <string name="interface_screen">Настройки отображения</string>
+    <string name="soundSum">использование звуков и музыки</string>
+    <string name="soundTitle">Звук</string>
+	<string name="dialog_color_picker">Выбор цвета</string> 
+  	<string name="textColor">Цвет текста</string> 
+  	<string name="backColor">Цвет фона</string> 
+  	<string name="linkColor">Цвет ссылок</string> 
+    <string name="opt_show_acts_hot_keys">Показ горячих клавиш для действий</string>
+    <string name="opt_highlight_acts">Подсветка действий</string>
+    <string name="optdesc_highlight_acts">использовать для действий цвет, отличный от цвета описания</string>
+      
+    <!-- Меню -->
+    <string name="menu_gamestock">Полка игр</string>
+    <string name="menu_options">Настройки</string>
+    <string name="menu_about">О программе</string>
+    <string name="menu_newgame">Начать заново</string>
+    <string name="menu_resumegame">Продолжить игру</string>
+    <string name="menu_load">Загрузить</string>
+    <string name="menu_save">Сохранить</string>
+    <string name="menu_deletegames">Удаление игр</string>
+    <string name="menu_openfile">Открыть файл</string>
+    <string name="menu_closeapp">Закрыть Quest Player</string>
+    
+    <!-- Прочее -->
+    <string name="app_name">Quest Player</string>
+    <string name="market_details_url">market://details?id=com.qsp.player</string>
+<string name="actsColor">Цвет действий</string>
+</resources>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:id="@+id/menu_gamestock"
+        android:title="@string/menu_gamestock" />
+        
+    <item android:id="@+id/menu_options"
+    	android:title="@string/menu_options" />
+        
+    <item android:id="@+id/menu_about"
+        android:title="@string/menu_about" />
+
+    <group android:id="@+id/menugroup_running">
+    
+	    <item android:id="@+id/menu_newgame"
+	        android:title="@string/menu_newgame" />
+	        
+	    <item android:id="@+id/menu_loadgame" />
+
+	    <item android:id="@+id/menu_savegame" />
+	    
+	</group>
+	
+</menu>
