@@ -158,13 +158,13 @@ public class QspGameStock extends TabActivity {
         TabHost tabHost = getTabHost();
         LayoutInflater.from(getApplicationContext()).inflate(R.layout.gamestock, tabHost.getTabContentView(), true);
         tabHost.addTab(tabHost.newTabSpec("downloaded")
-                .setIndicator("Загруженные")
+                .setIndicator(getResources().getString(R.string.tab_downloaded))
                 .setContent(R.id.downloaded_tab));
         tabHost.addTab(tabHost.newTabSpec("starred")
-                .setIndicator("Отмеченные")
+                .setIndicator(getResources().getString(R.string.tab_starred))
                 .setContent(R.id.starred_tab));
         tabHost.addTab(tabHost.newTabSpec("all")
-                .setIndicator("Все")
+                .setIndicator(getResources().getString(R.string.tab_all))
                 .setContent(R.id.all_tab));
         
     	openDefaultTab = true;

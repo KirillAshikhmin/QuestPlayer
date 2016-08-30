@@ -33,6 +33,11 @@
     <string name="menu_deletegames">Удаление игр</string>
     <string name="menu_openfile">Открыть файл</string>
     <string name="menu_closeapp">Закрыть Quest Player</string>
+
+    <!-- Вкладки -->
+    <string name="tab_downloaded">Загружено</string>
+    <string name="tab_starred">Отмечено</string>
+    <string name="tab_all">Все</string>
     
     <!-- Прочее -->
     <string name="app_name">Quest Player</string>
