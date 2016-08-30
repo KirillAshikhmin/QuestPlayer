@@ -35,3 +35,4 @@ build/
 # NDK
 obj/
 *.patch
+app/src/main/libs/
