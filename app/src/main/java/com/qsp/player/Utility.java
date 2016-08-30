@@ -9,6 +9,7 @@ import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
@@ -17,9 +18,11 @@ import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.text.Html;
 import android.text.Html.ImageGetter;
 import android.text.Spanned;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.View.MeasureSpec;
@@ -145,6 +148,13 @@ public class Utility {
 	    	}
     	}
     	return null;
+    }
+
+    public static String GetGamesPath(Context context)
+    {
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
+        String path = settings.getString("gamesdir", null);
+        return (path != null && !TextUtils.isEmpty(path)) ? path : GetDefaultPath();
     }
     
     public static void WriteLog(String msg)

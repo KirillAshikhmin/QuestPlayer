@@ -16,4 +16,5 @@
 	</PreferenceScreen>
 	<CheckBoxPreference android:key="sound" android:title="@string/soundTitle" android:summary="@string/soundSum" android:defaultValue="true"/>
     <CheckBoxPreference android:key="gestures" android:title="@string/using_gestures" android:enabled="true" android:summaryOff="@string/gestures_off" android:summaryOn="@string/gestures_sum"/>
+    <EditTextPreference android:key="gamesdir" android:title="Путь к файлам игр" android:enabled="true" android:summary="каталог, где хранятся файлы игр" />
 </PreferenceScreen> 

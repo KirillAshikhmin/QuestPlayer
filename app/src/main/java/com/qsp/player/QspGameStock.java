@@ -491,9 +491,10 @@ public class QspGameStock extends TabActivity {
 		String folderName = Utility.ConvertGameTitleToCorrectFolderName(gameToDownload.title);
 
 		final String urlToDownload = file_url;
-    	final String unzipLocation = Utility.GetDefaultPath().concat("/").concat(folderName).concat("/");
+	final String unzipLocation = Utility.GetGamesPath(this).concat("/").concat(folderName).concat("/");
     	final String gameId = game_id;
     	final String gameName = gameToDownload.title;
+	final String gamesPath = Utility.GetGamesPath(this);
     	final int totalSize = file_size;
     	downloadProgressDialog = new ProgressDialog(uiContext);
     	downloadProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
@@ -605,7 +606,7 @@ public class QspGameStock extends TabActivity {
         				if (!success)
         				{
         					//Удаляем неудачно распакованную игру
-        					File gameFolder = new File(Utility.GetDefaultPath().concat("/").concat(Utility.ConvertGameTitleToCorrectFolderName(checkGameName)));
+						File gameFolder = new File(gamesPath.concat("/").concat(Utility.ConvertGameTitleToCorrectFolderName(checkGameName)));
         					Utility.DeleteRecursive(gameFolder);
         				}
         				
@@ -709,7 +710,7 @@ public class QspGameStock extends TabActivity {
 		if (game==null)
 			return;
 		
-		File gameFolder = new File(Utility.GetDefaultPath().concat("/").concat(Utility.ConvertGameTitleToCorrectFolderName(game.title)));
+		File gameFolder = new File(Utility.GetGamesPath(this).concat("/").concat(Utility.ConvertGameTitleToCorrectFolderName(game.title)));
 		if (!gameFolder.exists())
 			return;
 		
@@ -804,7 +805,7 @@ public class QspGameStock extends TabActivity {
     {
     	//Заполняем список скачанных игр
     	
-    	String path = Utility.GetDefaultPath();
+	String path = Utility.GetGamesPath(this);
     	if (path == null)
     		return false;
     	
@@ -1277,7 +1278,7 @@ public class QspGameStock extends TabActivity {
     private void DeleteGames()
     {
         //Ищем папки в /qsp/games
-        File sdcardRoot = new File (Utility.GetDefaultPath());
+        File sdcardRoot = new File (Utility.GetGamesPath(this));
         File[] sdcardFiles = sdcardRoot.listFiles();
         qspGamesToDeleteList = new ArrayList<File>();
         for (File currentFile : sdcardFiles)

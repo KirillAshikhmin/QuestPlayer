@@ -249,7 +249,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         .setCancelable(false)
         .create();
         
-        if (Utility.GetDefaultPath() == null)
+        if (Utility.GetGamesPath(this) == null)
         {
         	sdcard_mounted = false;
         	Utility.ShowError(uiContext, "SD-карта не подключена, Quest Player не может быть запущен. Подключите SD-карту и перезапустите Quest Player.");
