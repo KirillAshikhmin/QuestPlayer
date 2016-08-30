@@ -11,6 +11,8 @@ android {
 
         ndk {
             moduleName "ndkqsp"
+            cFlags "-fshort-wchar -D_ANDROID -D_UNICODE -DNOT_RUBY -DEXPORT"
+            ldLibs 'log'
         }
     }
 
