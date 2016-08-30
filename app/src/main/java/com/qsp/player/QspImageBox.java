@@ -1,7 +1,5 @@
 package com.qsp.player;
 
-import org.acra.ErrorReporter;
-
 import android.app.Activity;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -30,7 +28,6 @@ public class QspImageBox extends Activity implements OnClickListener {
         //load image
         Bundle b = this.getIntent().getExtras();
         String file=b.getString("imageboxFile");
-        ErrorReporter.getInstance().putCustomData("ImageBoxFile", file);
         Drawable drawable = Drawable.createFromPath(file);
         if (drawable == null)
         {
@@ -47,6 +44,5 @@ public class QspImageBox extends Activity implements OnClickListener {
 	public void onClick(View arg0) {
 		//Closed by any click		
 		finish();
-		ErrorReporter.getInstance().removeCustomData("ImageBoxFile");
 	}
 }

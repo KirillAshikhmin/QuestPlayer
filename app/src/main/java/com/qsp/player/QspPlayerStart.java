@@ -58,10 +58,6 @@ import java.util.Vector;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.acra.ErrorReporter;
-
-
-
 
 
 /*public class jniResult
@@ -1007,11 +1003,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     	qspInited = true;
     	final String gameFileName = fileName;
     	curGameFile = gameFileName;
-// ACRA    	
-//    	ErrorReporter.getInstance().putCustomData("curGameFile", curGameFile);
         curGameDir = gameFileName.substring(0, gameFileName.lastIndexOf(File.separator, gameFileName.length() - 1) + 1);
-// ACRA    	
-//      ErrorReporter.getInstance().putCustomData("curGameDir", curGameDir);
         
         TextView tv = (TextView)findViewById(R.id.main_desc);
         int padding = tv.getPaddingLeft() + tv.getPaddingRight();
@@ -1144,11 +1136,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             gameIsRunning = false;
 		}
 		curGameDir = "";
-// ACRA
-//		ErrorReporter.getInstance().removeCustomData("curGameDir");
 		curGameFile = "";
-// ACRA
-//		ErrorReporter.getInstance().removeCustomData("curGameFile");
 
 		//Очищаем библиотеку
 		if (restart || libraryThreadIsRunning)
