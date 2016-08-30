@@ -7,9 +7,10 @@ android {
 
     defaultConfig {
         applicationId "com.qsp.player"
-        minSdkVersion 4
+        minSdkVersion 8
         targetSdkVersion 22
     }
+
 
     sourceSets.main {
         jniLibs.srcDir "src/main/libs"
@@ -45,5 +46,8 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
+    }
+    dependencies {
+        compile 'pl.droidsonroids.gif:android-gif-drawable:1.1.+'
     }
 }
