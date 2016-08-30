@@ -20,8 +20,12 @@
   	<string name="linkColor">Цвет ссылок</string> 
     <string name="opt_show_acts_hot_keys">Показ горячих клавиш для действий</string>
     <string name="opt_highlight_acts">Подсветка действий</string>
-    <string name="optdesc_highlight_acts">использовать для действий цвет, отличный от цвета описания</string>
-      
+    <string name="opt_back_action">Кнопка Назад выполняет 1 действие</string>
+    <string name="opt_big_image">Большие изображения</string>
+    <string name="optdesc_highlight_acts">Использовать для действий цвет, отличный от цвета описания</string>
+    <string name="optdesc_back_action">Нажатие на кнопку "Назад" выполняет первое из доступных действий</string>
+    <string name="optdesc_big_image">Растягивать изображения на всю ширину экрана</string>
+
     <!-- Меню -->
     <string name="menu_gamestock">Полка игр</string>
     <string name="menu_options">Настройки</string>
@@ -40,7 +44,7 @@
     <string name="tab_all">Все</string>
     
     <!-- Прочее -->
-    <string name="app_name">Quest Player</string>
+    <string name="app_name">Quest Player Fork</string>
     <string name="market_details_url">market://details?id=com.qsp.player</string>
 <string name="actsColor">Цвет действий</string>
 </resources>

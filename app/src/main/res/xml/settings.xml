@@ -3,12 +3,14 @@
         android:key="main_screen">
     <PreferenceScreen
             android:key="interface_screen" android:title="@string/interface_screen" android:summary="@string/interface_scr_sum">
-    	<CheckBoxPreference android:title="@string/fullscreenTitle" android:key="fullscreen" android:summaryOff="@string/fullscreen_off" android:summaryOn="@string/fullscreenSum"></CheckBoxPreference>
+    	<CheckBoxPreference android:title="@string/fullscreenTitle" android:key="fullscreen" android:summaryOff="@string/fullscreen_off" android:summaryOn="@string/fullscreenSum"/>
+    	<CheckBoxPreference android:title="@string/opt_big_image" android:key="big_image" android:summary="@string/optdesc_big_image" />
 		<!-- <ListPreference android:defaultValue="0" android:key="theme" android:title="@string/appTheme" android:entries="@array/themeName" android:entryValues="@array/fontValue"></ListPreference> -->
-		<CheckBoxPreference android:title="@string/opt_show_acts_hot_keys" android:key="acts_hot_keys"></CheckBoxPreference>
-		<CheckBoxPreference android:title="@string/opt_highlight_acts" android:key="highlight_acts" android:summary="@string/optdesc_highlight_acts" android:defaultValue="true"></CheckBoxPreference>
-		<ListPreference android:key="typeface" android:title="@string/typeface" android:entries="@array/fontName" android:entryValues="@array/fontValue" android:defaultValue="0"></ListPreference>
-		<ListPreference android:key="fontsize" android:title="@string/fontSize" android:entries="@array/fontSize" android:entryValues="@array/fontSize" android:defaultValue="16"></ListPreference>
+		<CheckBoxPreference android:title="@string/opt_show_acts_hot_keys" android:key="acts_hot_keys"/>
+		<CheckBoxPreference android:title="@string/opt_highlight_acts" android:key="highlight_acts" android:summary="@string/optdesc_highlight_acts" android:defaultValue="true"/>
+		<CheckBoxPreference android:title="@string/opt_back_action" android:key="back_action" android:summary="@string/optdesc_back_action" android:defaultValue="false"/>
+		<ListPreference android:key="typeface" android:title="@string/typeface" android:entries="@array/fontName" android:entryValues="@array/fontValue" android:defaultValue="0"/>
+		<ListPreference android:key="fontsize" android:title="@string/fontSize" android:entries="@array/fontSize" android:entryValues="@array/fontSize" android:defaultValue="16"/>
 		<com.att.preference.colorpicker.ColorPickerPreference android:title="@string/textColor" android:key="textColor" android:defaultValue="#ffffffff"/> 
 		<com.att.preference.colorpicker.ColorPickerPreference android:title="@string/linkColor" android:key="linkColor" android:defaultValue="#ff0000ff"/> 
 		<com.att.preference.colorpicker.ColorPickerPreference android:title="@string/actsColor" android:defaultValue="#ffffd700" android:key="actsColor" />

@@ -10,15 +10,21 @@ import java.io.IOException;
 public class QspImageGetter implements ImageGetter {
 	private String mDirectory;
 	private int mScreenWidth;
-	
-	public void SetDirectory(String directory)
+	private boolean mFullSize;
+
+	public void setDirectory(String directory)
 	{
 		mDirectory = directory;
 	}
 	
-	public void SetScreenWidth(int width)
+	public void setScreenWidth(int width)
 	{
 		mScreenWidth = width;
+	}
+
+	public void setFullSize(boolean fullSize)
+	{
+		mFullSize = fullSize;
 	}
 
 	@Override
@@ -56,10 +62,10 @@ public class QspImageGetter implements ImageGetter {
                       e.printStackTrace();
                   }
                   if (drawable != null) {
-                      int nWidth = (int) ((int) drawable.getIntrinsicWidth() * 0.75);
-                      int nHeight = (int) ((int) drawable.getIntrinsicHeight() * 0.75);
+                      int nWidth = (int) ((int) drawable.getIntrinsicWidth());
+                      int nHeight = (int) ((int) drawable.getIntrinsicHeight());
 
-                      if (nWidth > mScreenWidth) {
+                      if (mFullSize || nWidth > mScreenWidth) {
                           float k = mScreenWidth;
                           k = k / nWidth;
                           nWidth = mScreenWidth;

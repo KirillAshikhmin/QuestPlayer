@@ -104,6 +104,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 	private boolean hotKeys = false;
 	private boolean highlightActs = true;
 	private boolean sdcard_mounted = false;
+	private boolean backAction = false;
+	private boolean bigImage;
 
 	private class QSPItem {
 		private Drawable icon;
@@ -283,7 +285,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     	super.onResume();
     	
     	//полноэкранный режим если надо
-        updateFullscreenStatus(settings.getBoolean("fullscreen", false)); 
+        updateFullscreenStatus(settings.getBoolean("fullscreen", false));
 
         //подключаем жесты
         GestureOverlayView gestures = (GestureOverlayView) findViewById(R.id.gestures);
@@ -291,7 +293,9 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         if(settings.getBoolean("gestures", false))
         	gestures.addOnGesturePerformedListener(this);
 
+		backAction = settings.getBoolean("back_action", false);
 		hotKeys = settings.getBoolean("acts_hot_keys", false);
+		bigImage = settings.getBoolean("big_image", false);
 		highlightActs = settings.getBoolean("highlight_acts", true);
         ApplyViewSettings();
         
@@ -364,7 +368,13 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     	//Ловим кнопку "Back", и не закрываем активити, а только
     	//отправляем в бэкграунд (как будто нажали "Home")
         if (sdcard_mounted && keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) {
-        	ShowExitDialog();
+			if (backAction) {
+				ListView lv = (ListView)findViewById(R.id.acts);
+				if (lv.getCount()>=1) {
+					lv.setSelection(0);
+					actionExecute(0);
+				}
+			} else ShowExitDialog();
         	return true;
         }
         if (currentWin == WIN_MAIN && keyCode >= KeyEvent.KEYCODE_1 && keyCode <= KeyEvent.KEYCODE_9) {
@@ -416,8 +426,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
     private void ShowGameStock()
     {
-    	Intent myIntent = new Intent();
-    	myIntent.setClassName("com.qsp.player", "com.qsp.player.QspGameStock");
+    	Intent myIntent = new Intent(this, QspGameStock.class);
+    	//myIntent.setClassName("com.qsp.player", "com.qsp.player.QspGameStock");
     	myIntent.putExtra("game_is_running", gameIsRunning);
     	startActivityForResult(myIntent, ACTIVITY_SELECT_GAME);
     }
@@ -539,6 +549,12 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             case R.id.menu_gamestock:
                 //Выбираем игру
             	ShowGameStock();
+                return true;
+
+            case R.id.menu_exit:
+                //Выбираем игру
+				Utility.WriteLog("App closed by user! Going to background");
+				moveTaskToBack(true);
                 return true;
 
             case R.id.menu_options:
@@ -1007,9 +1023,12 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         
         TextView tv = (TextView)findViewById(R.id.main_desc);
         int padding = tv.getPaddingLeft() + tv.getPaddingRight();
-        imgGetter.SetDirectory(curGameDir);
-        imgGetter.SetScreenWidth(getWindow().getWindowManager().getDefaultDisplay().getWidth()-padding);
-        
+        imgGetter.setDirectory(curGameDir);
+        imgGetter.setScreenWidth(getWindow().getWindowManager().getDefaultDisplay().getWidth()-padding);
+		imgGetterDesc.setDirectory(curGameDir);
+		imgGetterDesc.setScreenWidth(getWindow().getWindowManager().getDefaultDisplay().getWidth()-padding);
+        imgGetterDesc.setFullSize(bigImage);
+
         //Очищаем все поля
 	    final  QSPItem []emptyItems = new QSPItem[0];
         ListView lv = (ListView)findViewById(R.id.acts);        
@@ -1338,7 +1357,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 					TextView tvDesc = (TextView) findViewById(R.id.main_desc);
 					if (html)
 					{
-						tvDesc.setText(Utility.QspStrToHtml(txtMainDesc, imgGetter));
+						tvDesc.setText(Utility.QspStrToHtml(txtMainDesc, imgGetterDesc));
 						tvDesc.setMovementMethod(QspLinkMovementMethod.getInstance());
 					}
 					else
@@ -1534,8 +1553,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 		        
 		        waitForImageBox = true;
 		
-		    	Intent imageboxIntent = new Intent();
-		    	imageboxIntent.setClassName("com.qsp.player", "com.qsp.player.QspImageBox");
+		    	Intent imageboxIntent = new Intent(QspPlayerStart.this, QspImageBox.class);
+		    	//imageboxIntent.setClassName("com.qsp.player", "com.qsp.player.QspImageBox");
 		    	Bundle b = new Bundle();
 		    	b.putString("imageboxFile", prefix.concat(fileName));
 		    	imageboxIntent.putExtras(b);
@@ -1764,6 +1783,11 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     	}
     }
 
+	@Override
+	public void OnImageClicked(String source) {
+		ShowPicture(source);
+	}
+
 	//Callback for click on selected act
     private OnItemClickListener actListClickListener = new OnItemClickListener() 
     {
@@ -1827,8 +1851,9 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     };
     
     //Для отображения картинок в HTML
+    static QspImageGetter imgGetterDesc = new QspImageGetter();
     static QspImageGetter imgGetter = new QspImageGetter();
-    
+
     //Хэндлер для UI-потока
     final Handler uiThreadHandler = new Handler();
 

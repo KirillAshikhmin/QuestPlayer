@@ -1,5 +1,4 @@
 LOCAL_PATH := $(call my-dir)
-
 include $(CLEAR_VARS)
 
 # Use older NDK platform to support pre-API21 devices.
@@ -8,8 +7,10 @@ include $(CLEAR_VARS)
 # both PIE and non-PIE builds), but does the trick for now.
 APP_PLATFORM := 16
 
-LOCAL_CFLAGS := -fshort-wchar -D_ANDROID -D_UNICODE -DNOT_RUBY -DEXPORT
+LOCAL_DISABLE_FATAL_LINKER_WARNINGS := true
+LOCAL_CFLAGS := -fshort-wchar -D_ANDROID -D_UNICODE -DNOT_RUBY -DEXPORT -w
 LOCAL_LDLIBS := -llog
+LOCAL_LDFLAGS := -fPIC
 LOCAL_MODULE    := ndkqsp
 LOCAL_SRC_FILES := androidqspwrapper.c \
 qsp/actions.c \

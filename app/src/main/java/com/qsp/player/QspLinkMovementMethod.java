@@ -211,6 +211,7 @@ extends ScrollingMovementMethod
             int off;
 
             URLSpan[] link = null;
+            ImageSpan[] images = null;
             for (int i=0; i<9; i++)
             {
             	line = layout.getLineForVertical(y) + dy[i];
@@ -218,8 +219,9 @@ extends ScrollingMovementMethod
             		continue;
             	off = layout.getOffsetForHorizontal(line, x) + dx[i];
             	link = buffer.getSpans(off, off, URLSpan.class);
-            	if (link.length != 0)
-            		break;
+            	if (link.length != 0) break;
+                images = buffer.getSpans(off, off, ImageSpan.class);
+                if (images.length != 0) break;
             }
             
             if (link.length != 0) {
@@ -229,6 +231,16 @@ extends ScrollingMovementMethod
                     Selection.setSelection(buffer,
                                            buffer.getSpanStart(link[0]),
                                            buffer.getSpanEnd(link[0]));
+                }
+
+                return true;
+            } else if (images.length != 0) {
+                if (action == MotionEvent.ACTION_UP) {
+                    urlCatcher.OnImageClicked(images[0].getSource());
+                } else if (action == MotionEvent.ACTION_DOWN) {
+                    Selection.setSelection(buffer,
+                                           buffer.getSpanStart(images[0]),
+                                           buffer.getSpanEnd(images[0]));
                 }
 
                 return true;

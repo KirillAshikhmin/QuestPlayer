@@ -76,15 +76,14 @@ public class Utility {
 
     public static Spanned QspStrToHtml(String str, ImageGetter imgGetter)
     {
-    	Spanned result = Html.fromHtml("");
     	if (str!=null && str.length() > 0)
     	{
     		str = str.replaceAll("\r", "<br>");
     		str = str.replaceAll("(?i)</td>", " ");
     		str = str.replaceAll("(?i)</tr>", "<br>");
-    		result = Html.fromHtml(str, imgGetter, null);
+    		return Html.fromHtml(str, imgGetter, null);
     	}
-    	return result;
+    	return Html.fromHtml("");
     }
     
     public static String QspStrToStr(String str)
