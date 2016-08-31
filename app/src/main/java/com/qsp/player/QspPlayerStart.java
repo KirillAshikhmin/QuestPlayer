@@ -7,7 +7,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.gesture.Gesture;
 import android.gesture.GestureOverlayView;
@@ -23,7 +22,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.preference.PreferenceManager;
-import android.text.style.ClickableSpan;
+import android.text.format.DateFormat;
 import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -35,7 +34,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
-import android.view.View.OnClickListener;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
@@ -47,32 +45,21 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
+
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
-
-
-/*public class jniResult
-{
-	boolean success;
-	
-	int int1;
-	int int2;
-	int int3;
-
-	String str1;
-	String str2;
-	String str3;
-};
-*/
 
 public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGesturePerformedListener, Drawable.Callback {
 
@@ -125,6 +112,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         TextView tvDesc = (TextView) findViewById(R.id.main_desc);
         tvDesc.removeCallbacks(what);
     }
+
 
 
     private class QSPItem {
@@ -289,11 +277,6 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         Utility.WriteLog("onCreate/");
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-
-    }
 
     @Override
     public void onResume() {
@@ -357,27 +340,6 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     }
 
     @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        Utility.WriteLog("onConfigurationChanged\\");
-        super.onConfigurationChanged(newConfig);
-
-        // Экран повернут, либо выдвинута клавиатура
-        if ((newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) || (newConfig.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO)) {
-            //!!! STUB
-        } else if ((newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) || (newConfig.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_YES)) {
-            //!!! STUB
-        }
-        Utility.WriteLog("onConfigurationChanged/");
-    }
-
-    @Override
-    public void onNewIntent(Intent intent) {
-        Utility.WriteLog("onNewIntent\\");
-        super.onNewIntent(intent);
-        Utility.WriteLog("onNewIntent/");
-    }
-
-    @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         //Контекст UI
         //Ловим кнопку "Back", и не закрываем активити, а только
@@ -431,9 +393,9 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         if (gameIsRunning) {
             //Заполняем слоты
             MenuItem loadItem = menu.findItem(R.id.menu_loadgame);
-            LoadSlots(loadItem, getString(R.string.menu_load));
+            LoadSlots(loadItem, getString(R.string.menu_load), true);
             MenuItem saveItem = menu.findItem(R.id.menu_savegame);
-            LoadSlots(saveItem, getString(R.string.menu_save));
+            LoadSlots(saveItem, getString(R.string.menu_save), false);
         }
         return true;
     }
@@ -513,12 +475,12 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         alert.show();
     }
 
-    private void LoadSlots(MenuItem rootItem, String name) {
+    private void LoadSlots(MenuItem rootItem, String name, boolean isLoad) {
         //Контекст UI
         if (rootItem == null)
             return;
 
-        SubMenu slotsMenu = null;
+        SubMenu slotsMenu;
 
         if (rootItem.hasSubMenu()) {
             slotsMenu = rootItem.getSubMenu();
@@ -526,21 +488,49 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         } else {
             int id = rootItem.getItemId();
             menuMain.removeItem(id);
-            slotsMenu = menuMain.addSubMenu(Menu.NONE, id, Menu.NONE, name);
+            slotsMenu = menuMain.addSubMenu(Menu.NONE, id, isLoad ? 65535 : 65536, name);
             slotsMenu.setHeaderTitle("Выберите слот");
+
         }
 
+        int position=0;
         for (int i = 0; i < SLOTS_MAX; i++) {
             String title = String.valueOf(i + 1).concat(": ");
             String Slotname = String.valueOf(i + 1).concat(".sav");
             File checkSlot = new File(curGameDir.concat(Slotname));
             if (checkSlot.exists()) {
-                String datetime = (String) android.text.format.DateFormat.format("yyyy-MM-dd hh:mm:ss", checkSlot.lastModified());
+                String datetime = (String) DateFormat.format("yyyy-MM-dd kk:mm:ss", checkSlot.lastModified());
                 title = title.concat(datetime);
             } else
                 title = title.concat("[пусто]");
-            slotsMenu.add(title);
+            slotsMenu.add(isLoad ? 1: 2, position,position, title);
+            position ++;
         }
+        if (!isLoad) return;
+        File currDir = new File(curGameDir);
+        File[] files = currDir.listFiles(new FileFilter() {
+            @Override
+            public boolean accept(File pathname) {
+                return (pathname.isFile() && pathname.toString().endsWith(".sav"));
+            }
+        });
+        if (files.length>0) {
+            for (File file : files) {
+                String fname = file.getName();
+                fname = fname.substring(0,fname.length()-4);
+                boolean isSlot = false;
+                for (int i = 0; i <= SLOTS_MAX; i++) {
+                    if (fname.toString().equals(String.valueOf(i))) {
+                        isSlot=true;
+                        break;
+                    }
+                }
+                if (isSlot) continue;
+                slotsMenu.add(isLoad ? 1: 2, position,position, file.getName());
+                position ++;
+            }
+        }
+
     }
 
     @Override
@@ -565,8 +555,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 return true;
 
             case R.id.menu_about:
-                Intent updateIntent = null;
-                updateIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.market_details_url)));
+                Intent updateIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.market_details_url)));
                 try {
                     startActivity(updateIntent);
                 } catch (ActivityNotFoundException e) {
@@ -588,9 +577,36 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 return true;
 
             default: {
-                MenuItem l = menuMain.findItem(R.id.menu_loadgame);
+                if (item.getGroupId()==1) {
+
+                    MenuItem l = menuMain.findItem(R.id.menu_loadgame);
+                    SubMenu ls = l.getSubMenu();
+                    for (int i = 0; i < SLOTS_MAX; i++) {
+                        MenuItem li = ls.getItem(i);
+                        if (li == item) {
+                            LoadSlot(i + 1);
+                            return true;
+                        }
+                    }
+                    LoadSlot(item.getTitle().toString());
+                }
+                if (item.getGroupId()==2) {
+
+                    MenuItem l = menuMain.findItem(R.id.menu_savegame);
+                    SubMenu ls = l.getSubMenu();
+                    for (int i = 0; i < SLOTS_MAX; i++) {
+                        MenuItem li = ls.getItem(i);
+                        if (li == item) {
+                            SaveSlot(i + 1);
+                            return true;
+                        }
+                    }
+                }
+/*
+                MenuItem l = menuMain.findItem(R.id.menu_savegame);
                 SubMenu ls = l.getSubMenu();
                 if (ls != null) {
+                    item.getGroupId()
                     for (int i = 0; i < SLOTS_MAX; i++) {
                         MenuItem li = ls.getItem(i);
                         if (li == item) {
@@ -607,7 +623,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                             SaveSlot(i + 1);
                         }
                     }
-                }
+                }*/
             }
             break;
         }
@@ -616,15 +632,21 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
     private void LoadSlot(int index) {
         //Контекст UI
-        String path = curGameDir.concat(String.valueOf(index)).concat(".sav");
+        String path = String.valueOf(index).concat(".sav");
+        LoadSlot(path);
+    }
+
+    private void LoadSlot(String filename) {
+        //Контекст UI
+        String path = curGameDir.concat(filename);
         File f = new File(path);
         if (!f.exists()) {
             Utility.WriteLog("LoadSlot: failed, file not found");
             return;
         }
 
-        FileInputStream fIn = null;
-        int size = 0;
+        FileInputStream fIn;
+        int size;
         try {
             fIn = new FileInputStream(f);
         } catch (FileNotFoundException e) {
@@ -690,9 +712,22 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         });
     }
 
+    private void c(int index) {
+        //Контекст UI
+        final String path = String.valueOf(index).concat(".sav");
+        SaveSlot(path);
+    }
+
+
     private void SaveSlot(int index) {
         //Контекст UI
-        final String path = curGameDir.concat(String.valueOf(index)).concat(".sav");
+        String path = String.valueOf(index).concat(".sav");
+        SaveSlot(path);
+    }
+
+    private void SaveSlot(String filename) {
+        //Контекст UI
+        final String path = curGameDir.concat(filename);
 
         libThreadHandler.post(new Runnable() {
             public void run() {
@@ -702,7 +737,6 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 }
                 libraryThreadIsRunning = true;
 
-                final String saveFilePath = path;
                 final byte[] dataToSave = QSPSaveGameAsData(false);
 
                 if (dataToSave == null) {
@@ -714,9 +748,9 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 runOnUiThread(new Runnable() {
                     public void run() {
 
-                        File f = new File(saveFilePath);
+                        File f = new File(path);
 
-                        FileOutputStream fileOutput = null;
+                        FileOutputStream fileOutput;
                         try {
                             fileOutput = new FileOutputStream(f);
                         } catch (FileNotFoundException e) {
@@ -728,7 +762,6 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                             fileOutput.close();
                         } catch (IOException e) {
                             e.printStackTrace();
-                            return;
                         }
 
                     }
@@ -945,20 +978,6 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         }
     };
 
-    //LINKS HACKS
-    static class InternalURLSpan extends ClickableSpan {
-        //Контекст UI
-        OnClickListener mListener;
-
-        public InternalURLSpan(OnClickListener listener) {
-            mListener = listener;
-        }
-
-        @Override
-        public void onClick(View widget) {
-            mListener.onClick(widget);
-        }
-    }
 
     private void FreeResources() {
         //Контекст UI
@@ -1485,6 +1504,20 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         });
     }
 
+    private void SaveGame(String file) {
+        //Контекст библиотеки
+        if (file == null || file.length() == 0)
+            return;
+        Toast.makeText(this, "SaveGame "+file, Toast.LENGTH_LONG).show();
+        SaveSlot(file);
+    }
+    private void OpenGame(String file) {
+        //Контекст библиотеки
+        if (file == null || file.length() == 0)
+            return;
+        Toast.makeText(this, "OpenGame "+file, Toast.LENGTH_LONG).show();
+        LoadSlot(file);
+    }
     private void ShowPicture(String file) {
         //Контекст библиотеки
         if (file == null || file.length() == 0)

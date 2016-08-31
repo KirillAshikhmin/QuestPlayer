@@ -44,7 +44,7 @@ void qspSetCallBack(int type, QSP_CALLBACK func)
 
 void qspCallDebug(QSP_CHAR *str)
 {
-	/* Здесь передаем управление отладчику */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
 	QSPCallState state;
 	if (qspCallBacks[QSP_CALL_DEBUG])
 	{
@@ -56,7 +56,7 @@ void qspCallDebug(QSP_CHAR *str)
 
 void qspCallSetTimer(int msecs)
 {
-	/* Здесь устанавливаем интервал таймера */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
 	QSPCallState state;
 	qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 		
@@ -74,7 +74,7 @@ void qspCallSetTimer(int msecs)
 
 void qspCallRefreshInt(QSP_BOOL isRedraw)
 {
-	/* Здесь выполняем обновление интерфейса */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
 	QSPCallState state;
 
 	qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
@@ -95,7 +95,7 @@ void qspCallRefreshInt(QSP_BOOL isRedraw)
 
 void qspCallSetInputStrText(QSP_CHAR *text)
 {
-	/* Здесь устанавливаем текст строки ввода */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ */
 	QSPCallState state;
 	if (qspCallBacks[QSP_CALL_SETINPUTSTRTEXT])
 	{
@@ -107,7 +107,7 @@ void qspCallSetInputStrText(QSP_CHAR *text)
 
 void qspCallAddMenuItem(QSP_CHAR *name, QSP_CHAR *imgPath)
 {
-	/* Здесь добавляем пункт меню */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ */
 	QSPCallState state;
 	qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 		
@@ -137,7 +137,7 @@ void qspCallAddMenuItem(QSP_CHAR *name, QSP_CHAR *imgPath)
 
 void qspCallSystem(QSP_CHAR *cmd)
 {
-	/* Здесь выполняем системный вызов */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ */
 	QSPCallState state;
 	if (qspCallBacks[QSP_CALL_SYSTEM])
 	{
@@ -149,34 +149,61 @@ void qspCallSystem(QSP_CHAR *cmd)
 
 void qspCallOpenGame(QSP_CHAR *file)
 {
-	/* Здесь позволяем пользователю выбрать файл */
-	/* состояния игры для загрузки и загружаем его */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ */
+	/* пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ */
 	QSPCallState state;
-	if (qspCallBacks[QSP_CALL_OPENGAMESTATUS])
-	{
-		qspSaveCallState(&state, QSP_FALSE, QSP_TRUE);
-		qspCallBacks[QSP_CALL_OPENGAMESTATUS](file);
-		qspRestoreCallState(&state);
-	}
+
+    qspSaveCallState(&state, QSP_FALSE, QSP_TRUE);
+    jclass cls = (*qspCallbackEnv)->GetObjectClass(qspCallbackEnv, qspCallbackObject);
+        jmethodID mid =
+             (*qspCallbackEnv)->GetMethodID(qspCallbackEnv, cls, "OpenGame", "(Ljava/lang/String;)V");
+        (*qspCallbackEnv)->DeleteLocalRef( qspCallbackEnv, cls );
+        if (mid == NULL)
+            return; /* method not found */
+
+        char * sz = qspW2C(file);
+        jstring fileName = (*qspCallbackEnv)->NewStringUTF(qspCallbackEnv, sz);
+        if (sz!=NULL)
+            free(sz);
+
+        (*qspCallbackEnv)->CallVoidMethod(qspCallbackEnv, qspCallbackObject, mid, fileName);
+        (*qspCallbackEnv)->DeleteLocalRef( qspCallbackEnv, fileName );
+
+        qspRestoreCallState(&state);
+    qspRestoreCallState(&state);
+
 }
+
 
 void qspCallSaveGame(QSP_CHAR *file)
 {
-	/* Здесь позволяем пользователю выбрать файл */
-	/* для сохранения состояния игры и сохраняем */
-	/* в нем текущее состояние */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
 	QSPCallState state;
-	if (qspCallBacks[QSP_CALL_SAVEGAMESTATUS])
-	{
-		qspSaveCallState(&state, QSP_FALSE, QSP_TRUE);
-		qspCallBacks[QSP_CALL_SAVEGAMESTATUS](file);
-		qspRestoreCallState(&state);
-	}
+	qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
+
+    jclass cls = (*qspCallbackEnv)->GetObjectClass(qspCallbackEnv, qspCallbackObject);
+    jmethodID mid =
+         (*qspCallbackEnv)->GetMethodID(qspCallbackEnv, cls, "SaveGame", "(Ljava/lang/String;)V");
+    (*qspCallbackEnv)->DeleteLocalRef( qspCallbackEnv, cls );
+    if (mid == NULL)
+        return; /* method not found */
+
+    char * sz = qspW2C(file);
+    jstring fileName = (*qspCallbackEnv)->NewStringUTF(qspCallbackEnv, sz);
+    if (sz!=NULL)
+        free(sz);
+
+    (*qspCallbackEnv)->CallVoidMethod(qspCallbackEnv, qspCallbackObject, mid, fileName);
+    (*qspCallbackEnv)->DeleteLocalRef( qspCallbackEnv, fileName );
+
+    qspRestoreCallState(&state);
+
 }
+
 
 void qspCallShowMessage(QSP_CHAR *text)
 {
-	/* Здесь показываем сообщение */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
 	QSPCallState state;
 	qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 
@@ -200,7 +227,7 @@ void qspCallShowMessage(QSP_CHAR *text)
 
 int qspCallShowMenu()
 {
-	/* Здесь показываем меню */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ */
 	QSPCallState state;
 
 	qspSaveCallState(&state, QSP_FALSE, QSP_TRUE);
@@ -224,7 +251,7 @@ int qspCallShowMenu()
 
 void qspCallShowPicture(QSP_CHAR *file)
 {
-	/* Здесь показываем изображение */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
 	QSPCallState state;
 	qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 
@@ -248,7 +275,7 @@ void qspCallShowPicture(QSP_CHAR *file)
 
 void qspCallShowWindow(int type, QSP_BOOL isShow)
 {
-	/* Здесь показываем или скрываем окно */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ */
 	QSPCallState state;
 	if (qspCallBacks[QSP_CALL_SHOWWINDOW])
 	{
@@ -260,7 +287,7 @@ void qspCallShowWindow(int type, QSP_BOOL isShow)
 
 void qspCallPlayFile(QSP_CHAR *file, int volume)
 {
-	/* Здесь начинаем воспроизведение файла с заданной громкостью */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
 	QSPCallState state;
 	qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 
@@ -284,7 +311,7 @@ void qspCallPlayFile(QSP_CHAR *file, int volume)
 
 QSP_BOOL qspCallIsPlayingFile(QSP_CHAR *file)
 {
-	/* Здесь проверяем, проигрывается ли файл */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ */
 	QSPCallState state;
 	qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 		
@@ -317,7 +344,7 @@ QSP_BOOL qspCallIsPlayingFile(QSP_CHAR *file)
 
 void qspCallSleep(int msecs)
 {
-	/* Здесь ожидаем заданное количество миллисекунд */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
 	QSPCallState state;
 	qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 	
@@ -335,7 +362,7 @@ void qspCallSleep(int msecs)
 
 int qspCallGetMSCount()
 {
-	/* Здесь получаем количество миллисекунд, прошедших с момента последнего вызова функции */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
 	QSPCallState state;
 	int count = 0;
 	qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);	
@@ -355,7 +382,7 @@ int qspCallGetMSCount()
 
 void qspCallCloseFile(QSP_CHAR *file)
 {
-	/* Здесь выполняем закрытие файла */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ */
 	QSPCallState state;
 	qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
 		
@@ -379,7 +406,7 @@ void qspCallCloseFile(QSP_CHAR *file)
 
 void qspCallDeleteMenu()
 {
-	/* Здесь удаляем текущее меню */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ */
 	QSPCallState state;
 
 	qspSaveCallState(&state, QSP_TRUE, QSP_FALSE);
@@ -400,7 +427,7 @@ void qspCallDeleteMenu()
 
 QSP_CHAR *qspCallInputBox(QSP_CHAR *text)
 {
-	/* Здесь вводим текст */
+	/* пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ */
 	QSPCallState state;
 	QSP_CHAR *buffer;
 
