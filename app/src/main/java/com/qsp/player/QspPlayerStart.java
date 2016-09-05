@@ -55,7 +55,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
@@ -94,23 +93,22 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private boolean backAction = false;
     private boolean bigImage;
     private boolean imageDensity;
+    private TextView vars_desc;
+    private TextView main_desc;
 
     @Override
     public void invalidateDrawable(Drawable who) {
-        TextView tvDesc = (TextView) findViewById(R.id.main_desc);
-        tvDesc.invalidate();
+        main_desc.invalidate();
     }
 
     @Override
     public void scheduleDrawable(Drawable who, Runnable what, long when) {
-        TextView tvDesc = (TextView) findViewById(R.id.main_desc);
-        tvDesc.postDelayed(what, when);
+        main_desc.postDelayed(what, when);
     }
 
     @Override
     public void unscheduleDrawable(Drawable who, Runnable what) {
-        TextView tvDesc = (TextView) findViewById(R.id.main_desc);
-        tvDesc.removeCallbacks(what);
+        main_desc.removeCallbacks(what);
     }
 
 
@@ -238,6 +236,9 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
         res = getResources();
+
+        main_desc = (TextView) findViewById(R.id.main_desc);
+        vars_desc = (TextView) findViewById(R.id.vars_desc);
 
         //Создаем объект для обработки ссылок
         qspLinkMovementMethod = QspLinkMovementMethod.getQspInstance();
@@ -386,7 +387,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     public boolean onPrepareOptionsMenu(Menu menu) {
         //Контекст UI
         if (!sdcard_mounted)
-            return false;
+            return true;
 
         //Прячем или показываем группу пунктов меню "Начать заново", "Загрузить", "Сохранить"
         menu.setGroupVisible(R.id.menugroup_running, gameIsRunning);
@@ -433,10 +434,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         v.setBackgroundColor(backColor);
         ListView lv = (ListView) findViewById(R.id.inv);
         lv.setCacheColorHint(backColor);
-        TextView tv = (TextView) findViewById(R.id.main_desc);
-        ApplyFontSettingsToTextView(tv, textColor);
-        tv = (TextView) findViewById(R.id.vars_desc);
-        ApplyFontSettingsToTextView(tv, textColor);
+        ApplyFontSettingsToTextView(main_desc, textColor);
+        ApplyFontSettingsToTextView(vars_desc, textColor);
         if (mActListAdapter != null)
             mActListAdapter.notifyDataSetChanged();
         if (mItemListAdapter != null)
@@ -1022,8 +1021,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         curGameFile = gameFileName;
         curGameDir = gameFileName.substring(0, gameFileName.lastIndexOf(File.separator, gameFileName.length() - 1) + 1);
 
-        TextView tv = (TextView) findViewById(R.id.main_desc);
-        int padding = tv.getPaddingLeft() + tv.getPaddingRight();
+        int padding = main_desc.getPaddingLeft() + main_desc.getPaddingRight();
         float density = imageDensity ? getResources().getDisplayMetrics().density : 1;
         imgGetter.setDensity(density);
         imgGetterDesc.setDensity(density);
@@ -1039,9 +1037,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         lv.setAdapter(new QSPListAdapter(uiContext, R.layout.act_item, emptyItems));
         lv = (ListView) findViewById(R.id.inv);
         lv.setAdapter(new QSPListAdapter(uiContext, R.layout.obj_item, emptyItems));
-        tv.setText("");
-        tv = (TextView) findViewById(R.id.vars_desc);
-        tv.setText("");
+        main_desc.setText("");
+        vars_desc.setText("");
         setCurrentWin(WIN_MAIN);
 
         libThreadHandler.post(new Runnable() {
@@ -1338,13 +1335,11 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             final String txtMainDesc = QSPGetMainDesc();
             runOnUiThread(new Runnable() {
                 public void run() {
-                    TextView tvDesc = (TextView) findViewById(R.id.main_desc);
                     if (html) {
-                        tvDesc.setText(Utility.QspStrToHtml(txtMainDesc, imgGetterDesc));
-                        tvDesc.setText(Utility.AttachGifCallback(Utility.QspStrToHtml(txtMainDesc, imgGetterDesc), QspPlayerStart.this));
-                        tvDesc.setMovementMethod(QspLinkMovementMethod.getInstance());
+                        main_desc.setText(Utility.AttachGifCallback(Utility.QspStrToHtml(txtMainDesc, imgGetterDesc), QspPlayerStart.this));
+                        main_desc.setMovementMethod(QspLinkMovementMethod.getInstance());
                     } else
-                        tvDesc.setText(Utility.QspStrToStr(txtMainDesc));
+                        main_desc.setText(Utility.QspStrToStr(txtMainDesc));
                 }
             });
         }
@@ -1406,12 +1401,11 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                         varUnread = true;
                         updateTitle();
                     }
-                    TextView tvVarsDesc = (TextView) findViewById(R.id.vars_desc);
                     if (html) {
-                        tvVarsDesc.setText(Utility.QspStrToHtml(txtVarsDesc, imgGetter));
-                        tvVarsDesc.setMovementMethod(QspLinkMovementMethod.getInstance());
+                        vars_desc.setText(Utility.QspStrToHtml(txtVarsDesc, imgGetter));
+                        vars_desc.setMovementMethod(QspLinkMovementMethod.getInstance());
                     } else
-                        tvVarsDesc.setText(txtVarsDesc);
+                        vars_desc.setText(txtVarsDesc);
                 }
             });
         }

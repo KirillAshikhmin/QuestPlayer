@@ -5,18 +5,46 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
 
 import pl.droidsonroids.gif.GifDrawable;
+import uk.co.senab.photoview.PhotoViewAttacher;
 
 
 /**
  * Show an image called by "VIEW" keyword from a game.
  */
 public class QspImageBox extends Activity implements OnClickListener {
+
+    boolean isBtnClosed;
+    static boolean helpShowed;
+    PhotoViewAttacher mAttacher;
+
+    private OnClickListener zoomClick = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            if (isBtnClosed) {
+                finish();
+                return;
+            }
+            zoom.setImageResource(R.drawable.ic_close);
+            box.setOnClickListener(null);
+            mAttacher = new PhotoViewAttacher(box);
+            if (!helpShowed) {
+                Toast.makeText(QspImageBox.this,"Теперь вы можете масштабировать изображение. Для закрытия окна нажмите еще раз на эту кнопку", Toast.LENGTH_LONG).show();
+                helpShowed=true;
+            }
+            isBtnClosed=true;
+        }
+    };
+    private ImageButton zoom;
+    private ImageView box;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,7 +55,9 @@ public class QspImageBox extends Activity implements OnClickListener {
         setContentView(R.layout.image_box);
 
         //set image click listener to activity click listener
-        ImageView box = (ImageView) findViewById(R.id.imagebox);
+        box = (ImageView) findViewById(R.id.imagebox);
+        zoom = (ImageButton) findViewById(R.id.zoom);
+        zoom.setOnClickListener(zoomClick);
         box.setOnClickListener(this);
 
         //load image

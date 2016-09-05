@@ -20,7 +20,7 @@
     </style>
 
 
-   <style name="Theme.Black" parent="android:style/Theme.Black"></style>
-   <style name="Theme.Light" parent="android:style/Theme.Light"></style>
-   <style name="Theme.Trans" parent="android:style/Theme.Translucent"></style>
+   <style name="Theme.Black" parent="android:style/Theme.Black"/>
+   <style name="Theme.Light" parent="android:style/Theme.Light"/>
+   <style name="Theme.Trans" parent="android:style/Theme.Translucent"/>
 </resources>

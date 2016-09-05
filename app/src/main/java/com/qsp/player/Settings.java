@@ -13,7 +13,7 @@ public class Settings extends PreferenceActivity implements Preference.OnPrefere
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.settings);
 
-        String defaultGamesDir = Utility.GetDefaultPath();
+        String defaultGamesDir = Utility.GetDefaultPath(this);
         if (defaultGamesDir != null && !TextUtils.isEmpty(defaultGamesDir)) {
             EditTextPreference gamesDirPref = (EditTextPreference) findPreference("gamesdir");
             gamesDirPref.setDefaultValue(defaultGamesDir);

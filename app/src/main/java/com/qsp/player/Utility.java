@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import android.app.AlertDialog;
 import android.content.ComponentName;
@@ -33,6 +35,8 @@ import android.view.ViewGroup;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
+
+import org.w3c.dom.Text;
 
 import pl.droidsonroids.gif.GifDrawable;
 
@@ -94,14 +98,76 @@ public class Utility {
         return folder;
     }
 
+
     public static Spanned QspStrToHtml(String str, ImageGetter imgGetter) {
         if (str != null && str.length() > 0) {
             str = str.replaceAll("\r", "<br>");
             str = str.replaceAll("(?i)</td>", " ");
             str = str.replaceAll("(?i)</tr>", "<br>");
+
+            str = fixImagesSize(str);
+
             return Html.fromHtml(str, imgGetter, null);
         }
         return Html.fromHtml("");
+    }
+    private static String fixImagesSize(String str) {
+        boolean hasImg = str.contains("<img");
+
+        String endOfStr = str;
+        String newStr= str;
+        if (!hasImg) return str;
+        Pattern pattern = Pattern.compile("(\\S+)=['\"]?((?:(?!/>|>|\"|'|\\s).)+)");
+        do {
+            int firstImg = endOfStr.indexOf("<img");
+            if (firstImg==-1) {
+                hasImg=false;
+                continue;
+            }
+            hasImg = firstImg >=0;
+            String curStr = endOfStr.substring(firstImg);
+            int endImg = curStr.indexOf(">");
+            curStr = curStr.substring(0,endImg+1);
+            endOfStr = endOfStr.substring(firstImg+curStr.length());
+
+            newStr = newStr.substring(0,newStr.indexOf(curStr));
+            Matcher matcher = pattern.matcher(curStr);
+
+            if (matcher.groupCount()==0) continue;
+
+            String src = null, widthS = null, heightS = null;
+            try {
+                while (matcher.find()) {
+                    String group = matcher.group();
+                    if (group.startsWith("src=")) src = group;
+                    else if (group.startsWith("width=")) widthS=group.substring(6);
+                    else if (group.startsWith("height=")) heightS=group.substring(7);
+                }
+
+                if (isNullOrEmpty(src)) {
+                    newStr +=curStr+endOfStr;
+                    continue;
+                }
+
+                if (isNullOrEmpty(widthS) && isNullOrEmpty(heightS)) {
+                    newStr +=curStr+endOfStr;
+                    continue;
+                }
+
+                int w = isNullOrEmpty(widthS) ? 0 : Integer.parseInt(widthS);
+                int h = isNullOrEmpty(heightS) ? 0 : Integer.parseInt(heightS);
+                newStr += curStr.replace(src, String.format("%s?size=%sx%s",src,w,h)) + endOfStr;
+
+            } catch (Exception e) {
+                Log.e("fixImagesSize","unable parse "+curStr,e);
+            }
+        } while (hasImg);
+        return newStr;
+    }
+
+
+    private static boolean isNullOrEmpty(String string) {
+        return (string == null || string.equals(""));
     }
 
     public static String QspStrToStr(String str) {
@@ -133,10 +199,12 @@ public class Utility {
         }
     }
 
-    public static String GetDefaultPath() {
+    public static String GetDefaultPath(Context context) {
         //Возвращаем путь к папке с играми.
         if (!android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED))
             return null;
+
+
         File sdDir = Environment.getExternalStorageDirectory();
         if (sdDir.exists() && sdDir.canWrite()) {
             String flashCard = sdDir.getPath();
@@ -160,7 +228,7 @@ public class Utility {
     public static String GetGamesPath(Context context) {
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
         String path = settings.getString("gamesdir", null);
-        return (path != null && !TextUtils.isEmpty(path)) ? path : GetDefaultPath();
+        return (path != null && !TextUtils.isEmpty(path)) ? path : GetDefaultPath(context);
     }
 
     public static void WriteLog(String msg) {

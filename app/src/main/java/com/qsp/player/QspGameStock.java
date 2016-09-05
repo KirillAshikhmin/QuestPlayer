@@ -37,6 +37,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -806,7 +807,7 @@ public class QspGameStock extends TabActivity {
     	//Заполняем список скачанных игр
     	
 	String path = Utility.GetGamesPath(this);
-    	if (path == null)
+    	if (TextUtils.isEmpty(path))
     		return false;
     	
         File gameStartDir = new File (path);
@@ -814,6 +815,7 @@ public class QspGameStock extends TabActivity {
         ArrayList<File> qspGameDirs = new ArrayList<File>();
         ArrayList<File> qspGameFiles = new ArrayList<File>();
         //Сначала добавляем все папки
+		if (sdcardFiles!=null)
         for (File currentFile : sdcardFiles)
         {
         	if (currentFile.isDirectory() && !currentFile.isHidden() && !currentFile.getName().startsWith("."))

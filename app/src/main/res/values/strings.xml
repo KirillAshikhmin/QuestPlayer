@@ -48,5 +48,5 @@
     <!-- Прочее -->
     <string name="app_name">Quest Player Fork</string>
     <string name="market_details_url">market://details?id=com.qsp.player</string>
-<string name="actsColor">Цвет действий</string>
+    <string name="actsColor">Цвет действий</string>
 </resources>
