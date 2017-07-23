@@ -283,7 +283,17 @@ public class QspGameStock extends TabActivity {
                 return true;
 
             case R.id.menu_openfile:
-            	BrowseGame(Environment.getExternalStorageDirectory().getPath(), true);
+            // ** original code for BrowseGame directory checking **
+			//	BrowseGame(Environment.getExternalStorageDirectory().getPath(), true);
+
+			// ** begin replacement code for checking storage directory **
+				String strSDCardPath = System.getenv("SECONDARY_STORAGE");
+								if ((null == strSDCardPath) || (strSDCardPath.length() == 0)) {
+					strSDCardPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
+				}
+				BrowseGame(strSDCardPath, true);
+			// ** end replacement code for checking storage directory **
+
                 return true;
 
             case R.id.menu_deletegames:
@@ -506,10 +516,21 @@ public class QspGameStock extends TabActivity {
         		//set the path where we want to save the file
         		//in this case, going to save it in program cache directory
         		//on sd card.
-        		File SDCardRoot = Environment.getExternalStorageDirectory();
         		
-        		File cacheDir = new File (SDCardRoot.getPath().concat("/Android/data/com.qsp.player/cache/"));
-        		if (!cacheDir.exists())
+				// ** original code for checking for storage directory **
+				// File SDCardRoot = Environment.getExternalStorageDirectory();
+        		// File cacheDir = new File (SDCardRoot.getPath().concat("/Android/data/com.qsp.player/cache/"));
+        		 
+				// ** begin replacement code for checking storage directory **
+				String strSDCardPath = System.getenv("SECONDARY_STORAGE");
+								if ((null == strSDCardPath) || (strSDCardPath.length() == 0)) {
+					strSDCardPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
+				}
+        		File cacheDir = new File (strSDCardPath.concat("/Android/data/com.qsp.player/cache/"));
+				// ** end replacement code for checking storage directory **
+        		
+				
+				if (!cacheDir.exists())
         		{
         			if (!cacheDir.mkdirs())
         			{

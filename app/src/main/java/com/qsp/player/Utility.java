@@ -154,6 +154,14 @@ public class Utility {
                     continue;
                 }
 
+                // ** Remove leading quote (") character if present **
+                if (!isNullOrEmpty(widthS)) {
+                    if (widthS.startsWith("\"")) { widthS = widthS.substring(1); }
+                }
+                if (!isNullOrEmpty(heightS)) {
+                    if (heightS.startsWith("\"")) { heightS = heightS.substring(1); }
+                }
+
                 int w = isNullOrEmpty(widthS) ? 0 : Integer.parseInt(widthS);
                 int h = isNullOrEmpty(heightS) ? 0 : Integer.parseInt(heightS);
                 newStr += curStr.replace(src, String.format("%s?size=%sx%s",src,w,h)) + endOfStr;
@@ -204,8 +212,20 @@ public class Utility {
         if (!android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED))
             return null;
 
+		// ** original code for checking games directory **
+        // File sdDir = Environment.getExternalStorageDirectory();
+		// ** begin replacement code for checking storage directory **
 
-        File sdDir = Environment.getExternalStorageDirectory();
+		String strSDCardPath = System.getenv("SECONDARY_STORAGE");
+		if ((null == strSDCardPath) || (strSDCardPath.length() == 0)) {
+			strSDCardPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
+		}
+        File sdDir = new File (strSDCardPath);
+		// ** end replacement code for checking storage directory **
+
+
+
+
         if (sdDir.exists() && sdDir.canWrite()) {
             String flashCard = sdDir.getPath();
             String tryFull1 = flashCard + "/qsp/games";

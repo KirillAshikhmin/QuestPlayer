@@ -488,25 +488,27 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             int id = rootItem.getItemId();
             menuMain.removeItem(id);
             slotsMenu = menuMain.addSubMenu(Menu.NONE, id, isLoad ? 65535 : 65536, name);
-            slotsMenu.setHeaderTitle("Выберите слот");
+            slotsMenu.setHeaderTitle("Select a slot");
 
         }
 
         int position=0;
         for (int i = 0; i < SLOTS_MAX; i++) {
             String title = String.valueOf(i + 1).concat(": ");
+
             String Slotname = String.valueOf(i + 1).concat(".sav");
-            File checkSlot = new File(curGameDir.concat(Slotname));
+			
+            File checkSlot = new File(saveGameDir.concat(Slotname));
             if (checkSlot.exists()) {
                 String datetime = (String) DateFormat.format("yyyy-MM-dd kk:mm:ss", checkSlot.lastModified());
                 title = title.concat(datetime);
             } else
-                title = title.concat("[пусто]");
+                title = title.concat("[Empty]");
             slotsMenu.add(isLoad ? 1: 2, position,position, title);
             position ++;
         }
         if (!isLoad) return;
-        File currDir = new File(curGameDir);
+        File currDir = new File(saveGameDir);
         File[] files = currDir.listFiles(new FileFilter() {
             @Override
             public boolean accept(File pathname) {
@@ -637,7 +639,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
     private void LoadSlot(String filename) {
         //Контекст UI
-        String path = curGameDir.concat(filename);
+        String path = saveGameDir.concat(filename);
         File f = new File(path);
         if (!f.exists()) {
             Utility.WriteLog("LoadSlot: failed, file not found");
@@ -726,7 +728,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
     private void SaveSlot(String filename) {
         //Контекст UI
-        final String path = curGameDir.concat(filename);
+        final String path = saveGameDir.concat(filename);
 
         libThreadHandler.post(new Runnable() {
             public void run() {
@@ -1020,6 +1022,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         final String gameFileName = fileName;
         curGameFile = gameFileName;
         curGameDir = gameFileName.substring(0, gameFileName.lastIndexOf(File.separator, gameFileName.length() - 1) + 1);
+		
+		saveGameDir = uiContext.getFilesDir().getAbsolutePath();
 
         int padding = main_desc.getPaddingLeft() + main_desc.getPaddingRight();
         float density = imageDensity ? getResources().getDisplayMetrics().density : 1;
@@ -1831,6 +1835,10 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
     String curGameDir;
     String curGameFile;
+
+// saveGameDir identifies internal data storage for app; resolves write-permission problem with Android SD Cards
+    String saveGameDir;
+
     Vector<MusicContent> mediaPlayersList;
     Handler timerHandler;
     long timerStartTime;
