@@ -18,6 +18,7 @@ import pl.droidsonroids.gif.GifDrawable;
 class QspImageGetter implements ImageGetter {
     private String mDirectory;
     private int mScreenWidth;
+    private int mScreenHeight;
     private boolean mFullSize;
     private float mDensity;
 
@@ -69,6 +70,10 @@ class QspImageGetter implements ImageGetter {
 
     void setScreenWidth(int width) {
         mScreenWidth = width;
+    }
+
+    void setScreenHeight(int height) {
+        mScreenHeight = height;
     }
 
     void setFullSize(boolean fullSize) {
@@ -165,12 +170,41 @@ class QspImageGetter implements ImageGetter {
                     int nWidth = (int) (haveRequestedSize ? widthRequest : iw * mDensity);
                     int nHeight = (int) (haveRequestedSize ? heightRequest : ih * mDensity);
 
+/* Original image size correction
                     if (mFullSize || nWidth > mScreenWidth) {
                         float k = mScreenWidth;
                         k = k / nWidth;
                         nWidth = mScreenWidth;
                         nHeight = (int) (nHeight * k);
                     }
+
+                    if (mFullSize || nHeight > mScreenHeight/2) {
+                        float kh = mScreenHeight;
+                        kh = kh / nHeight;
+                        nHeight = mScreenHeight/2;
+                        nWidth = (int) (nWidth * kh);
+                    }
+*/
+
+                    if (mFullSize || nWidth > mScreenWidth) {
+                        float k = mScreenWidth;
+                        k = k / nWidth;
+                        nWidth = mScreenWidth;
+                        nHeight = (int) (nHeight * k);
+                        if (nHeight > mScreenHeight) {
+                            float kh = mScreenHeight;
+                            kh = kh / nHeight;
+                            nHeight = mScreenHeight;
+                            nWidth = (int) (nWidth * kh);
+                        }
+                    } else if (mFullSize || nHeight > mScreenHeight) {
+                        float kh = mScreenHeight;
+                        kh = kh / nHeight;
+                        nHeight = mScreenHeight;
+                        nWidth = (int) (nWidth * kh);
+                    }
+
+
                     drawable.setBounds(0, 0, nWidth, nHeight);
                 }
 

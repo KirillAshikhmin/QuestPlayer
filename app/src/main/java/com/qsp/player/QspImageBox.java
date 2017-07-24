@@ -37,7 +37,7 @@ public class QspImageBox extends Activity implements OnClickListener {
             box.setOnClickListener(null);
             mAttacher = new PhotoViewAttacher(box);
             if (!helpShowed) {
-                Toast.makeText(QspImageBox.this,"Теперь вы можете масштабировать изображение. Для закрытия окна нажмите еще раз на эту кнопку", Toast.LENGTH_LONG).show();
+                Toast.makeText(QspImageBox.this,"Now you can scale the image. To close the window, click again on this button.", Toast.LENGTH_LONG).show();
                 helpShowed=true;
             }
             isBtnClosed=true;

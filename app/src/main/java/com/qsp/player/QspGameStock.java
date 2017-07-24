@@ -361,7 +361,7 @@ public class QspGameStock extends TabActivity {
         			{
         				if (!triedToLoadGameList)
         				{
-        					Utility.ShowError(uiContext, "Не удалось загрузить список игр. Проверьте интернет-подключение.");
+        					Utility.ShowError(uiContext, "The game list could not be loaded. Check your internet connection.");
         					triedToLoadGameList = true;
         				}
         			}
@@ -460,15 +460,15 @@ public class QspGameStock extends TabActivity {
 		
 			StringBuilder txt = new StringBuilder();
 			if(selectedGame.author.length()>0)
-				txt.append("Автор: ").append(selectedGame.author);
+				txt.append("Author: ").append(selectedGame.author);
 			if(selectedGame.version.length()>0)
-				txt.append("\nВерсия: ").append(selectedGame.version);
+				txt.append("\nVersion: ").append(selectedGame.version);
 			if(selectedGame.file_size>0)
-				txt.append("\nРазмер: ").append(selectedGame.file_size/1024).append(" килобайт");
+				txt.append("\nSize: ").append(selectedGame.file_size/1024).append(" Kilobytes");
 			AlertDialog.Builder bld = new AlertDialog.Builder(uiContext).setMessage(txt)
 			.setTitle(selectedGame.title)
 			.setIcon(R.drawable.icon)
-			.setPositiveButton((selectedGame.downloaded ? "Играть" : "Загрузить"), new DialogInterface.OnClickListener() {
+			.setPositiveButton((selectedGame.downloaded ? "Play" : "Download"), new DialogInterface.OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 	    		if (selectedGame.downloaded){
@@ -482,7 +482,7 @@ public class QspGameStock extends TabActivity {
 	    			DownloadGame(selectedGame.file_url, selectedGame.file_size, selectedGame.game_id);						
 			}
 		})
-			.setNegativeButton("Закрыть", new DialogInterface.OnClickListener() {
+			.setNegativeButton("Close", new DialogInterface.OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				dialog.cancel();						
@@ -495,7 +495,7 @@ public class QspGameStock extends TabActivity {
     {
 		if (!Utility.haveInternet(uiContext))
 		{
-			Utility.ShowError(uiContext, "Не удалось загрузить игру. Проверьте интернет-подключение.");
+			Utility.ShowError(uiContext, "The game could not be loaded. Check your internet connection.");
 			return;
 		}
 		GameItem gameToDownload = gamesMap.get(game_id);
@@ -578,7 +578,7 @@ public class QspGameStock extends TabActivity {
             			fileOutput.write(buffer, 0, bufferLength);
             			//this is where you would do something to report the prgress, like this maybe
             			downloadedCount += bufferLength;
-            			updateSpinnerProgress(true, gameName, "Скачивается...", -downloadedCount);
+            			updateSpinnerProgress(true, gameName, "Downloading...", -downloadedCount);
             		}
             		//close the output stream when done
             		fileOutput.close();
@@ -599,11 +599,11 @@ public class QspGameStock extends TabActivity {
         				file.delete();
             		runOnUiThread(new Runnable() {
             			public void run() {
-        					String desc = "Не удалось скачать игру \"" + checkGameName + "\".";
+        					String desc = "Could not download game \"" + checkGameName + "\".";
             				if (isActive)
                	    			Utility.ShowError(uiContext, desc);
             				else
-               					Notify("Ошибка при загрузке игры", desc);
+               					Notify("Error loading game", desc);
             			}
             		});
             		return;
@@ -637,7 +637,7 @@ public class QspGameStock extends TabActivity {
             	    		if ( !success )
             	    		{
             	        		//Показываем сообщение об ошибке
-            	    			Utility.ShowError(uiContext, "Не удалось распаковать игру \"" + checkGameName + "\".");
+            	    			Utility.ShowError(uiContext, "Unable to unzip the game \"" + checkGameName + "\".");
             	    		}
             	    		else
             	    		{
@@ -650,13 +650,13 @@ public class QspGameStock extends TabActivity {
         					String desc = null;
         					if ( !success )
         					{
-        						msg = "Ошибка при загрузке игры";
-        						desc = "Не удалось распаковать игру \"" + checkGameName + "\"";
+        						msg = "Error loading game";
+        						desc = "Unable to unzip the game \"" + checkGameName + "\"";
         					}
         					else
         					{
-        						msg = "Игра загружена";
-        						desc = "Игра \"" + checkGameName + "\" успешно загружена";
+        						msg = "Game downloaded";
+        						desc = "Game \"" + checkGameName + "\" successfully uploaded";
         					}
            					Notify(msg, desc);
         				}
@@ -679,7 +679,7 @@ public class QspGameStock extends TabActivity {
 				downloadProgressDialog.setCancelable(false);
 			}
 		});
-    	updateSpinnerProgress(true, gameName, "Распаковывается...", 0);
+    	updateSpinnerProgress(true, gameName, "Unpacked...", 0);
 
     	_dirChecker("");
 
@@ -701,7 +701,7 @@ public class QspGameStock extends TabActivity {
     				int n;
     				while ((n = in.read(b,0,1024)) >= 0) {
     					out.write(b,0,n);
-    					updateSpinnerProgress(true, gameName, "Распаковывается...", n);
+    					updateSpinnerProgress(true, gameName, "Unpacked...", n);
     				}
 
     				zin.closeEntry();
@@ -813,7 +813,7 @@ public class QspGameStock extends TabActivity {
 
 		if (!ScanDownloadedGames())
 		{
-			Utility.ShowError(uiContext, "Нет доступа к флэш-карте.");
+			Utility.ShowError(uiContext, "No access to the flash card.");
 			return;
 		}
 		
@@ -1136,7 +1136,7 @@ public class QspGameStock extends TabActivity {
     	if ( !parsed && isActive && triedToLoadGameList )
     	{
     		//Показываем сообщение об ошибке
-    		Utility.ShowError(uiContext, "Не удалось загрузить список игр. Проверьте интернет-подключение.");
+    		Utility.ShowError(uiContext, "The game list could not be loaded. Check your Internet connection.");
     	}
     	return parsed;
     }
@@ -1152,7 +1152,7 @@ public class QspGameStock extends TabActivity {
     			}
     		});
             try {
-            	updateSpinnerProgress(true, "", "Загрузка списка игр", 0);
+            	updateSpinnerProgress(true, "", "Loading a list of games", 0);
             	URL updateURL = new URL("http://qsp.su/tools/gamestock/gamestock.php");
                 URLConnection conn = updateURL.openConnection();
                 InputStream is = conn.getInputStream();
@@ -1252,7 +1252,7 @@ public class QspGameStock extends TabActivity {
         File sdcardRoot = new File (startpath);
         if ((sdcardRoot == null) || !sdcardRoot.exists())
         {
-        	Utility.ShowError(uiContext, "Не удалось найти путь: ".concat(startpath));
+        	Utility.ShowError(uiContext, "Could not find path: ".concat(startpath));
         	return;
         }
         File[] sdcardFiles = sdcardRoot.listFiles();        
@@ -1289,7 +1289,7 @@ public class QspGameStock extends TabActivity {
         
         //Показываем диалог выбора файла
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Выберите файл с игрой");
+        builder.setTitle("Select a game file");
         builder.setItems(items, browseFileClick);
         AlertDialog alert = builder.create();
         alert.show();
@@ -1320,7 +1320,7 @@ public class QspGameStock extends TabActivity {
         
         //Показываем диалог выбора файла
         AlertDialog.Builder builder = new AlertDialog.Builder(uiContext);
-        builder.setTitle("Удалить игру");
+        builder.setTitle("Delete game");
         builder.setItems(items, new DialogInterface.OnClickListener()
 	        {
 	    		@Override
@@ -1330,13 +1330,13 @@ public class QspGameStock extends TabActivity {
 	    			final File f = qspGamesToDeleteList.get(which);
     				if ((f == null) || !f.isDirectory())
     					return;
-	    	        confirmBuilder.setMessage("Удалить игру \""+f.getName()+"\"?");
+	    	        confirmBuilder.setMessage("Delete game \""+f.getName()+"\"?");
 	    	        confirmBuilder.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
     					public void onClick(DialogInterface dialog, int whichButton) {
     						if (whichButton==DialogInterface.BUTTON_POSITIVE)
     						{
     		    				Utility.DeleteRecursive(f);
-    		    				Utility.ShowInfo(uiContext, "Игра удалена.");
+    		    				Utility.ShowInfo(uiContext, "The game has been deleted.");
     		    				RefreshLists();
     						}
     					}
@@ -1384,7 +1384,7 @@ public class QspGameStock extends TabActivity {
                     }
                 	tt = (TextView) v.findViewById(R.id.game_author);
                     if(o.author.length()>0)
-                    	tt.setText(new StringBuilder().append("Автор: ").append(o.author));//.append("  (").append(o.file_size).append(" байт)"));
+                    	tt.setText(new StringBuilder().append("Author: ").append(o.author));//.append("  (").append(o.file_size).append(" байт)"));
                     else
                     	tt.setText("");
             }

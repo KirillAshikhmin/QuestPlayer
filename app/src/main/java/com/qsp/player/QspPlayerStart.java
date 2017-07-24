@@ -875,18 +875,20 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     //анимация иконок при смене содержимого скрытых окон
     private void updateTitle() {
         ImageButton image = (ImageButton) findViewById(R.id.title_button_1);
-        image.clearAnimation();
+/*        image.clearAnimation();
         if (invUnread) {
             Animation update = AnimationUtils.loadAnimation(this, R.anim.update);
             image.startAnimation(update);
             image.setBackgroundResource(invBack = R.drawable.btn_bg_pressed);
             invUnread = false;
         }
+*/
+
         image = (ImageButton) findViewById(R.id.title_button_2);
         image.clearAnimation();
         if (varUnread) {
-            Animation update = AnimationUtils.loadAnimation(this, R.anim.update);
-            image.startAnimation(update);
+            //Animation update = AnimationUtils.loadAnimation(this, R.anim.update);
+            //image.startAnimation(update);
             image.setBackgroundResource(varBack = R.drawable.btn_bg_pressed);
             varUnread = false;
         }
@@ -925,13 +927,13 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 toggleExt(false);
                 invUnread = false;
                 invBack = 0;
-                setTitle("Инвентарь");
+                setTitle("Inventory and other menus");
                 break;
             case WIN_MAIN:
                 toggleInv(false);
                 toggleMain(true);
                 toggleExt(false);
-                setTitle("Описание");
+                setTitle("Description");
                 break;
             case WIN_EXT:
                 toggleInv(false);
@@ -939,7 +941,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 toggleExt(true);
                 varUnread = false;
                 varBack = 0;
-                setTitle("Доп. описание");
+// "Доп. описание"
+                setTitle("Character Information");
                 break;
         }
         currentWin = win;
@@ -1031,8 +1034,10 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         imgGetterDesc.setDensity(density);
         imgGetter.setDirectory(curGameDir);
         imgGetter.setScreenWidth(getWindow().getWindowManager().getDefaultDisplay().getWidth() - padding);
+        imgGetter.setScreenHeight(getWindow().getWindowManager().getDefaultDisplay().getHeight() - padding);
         imgGetterDesc.setDirectory(curGameDir);
         imgGetterDesc.setScreenWidth(getWindow().getWindowManager().getDefaultDisplay().getWidth() - padding);
+        imgGetterDesc.setScreenHeight(getWindow().getWindowManager().getDefaultDisplay().getHeight() - padding);
         imgGetterDesc.setFullSize(bigImage);
 
         //Очищаем все поля
