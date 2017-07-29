@@ -109,7 +109,20 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
 
     public class QSPWebViewClient extends WebViewClient {
+
+        /* Still working on getting video to autoplay
         @Override
+        public void onPageFinished(WebView myView, String url) {
+
+            if (url.contains("<video")) {
+                main_desc.getSettings().setJavaScriptEnabled(true);
+                main_desc.loadUrl("javascript:(function() { var firstVideo = document.getElementsByTagName(\"video\")[0]; firstVideo.play(); })()");
+            } else main_desc.getSettings().setJavaScriptEnabled(false);
+
+        }
+         */
+
+            @Override
         public boolean shouldOverrideUrlLoading(WebView view, String href) {
 
             if (href.toLowerCase().startsWith("exec:")) {
@@ -1407,16 +1420,20 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         //CheckQspResult(htmlResult.success, "RefreshInt: QSPGetVarValues");
         final boolean html = htmlResult.success && (htmlResult.int1 != 0);
 
-
         //основное описание
         if (QSPIsMainDescChanged()) {
             final String txtMainDesc = QSPGetMainDesc();
             runOnUiThread(new Runnable() {
                 public void run() {
                     if (html) {
+                        main_desc.getSettings().setJavaScriptEnabled(false);
+
                         //main_desc.setText(Utility.AttachGifCallback(Utility.QspStrToHtml(txtMainDesc, imgGetterDesc, curGameDir), QspPlayerStart.this));
                         //main_desc.setMovementMethod(QspLinkMovementMethod.getInstance());
-                        main_desc.loadDataWithBaseURL("",Utility.QspStrToWebView(txtMainDesc,curGameDir),"text/html","utf-8","");
+                        String newPage = Utility.QspStrToWebView(txtMainDesc,curGameDir);
+
+                        main_desc.loadDataWithBaseURL("",newPage,"text/html","utf-8","");
+
                     } else
                         //main_desc.setText(Utility.QspStrToStr(txtMainDesc));
                         main_desc.loadDataWithBaseURL("",Utility.QspStrToStr(txtMainDesc),"text/html","utf-8","");

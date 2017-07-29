@@ -132,6 +132,7 @@ public class Utility {
 
             str = fixImagesSize(str,srcDir,false);
 
+            str = fixVideosLinks(str,srcDir);
 
             str = "<html><head>"
                     + "<style type=\"text/css\">body{color: white; background-color: black;}"
@@ -149,7 +150,7 @@ public class Utility {
     private static String fixImagesSize(String str, String srcDir, boolean isForTextView) {
         boolean hasImg = str.contains("<img");
 
-        Utility.WriteLog("fixImagesSize: "+str);
+//        Utility.WriteLog("fixImagesSize: "+str);
 
         String endOfStr = str;
         String newStr= str;
@@ -260,6 +261,123 @@ public class Utility {
             }
         } while (hasImg);
         return newStr;
+    }
+
+    private static String fixVideosLinks (String str, String srcDir) {
+
+        boolean hasVid = str.contains("<video");
+
+        String endOfStr = str;
+        String newStr= str;
+        if (!hasVid) return str;
+
+        Pattern pattern = Pattern.compile("(\\S+)=['\"]?((?:(?!/>|>|\"|'|\\s).)+)");
+        do {
+            int firstVid = endOfStr.indexOf("<video");
+            if (firstVid==-1) {
+                hasVid=false;
+                continue;
+            }
+            hasVid = firstVid >=0;
+            String curStr = endOfStr.substring(firstVid);
+            int endVid = curStr.indexOf(">");
+            curStr = curStr.substring(0,endVid+1);
+            endOfStr = endOfStr.substring(firstVid+curStr.length());
+
+            newStr = newStr.substring(0,newStr.indexOf(curStr));
+            Matcher matcher = pattern.matcher(curStr);
+
+            if (matcher.groupCount()==0) continue;
+
+            //Make sure the video starts and loops automatically
+            if (!curStr.contains(" autoplay ") && !curStr.contains(" autoplay>"))
+                curStr = curStr.replace(">"," autoplay>");
+            if (!curStr.contains(" loop ") && !curStr.contains(" loop>"))
+                curStr = curStr.replace(">"," loop>");
+
+            String src = null, widthS = null, heightS = null, widthBase = null, heightBase = null;
+            try {
+                while (matcher.find()) {
+                    String group = matcher.group();
+                    if (group.startsWith("src=")) src = group;
+                    else if (group.startsWith("width=")) {
+                        widthBase = group;
+                        widthS = group.substring(6);
+                    }
+                    else if (group.startsWith("height=")) {
+                        heightBase = group;
+                        heightS = group.substring(7);
+                    }
+                }
+
+                if (isNullOrEmpty(src)) {
+                    newStr += curStr + endOfStr;
+                    continue;
+                }
+
+                String newSrc = src;
+                //change [src=..."] to [src="]
+                if (newSrc.indexOf("\"") > 3)
+                    newSrc = newSrc.substring(0, newSrc.indexOf("src=") + 4) + newSrc.substring(newSrc.indexOf("\""));
+                //then change [src="] to a [src="file://] URL
+                if ((newSrc.indexOf("src=\"") == 0) && newSrc.length() > 5) {
+                    if (newSrc.substring(5, 6).matches("^[a-zA-Z0-9]")) {
+                        newSrc = newSrc.replace("src=\"", "src=\"file://" + srcDir);
+                        curStr = curStr.replace(src, newSrc);
+                    } else if (newSrc.indexOf("src=\"/") == 0) {
+                        newSrc = newSrc.replace("src=\"/", "src=\"file://" + srcDir);
+                        curStr = curStr.replace(src, newSrc);
+                    }
+                }
+
+                // Lock the image to the screen width
+                int paddingW = Math.round(16 * (Resources.getSystem().getDisplayMetrics().xdpi / Resources.getSystem().getDisplayMetrics().DENSITY_DEFAULT));
+                int paddingH = Math.round(16 * (Resources.getSystem().getDisplayMetrics().ydpi / Resources.getSystem().getDisplayMetrics().DENSITY_DEFAULT));
+                int maxW = Resources.getSystem().getDisplayMetrics().widthPixels - paddingW;
+                int maxH = Resources.getSystem().getDisplayMetrics().heightPixels - paddingH;
+
+                // ** Remove leading quote (") character if present **
+                if (!isNullOrEmpty(widthS)) {
+                    if (widthS.startsWith("\"")) { widthS = widthS.substring(1); }
+                }
+                if (!isNullOrEmpty(heightS)) {
+                    if (heightS.startsWith("\"")) { heightS = heightS.substring(1); }
+                }
+
+                int w = isNullOrEmpty(widthS) ? 0 : Integer.parseInt(widthS);
+                int h = isNullOrEmpty(heightS) ? 0 : Integer.parseInt(heightS);
+
+                //if width and height are not both present, set width only
+                //width = maxW if video > maxW or width <= 0
+                if (isNullOrEmpty(widthS) || isNullOrEmpty(heightS)) {
+                    if ((w <= 0) || (w > maxW)) w = maxW;
+                    curStr = curStr.replace(">", " width=\"" + w + "\">");
+                    newStr += curStr + endOfStr;
+                    continue;
+                }
+
+                //if width/height are set, reduce them to maxW/maxH
+                if (w > maxW) {
+                    if (!isNullOrEmpty(heightS)) h = Math.round(h*maxW/w);
+                    w = maxW;
+                }
+                if (h > maxH) {
+                    if (!isNullOrEmpty(widthS)) w = Math.round(w*maxH/h);
+                    h = maxH;
+                }
+
+                curStr = curStr.replace(widthBase, "width=\"" + w);
+                curStr = curStr.replace(heightBase, "height=\"" + h);
+
+                newStr += curStr + endOfStr;
+
+
+            } catch (Exception e) {
+                Log.e("fixImagesSize","unable parse "+curStr,e);
+            }
+        } while (hasVid);
+        return newStr;
+
     }
 
     private static boolean isNullOrEmpty(String string) {
