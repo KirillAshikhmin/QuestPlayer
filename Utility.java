@@ -23,6 +23,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Environment;
 import android.preference.PreferenceManager;
+import android.support.annotation.RequiresPermission;
 import android.text.Editable;
 import android.text.Html;
 import android.text.Html.ImageGetter;
@@ -110,13 +111,13 @@ public class Utility {
     }
 
 //Replacing this code with QspStrToWebView
-    public static Spanned QspStrToHtml(String str, ImageGetter imgGetter, String srcDir) {
+    public static Spanned QspStrToHtml(String str, ImageGetter imgGetter, String srcDir, int maxW, int maxH) {
         if (str != null && str.length() > 0) {
             str = str.replaceAll("\r", "<br>");
             str = str.replaceAll("(?i)</td>", " ");
             str = str.replaceAll("(?i)</tr>", "<br>");
 
-            str = fixImagesSize(str,srcDir,true);
+            str = fixImagesSize(str,srcDir,true,maxW,maxH);
 
             return Html.fromHtml(str, imgGetter, null);
 
@@ -124,22 +125,25 @@ public class Utility {
         return Html.fromHtml("");
     }
 
-    public static String QspStrToWebView(String str, String srcDir) {
+    public static String QspStrToWebView(String str, String srcDir, int maxW, int maxH) {
         if (str != null && str.length() > 0) {
             str = str.replaceAll("\r", "<br>");
             str = str.replaceAll("(?i)</td>", " ");
             str = str.replaceAll("(?i)</tr>", "<br>");
 
-            str = fixImagesSize(str,srcDir,false);
+            str = fixImagesSize(str,srcDir,false,maxW,maxH);
 
-            str = fixVideosLinks(str,srcDir);
+            str = fixVideosLinks(str,srcDir,maxW,maxH);
 
             str = "<html><head>"
+                    + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
                     + "<style type=\"text/css\">body{color: white; background-color: black;}"
                     + "</style></head>"
                     + "<body>"
                     + str
                     + "</body></html>";
+
+            Utility.WriteLog("toWebView:\n"+ str);
 
             return str;
 
@@ -147,7 +151,7 @@ public class Utility {
         return "";
     }
 
-    private static String fixImagesSize(String str, String srcDir, boolean isForTextView) {
+    private static String fixImagesSize(String str, String srcDir, boolean isForTextView, int maxW, int maxH) {
         boolean hasImg = str.contains("<img");
 
 //        Utility.WriteLog("fixImagesSize: "+str);
@@ -218,13 +222,14 @@ public class Utility {
                 }
 
                 // Lock the image to the screen width
-                int paddingW = Math.round(16 * (Resources.getSystem().getDisplayMetrics().xdpi / Resources.getSystem().getDisplayMetrics().DENSITY_DEFAULT));
+/*                int paddingW = Math.round(16 * (Resources.getSystem().getDisplayMetrics().xdpi / Resources.getSystem().getDisplayMetrics().DENSITY_DEFAULT));
                 int paddingH = Math.round(16 * (Resources.getSystem().getDisplayMetrics().ydpi / Resources.getSystem().getDisplayMetrics().DENSITY_DEFAULT));
                 int maxW = Resources.getSystem().getDisplayMetrics().widthPixels - paddingW;
                 int maxH = Resources.getSystem().getDisplayMetrics().heightPixels - paddingH;
-
+                Utility.WriteLog("maxW = "+maxW);
+                Utility.WriteLog("maxH = "+maxH);*/
                 if (isNullOrEmpty(widthS) && isNullOrEmpty(heightS)) {
-                    newStr += curStr.replace(">","style=\"width: auto; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"px; \">") + endOfStr;
+                    newStr += curStr.replace(">","style=\"width: auto; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"; \">") + endOfStr;
                     continue;
                 }
 
@@ -251,7 +256,8 @@ public class Utility {
 
                 curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREwidth=%sPUTSPACEHEREheight=%s",newSrc,w,h));
                 curStr = curStr.replace("PUTSPACEHERE"," ");
-                curStr = curStr.replace(">","style=\"width: auto; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"px; \">");
+                curStr = curStr.replace(">","style=\"width: auto; max-width: "+maxW+"; height: auto; max-height: "+maxH+"; \">");
+//                curStr = curStr.replace(">","style=\"width: auto; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"px; \">");
                 newStr += curStr + endOfStr;
 //                newStr += curStr.replace(newSrc, String.format("%s\" width=%s height=%s",newSrc,w,h)) + endOfStr;
 
@@ -263,7 +269,7 @@ public class Utility {
         return newStr;
     }
 
-    private static String fixVideosLinks (String str, String srcDir) {
+    private static String fixVideosLinks (String str, String srcDir, int maxW, int maxH) {
 
         boolean hasVid = str.contains("<video");
 
@@ -331,11 +337,11 @@ public class Utility {
                 }
 
                 // Lock the image to the screen width
-                int paddingW = Math.round(16 * (Resources.getSystem().getDisplayMetrics().xdpi / Resources.getSystem().getDisplayMetrics().DENSITY_DEFAULT));
+/*                int paddingW = Math.round(16 * (Resources.getSystem().getDisplayMetrics().xdpi / Resources.getSystem().getDisplayMetrics().DENSITY_DEFAULT));
                 int paddingH = Math.round(16 * (Resources.getSystem().getDisplayMetrics().ydpi / Resources.getSystem().getDisplayMetrics().DENSITY_DEFAULT));
                 int maxW = Resources.getSystem().getDisplayMetrics().widthPixels - paddingW;
                 int maxH = Resources.getSystem().getDisplayMetrics().heightPixels - paddingH;
-
+*/
                 // ** Remove leading quote (") character if present **
                 if (!isNullOrEmpty(widthS)) {
                     if (widthS.startsWith("\"")) { widthS = widthS.substring(1); }
@@ -385,6 +391,7 @@ public class Utility {
     }
 
     public static String QspStrToStr(String str) {
+Utility.WriteLog("toStr:\n"+str);
         String result = "";
         if (str != null && str.length() > 0) {
             result = str.replaceAll("\r", "");
@@ -415,6 +422,8 @@ public class Utility {
     }
 
     public static String GetDefaultPath(Context context) {
+
+Utility.WriteLog("1.");
         //Возвращаем путь к папке с играми.
         if (!android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED))
             return null;
@@ -422,14 +431,23 @@ public class Utility {
 		// ** original code for checking games directory **
         // File sdDir = Environment.getExternalStorageDirectory();
 		// ** begin replacement code for checking storage directory **
+        Utility.WriteLog("2.");
 
+        File sdDir;
 		String strSDCardPath = System.getenv("SECONDARY_STORAGE");
 		if ((null == strSDCardPath) || (strSDCardPath.length() == 0)) {
 			strSDCardPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
+            Utility.WriteLog("3a. "+strSDCardPath);
 		}
-        File sdDir = new File (strSDCardPath);
+        if ((null == strSDCardPath) || (strSDCardPath.length() == 0)) {
+            strSDCardPath = Environment.getExternalStorageDirectory().getPath();
+            Utility.WriteLog("3b. "+strSDCardPath);
+
+        }
 		// ** end replacement code for checking storage directory **
 
+        sdDir = new File (strSDCardPath);
+        Utility.WriteLog("4. "+strSDCardPath);
 
 
 
@@ -439,6 +457,7 @@ public class Utility {
             String tryFull2 = tryFull1 + "/";
             String noMedia = flashCard + "/qsp/.nomedia";
             File f = new File(tryFull1);
+            Utility.WriteLog("5. "+f.getPath());
             if (f.exists()) {
                 CheckNoMedia(noMedia);
                 return tryFull2;

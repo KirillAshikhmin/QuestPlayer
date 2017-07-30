@@ -12,6 +12,7 @@ import android.gesture.Gesture;
 import android.gesture.GestureOverlayView;
 import android.gesture.GestureStroke;
 import android.gesture.GestureOverlayView.OnGesturePerformedListener;
+import android.graphics.Point;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
@@ -23,7 +24,9 @@ import android.os.Handler;
 import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.text.format.DateFormat;
+import android.util.DisplayMetrics;
 import android.util.TypedValue;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -102,6 +105,9 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private boolean imageDensity;
     private WebView vars_desc;
     private WebView main_desc; // ** changed from TextView
+
+    private int maxW = 0;
+    private int maxH = 0;
 
     //used to detect "exec:" commands
     private QSPWebViewClient main_descClient;
@@ -1104,7 +1110,17 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 		saveGameDir = uiContext.getFilesDir().getAbsolutePath();
 
         int padding = main_desc.getPaddingLeft() + main_desc.getPaddingRight();
-        float density = imageDensity ? getResources().getDisplayMetrics().density : 1;
+        DisplayMetrics QSP_displayMetrics = getResources().getDisplayMetrics();
+
+        Point size = new Point();
+        Display myDisplay = getWindowManager().getDefaultDisplay();
+        myDisplay.getSize(size);
+        float density = imageDensity ? QSP_displayMetrics.density : 1;
+        maxW = Math.round(size.x/density - padding/2);
+        maxH = Math.round(size.y/density);
+
+        Utility.WriteLog("maxW = "+maxW+", maxH = "+maxH+", density = "+density);
+
         imgGetter.setDensity(density);
         imgGetterDesc.setDensity(density);
         imgGetter.setDirectory(curGameDir);
@@ -1129,6 +1145,12 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         vars_desc.getSettings().setLoadsImagesAutomatically(true);
         main_desc.getSettings().setAllowFileAccess(true);
         vars_desc.getSettings().setAllowFileAccess(true);
+
+        main_desc.getSettings().setUseWideViewPort(true);
+        vars_desc.getSettings().setUseWideViewPort(true);
+        main_desc.getSettings().setLoadWithOverviewMode(true);
+        vars_desc.getSettings().setLoadWithOverviewMode(true);
+
 
         setCurrentWin(WIN_MAIN);
 
@@ -1430,7 +1452,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
                         //main_desc.setText(Utility.AttachGifCallback(Utility.QspStrToHtml(txtMainDesc, imgGetterDesc, curGameDir), QspPlayerStart.this));
                         //main_desc.setMovementMethod(QspLinkMovementMethod.getInstance());
-                        String newPage = Utility.QspStrToWebView(txtMainDesc,curGameDir);
+                        String newPage = Utility.QspStrToWebView(txtMainDesc,curGameDir,maxW,maxH);
 
                         main_desc.loadDataWithBaseURL("",newPage,"text/html","utf-8","");
 
@@ -1449,7 +1471,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 JniResult actsResult = (JniResult) QSPGetActionData(i);
                 if (html)
                     acts[i] = new QSPItem(imgGetter.getDrawable(actsResult.str2),
-                            Utility.QspStrToHtml(actsResult.str1, imgGetter, curGameDir));
+                            Utility.QspStrToHtml(actsResult.str1, imgGetter, curGameDir,maxW,maxH));
                 else
                     acts[i] = new QSPItem(imgGetter.getDrawable(actsResult.str2), actsResult.str1);
             }
@@ -1472,7 +1494,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 JniResult objsResult = (JniResult) QSPGetObjectData(i);
                 if (html)
                     objs[i] = new QSPItem(imgGetter.getDrawable(objsResult.str2),
-                            Utility.QspStrToHtml(objsResult.str1, imgGetter, curGameDir));
+                            Utility.QspStrToHtml(objsResult.str1, imgGetter, curGameDir,maxW,maxH));
                 else
                     objs[i] = new QSPItem(imgGetter.getDrawable(objsResult.str2), objsResult.str1);
             }
@@ -1501,7 +1523,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                     if (html) {
                         //vars_desc.setText(Utility.QspStrToHtml(txtVarsDesc, imgGetter, curGameDir));
                         //vars_desc.setMovementMethod(QspLinkMovementMethod.getInstance());
-                        vars_desc.loadDataWithBaseURL("",Utility.QspStrToWebView(txtVarsDesc,curGameDir),"text/html","UTF-8","");
+                        vars_desc.loadDataWithBaseURL("",Utility.QspStrToWebView(txtVarsDesc,curGameDir,maxW,maxH),"text/html","UTF-8","");
 //                        vars_desc.loadData(Utility.QspStrToWebView(txtVarsDesc,curGameDir),"text/html",null);
                     } else
                         //vars_desc.setText(txtVarsDesc);
@@ -1556,7 +1578,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                         })
                         .create();
                 if (html)
-                    msgBox.setMessage(Utility.QspStrToHtml(msg, imgGetter, curGameDir));
+                    msgBox.setMessage(Utility.QspStrToHtml(msg, imgGetter, curGameDir,maxW,maxH));
                 else
                     msgBox.setMessage(msg);
                 msgBox.setCancelable(false);
@@ -1667,7 +1689,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             public void run() {
                 inputboxResult = "";
                 if (html)
-                    inputboxDialog.setMessage(Utility.QspStrToHtml(inputboxTitle, imgGetter, curGameDir));
+                    inputboxDialog.setMessage(Utility.QspStrToHtml(inputboxTitle, imgGetter, curGameDir,maxW,maxH));
                 else
                     inputboxDialog.setMessage(inputboxTitle);
                 inputboxDialog.show();
