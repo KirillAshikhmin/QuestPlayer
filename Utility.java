@@ -127,6 +127,7 @@ public class Utility {
 
     public static String QspStrToWebView(String str, String srcDir, int maxW, int maxH) {
         if (str != null && str.length() > 0) {
+            Utility.WriteLog(str);
             str = str.replaceAll("\r", "<br>");
             str = str.replaceAll("(?i)</td>", " ");
             str = str.replaceAll("(?i)</tr>", "<br>");
@@ -177,13 +178,19 @@ public class Utility {
 
             if (matcher.groupCount()==0) continue;
 
-            String src = null, widthS = null, heightS = null;
+            String src = null, widthS = null, heightS = null, widthBase = null, heightBase = null;
             try {
                 while (matcher.find()) {
                     String group = matcher.group();
                     if (group.startsWith("src=")) src = group;
-                    else if (group.startsWith("width=")) widthS = group.substring(6);
-                    else if (group.startsWith("height=")) heightS = group.substring(7);
+                    else if (group.startsWith("width=")) {
+                        widthBase = group;
+                        widthS = group.substring(6);
+                    }
+                    else if (group.startsWith("height=")) {
+                        heightBase = group;
+                        heightS = group.substring(7);
+                    }
                 }
 
                 if (isNullOrEmpty(src)) {
@@ -236,9 +243,11 @@ public class Utility {
                 // ** Remove leading quote (") character if present **
                 if (!isNullOrEmpty(widthS)) {
                     if (widthS.startsWith("\"")) { widthS = widthS.substring(1); }
+                    curStr = curStr.replace(widthBase,"");
                 }
                 if (!isNullOrEmpty(heightS)) {
                     if (heightS.startsWith("\"")) { heightS = heightS.substring(1); }
+                    curStr = curStr.replace(heightBase,"");
                 }
 
                 int w = isNullOrEmpty(widthS) ? 0 : Integer.parseInt(widthS);
@@ -254,9 +263,15 @@ public class Utility {
                     h = maxH;
                 }
 
-                curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREwidth=%sPUTSPACEHEREheight=%s",newSrc,w,h));
+
+                if ((w > 0) && (h > 0))
+                    curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREwidth=\"%s\"PUTSPACEHEREheight=\"%s",newSrc,w,h));
+                else if (w < 0)
+                    curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREheight=\"%s",newSrc,h));
+                else
+                    curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREwidth=\"%s",newSrc,w));
                 curStr = curStr.replace("PUTSPACEHERE"," ");
-                curStr = curStr.replace(">","style=\"width: auto; max-width: "+maxW+"; height: auto; max-height: "+maxH+"; \">");
+                curStr = curStr.replace(">"," style=\"width: auto; max-width: "+maxW+"; height: auto; max-height: "+maxH+"; \">");
 //                curStr = curStr.replace(">","style=\"width: auto; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"px; \">");
                 newStr += curStr + endOfStr;
 //                newStr += curStr.replace(newSrc, String.format("%s\" width=%s height=%s",newSrc,w,h)) + endOfStr;

@@ -108,6 +108,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
     private int maxW = 0;
     private int maxH = 0;
+    private float playerHeightLimit = 0;
 
     //used to detect "exec:" commands
     private QSPWebViewClient main_descClient;
@@ -1111,15 +1112,17 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
         int padding = main_desc.getPaddingLeft() + main_desc.getPaddingRight();
         DisplayMetrics QSP_displayMetrics = getResources().getDisplayMetrics();
+        playerHeightLimit = new Float(0.5);
+
 
         Point size = new Point();
         Display myDisplay = getWindowManager().getDefaultDisplay();
         myDisplay.getSize(size);
         float density = imageDensity ? QSP_displayMetrics.density : 1;
         maxW = Math.round(size.x/density - padding/2);
-        maxH = Math.round(size.y/density);
+        maxH = Math.round(size.y/density * playerHeightLimit);
 
-        Utility.WriteLog("maxW = "+maxW+", maxH = "+maxH+", density = "+density);
+        Utility.WriteLog("maxW = "+maxW+", maxH = "+maxH+", density = "+density+", playerHeightLimit = "+playerHeightLimit);
 
         imgGetter.setDensity(density);
         imgGetterDesc.setDensity(density);
@@ -1139,8 +1142,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         lv.setAdapter(new QSPListAdapter(uiContext, R.layout.obj_item, emptyItems));
 //        main_desc.setText("");
 //        vars_desc.setText("");
-        main_desc.loadData("","text/html",null);
-        vars_desc.loadData("","text/html",null);
+        main_desc.loadDataWithBaseURL("","<html></html>","text/html","utf-8","");
+        vars_desc.loadDataWithBaseURL("","<html></html>","text/html","utf-8","");
         main_desc.getSettings().setLoadsImagesAutomatically(true);
         vars_desc.getSettings().setLoadsImagesAutomatically(true);
         main_desc.getSettings().setAllowFileAccess(true);
@@ -1441,6 +1444,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         JniResult htmlResult = (JniResult) QSPGetVarValues("USEHTML", 0);
         //CheckQspResult(htmlResult.success, "RefreshInt: QSPGetVarValues");
         final boolean html = htmlResult.success && (htmlResult.int1 != 0);
+
 
         //основное описание
         if (QSPIsMainDescChanged()) {
