@@ -62,6 +62,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Vector;
 import java.util.concurrent.locks.LockSupport;
@@ -110,7 +112,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private int maxH = 0;
     private float playerHeightLimit = 0;
 
-    //used to detect "exec:" commands
+    //used to detect and parse "exec:" commands
     private QSPWebViewClient main_descClient;
     private QSPWebViewClient vars_descClient;
 
@@ -132,7 +134,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             @Override
         public boolean shouldOverrideUrlLoading(WebView view, String href) {
 
-            if (href.toLowerCase().startsWith("exec:")) {
+                if (href.toLowerCase().startsWith("exec:")) {
+                Utility.addSpacesWithChar(href,"&",true,true);
                 if (libraryThreadIsRunning) return true;
                 final String code = href.substring(5);
                 libThreadHandler.post(new Runnable() {
@@ -1451,18 +1454,30 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             final String txtMainDesc = QSPGetMainDesc();
             runOnUiThread(new Runnable() {
                 public void run() {
+                    String newPage = txtMainDesc;
+                    //Change txMainDesc to UTF-8 encoding if possible
+                    try {
+//Utility.WriteLog("Base URL: "+newPage);
+                        newPage = Utility.encodeExec(newPage);
+//Utility.WriteLog("After encodeExec: "+newPage);
+                        newPage = URLDecoder.decode(newPage,"UTF-8");
+//Utility.WriteLog("After URLDecoder: "+newPage);
+                    }
+                    catch (UnsupportedEncodingException e) {
+                        Utility.ShowError(uiContext, "URL \""+txtMainDesc+"\n is not UTF-8 compatible."); }
+
                     if (html) {
                         main_desc.getSettings().setJavaScriptEnabled(false);
-
                         //main_desc.setText(Utility.AttachGifCallback(Utility.QspStrToHtml(txtMainDesc, imgGetterDesc, curGameDir), QspPlayerStart.this));
                         //main_desc.setMovementMethod(QspLinkMovementMethod.getInstance());
-                        String newPage = Utility.QspStrToWebView(txtMainDesc,curGameDir,maxW,maxH);
 
-                        main_desc.loadDataWithBaseURL("",newPage,"text/html","utf-8","");
+                        newPage = Utility.QspStrToWebView(newPage,curGameDir,maxW,maxH);
+
+                        main_desc.loadDataWithBaseURL("",newPage,"text/html","UTF-8","");
 
                     } else
                         //main_desc.setText(Utility.QspStrToStr(txtMainDesc));
-                        main_desc.loadDataWithBaseURL("",Utility.QspStrToStr(txtMainDesc),"text/html","utf-8","");
+                        main_desc.loadDataWithBaseURL("",Utility.QspStrToStr(newPage),"text/html","UTF-8","");
                 }
             });
         }
@@ -1834,6 +1849,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     }
 
     public void OnUrlClicked(String href) {
+
         //Контекст UI
         if ((href == null) || (href.length() == 0))
             return;

@@ -127,7 +127,7 @@ public class Utility {
 
     public static String QspStrToWebView(String str, String srcDir, int maxW, int maxH) {
         if (str != null && str.length() > 0) {
-            Utility.WriteLog(str);
+//            Utility.WriteLog(str);
             str = str.replaceAll("\r", "<br>");
             str = str.replaceAll("(?i)</td>", " ");
             str = str.replaceAll("(?i)</tr>", "<br>");
@@ -138,18 +138,102 @@ public class Utility {
 
             str = "<html><head>"
                     + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-                    + "<style type=\"text/css\">body{color: white; background-color: black;}"
+                    + "<style type=\"text/css\">body{margin: 0; padding: 0; color: white; background-color: black;}"
                     + "</style></head>"
                     + "<body>"
                     + str
                     + "</body></html>";
 
-            Utility.WriteLog("toWebView:\n"+ str);
+//            Utility.WriteLog("toWebView:\n"+ str);
 
             return str;
 
         }
         return "";
+    }
+
+    public static String addSpacesWithChar(String str, String target,boolean addBefore, boolean addAfter) {
+
+//Utility.WriteLog("[href] = \""+str+"\", [target] = \""+target+"\"");
+
+        //Check if the string has the target character set
+        boolean hasTarget = str.toLowerCase().contains(target.toLowerCase());
+        if ( !hasTarget || (!addBefore && !addAfter) ) return str;
+
+        int targetLength = target.length();
+        String endOfStr = str;
+        String newStr = "";
+
+        do {
+            int targetIndex = endOfStr.toLowerCase().indexOf(target.toLowerCase());
+
+            //Add to newStr any text up to the target
+            if (targetIndex > 0)
+                newStr += endOfStr.substring(0,targetIndex);
+            //Set endOfStr to everything after the target, but be sure not to go past
+            //the length of endOfStr
+            if (endOfStr.length() > targetIndex + targetLength)
+                endOfStr = endOfStr.substring(targetIndex + targetLength);
+            else endOfStr = "";
+
+//Utility.WriteLog("[newStr] = \"" +newStr+"\", [target] = \""+target+"\", [endOfStr] = \""+endOfStr+"\", [targetIndex] = "+targetIndex+", [targetLength] = "+targetLength);
+
+            //addBefore: if there are characters before the target, add a space if there isn't one
+            if ((addBefore) && (newStr.length() > 0) && (newStr.charAt(newStr.length()-1) != ' '))
+                newStr += " ";
+
+            newStr += target;
+
+            //addAfter: if there are characters after the target, add a space if there isn't one
+            if( (addAfter) && (endOfStr.length() > 0) && (endOfStr.charAt(0) != ' ') )
+                newStr += " ";
+
+            hasTarget = endOfStr.toLowerCase().contains(target.toLowerCase());
+        } while (hasTarget);
+
+        //finish the string
+        newStr += endOfStr;
+
+//Utility.WriteLog("[newStr] = \""+newStr+"\"");
+        return newStr;
+    }
+
+    //This function corrects all "exec:" commands so that the '+' is not lost when the URL is
+    //loaded into WebView but instead becomes "%2b"
+    public static String encodeExec(String str) {
+        boolean hasExec = str.contains("exec:");
+        if (!hasExec) return str;
+
+        String endOfStr = str;
+        String newStr = "";
+        String execStr;
+
+        do {
+            int execIndex = endOfStr.toLowerCase().indexOf("exec:");
+            newStr += endOfStr.substring(0, execIndex);
+
+            int quoteIndex = endOfStr.indexOf("\"");
+
+            //execStr includes 'exec:' to the next '"' or to the end of endOfStr
+            //endOfStr starts after execStr or becomes ""
+            if (quoteIndex > execIndex) {
+                execStr = endOfStr.substring(execIndex, quoteIndex);
+                endOfStr = endOfStr.substring(quoteIndex);
+            }
+            else {
+                execStr = endOfStr.substring(execIndex);
+                endOfStr = "";
+            }
+
+            //Replace all '+' with the URL-codable '+' and attach to newStr
+            newStr += execStr.replace("+","%2b");
+
+            hasExec = endOfStr.contains("exec:");
+        } while (hasExec);
+        //Utility.WriteLog("testend");
+
+        newStr += endOfStr;
+        return newStr;
     }
 
     private static String fixImagesSize(String str, String srcDir, boolean isForTextView, int maxW, int maxH) {
