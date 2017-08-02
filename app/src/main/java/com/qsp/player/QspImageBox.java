@@ -23,6 +23,7 @@ public class QspImageBox extends Activity implements OnClickListener {
 
     boolean isBtnClosed;
     static boolean helpShowed;
+    static boolean basicHelpShowed;
     PhotoViewAttacher mAttacher;
 
     private OnClickListener zoomClick = new OnClickListener() {
@@ -86,6 +87,10 @@ public class QspImageBox extends Activity implements OnClickListener {
 
         //assign to view
         box.setImageDrawable(drawable);
+        if (!basicHelpShowed) {
+            Toast.makeText(QspImageBox.this,"Click the magnifying glass in the upper-right corner to examine the image closer.", Toast.LENGTH_LONG).show();
+            basicHelpShowed = true;
+        }
     }
 
     @Override

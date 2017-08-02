@@ -15,6 +15,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
@@ -22,23 +23,34 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Environment;
 import android.preference.PreferenceManager;
+import android.support.annotation.RequiresPermission;
+import android.text.Editable;
 import android.text.Html;
 import android.text.Html.ImageGetter;
+import android.text.Layout;
+import android.text.Spannable;
+import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.AlignmentSpan;
 import android.text.style.ImageSpan;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.View;
 import android.view.View.MeasureSpec;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
 import org.w3c.dom.Text;
+import org.xml.sax.XMLReader;
 
 import pl.droidsonroids.gif.GifDrawable;
+import android.text.Html.TagHandler;
 
 public class Utility {
 
@@ -98,21 +110,136 @@ public class Utility {
         return folder;
     }
 
-
-    public static Spanned QspStrToHtml(String str, ImageGetter imgGetter) {
+//Replacing this code with QspStrToWebView
+    public static Spanned QspStrToHtml(String str, ImageGetter imgGetter, String srcDir, int maxW, int maxH) {
         if (str != null && str.length() > 0) {
             str = str.replaceAll("\r", "<br>");
             str = str.replaceAll("(?i)</td>", " ");
             str = str.replaceAll("(?i)</tr>", "<br>");
 
-            str = fixImagesSize(str);
+            str = fixImagesSize(str,srcDir,true,maxW,maxH);
 
             return Html.fromHtml(str, imgGetter, null);
+
         }
         return Html.fromHtml("");
     }
-    private static String fixImagesSize(String str) {
+
+    public static String QspStrToWebView(String str, String srcDir, int maxW, int maxH) {
+        if (str != null && str.length() > 0) {
+//            Utility.WriteLog(str);
+            str = str.replaceAll("\r", "<br>");
+            str = str.replaceAll("(?i)</td>", " ");
+            str = str.replaceAll("(?i)</tr>", "<br>");
+
+            str = fixImagesSize(str,srcDir,false,maxW,maxH);
+
+            str = fixVideosLinks(str,srcDir,maxW,maxH);
+
+            str = "<html><head>"
+                    + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+                    + "<style type=\"text/css\">body{margin: 0; padding: 0; color: white; background-color: black;}"
+                    + "</style></head>"
+                    + "<body>"
+                    + str
+                    + "</body></html>";
+
+            Utility.WriteLog("toWebView:\n"+ str);
+
+            return str;
+
+        }
+        return "";
+    }
+
+    public static String addSpacesWithChar(String str, String target,boolean addBefore, boolean addAfter) {
+
+//Utility.WriteLog("[href] = \""+str+"\", [target] = \""+target+"\"");
+
+        //Check if the string has the target character set
+        boolean hasTarget = str.toLowerCase().contains(target.toLowerCase());
+        if ( !hasTarget || (!addBefore && !addAfter) ) return str;
+
+        int targetLength = target.length();
+        String endOfStr = str;
+        String newStr = "";
+
+        do {
+            int targetIndex = endOfStr.toLowerCase().indexOf(target.toLowerCase());
+
+            //Add to newStr any text up to the target
+            if (targetIndex > 0)
+                newStr += endOfStr.substring(0,targetIndex);
+            //Set endOfStr to everything after the target, but be sure not to go past
+            //the length of endOfStr
+            if (endOfStr.length() > targetIndex + targetLength)
+                endOfStr = endOfStr.substring(targetIndex + targetLength);
+            else endOfStr = "";
+
+//Utility.WriteLog("[newStr] = \"" +newStr+"\", [target] = \""+target+"\", [endOfStr] = \""+endOfStr+"\", [targetIndex] = "+targetIndex+", [targetLength] = "+targetLength);
+
+            //addBefore: if there are characters before the target, add a space if there isn't one
+            if ((addBefore) && (newStr.length() > 0) && (newStr.charAt(newStr.length()-1) != ' '))
+                newStr += " ";
+
+            newStr += target;
+
+            //addAfter: if there are characters after the target, add a space if there isn't one
+            if( (addAfter) && (endOfStr.length() > 0) && (endOfStr.charAt(0) != ' ') )
+                newStr += " ";
+
+            hasTarget = endOfStr.toLowerCase().contains(target.toLowerCase());
+        } while (hasTarget);
+
+        //finish the string
+        newStr += endOfStr;
+
+//Utility.WriteLog("[newStr] = \""+newStr+"\"");
+        return newStr;
+    }
+
+    //This function corrects all "exec:" commands so that the '+' is not lost when the URL is
+    //loaded into WebView but instead becomes "%2b"
+    public static String encodeExec(String str) {
+        boolean hasExec = str.contains("exec:");
+        if (!hasExec) return str;
+
+        String endOfStr = str;
+        String newStr = "";
+        String execStr;
+
+        do {
+            int execIndex = endOfStr.toLowerCase().indexOf("exec:");
+            newStr += endOfStr.substring(0, execIndex);
+
+            int quoteIndex = endOfStr.indexOf("\"");
+
+            //execStr includes 'exec:' to the next '"' or to the end of endOfStr
+            //endOfStr starts after execStr or becomes ""
+            if (quoteIndex > execIndex) {
+                execStr = endOfStr.substring(execIndex, quoteIndex);
+                endOfStr = endOfStr.substring(quoteIndex);
+            }
+            else {
+                execStr = endOfStr.substring(execIndex);
+                endOfStr = "";
+            }
+
+            //Replace all '+' with the URL-codable '+' and attach to newStr
+            newStr += execStr.replace("+","%2b");
+
+            hasExec = endOfStr.contains("exec:");
+        } while (hasExec);
+        //Utility.WriteLog("testend");
+
+        newStr += endOfStr;
+        return newStr;
+    }
+
+    private static String fixImagesSize(String str, String srcDir, boolean isForTextView, int maxW, int maxH) {
         boolean hasImg = str.contains("<img");
+
+//        Utility.WriteLog("fixImagesSize: "+str);
 
         String endOfStr = str;
         String newStr= str;
@@ -135,25 +262,185 @@ public class Utility {
 
             if (matcher.groupCount()==0) continue;
 
-            String src = null, widthS = null, heightS = null;
+            String src = null, widthS = null, heightS = null, widthBase = null, heightBase = null;
             try {
                 while (matcher.find()) {
                     String group = matcher.group();
                     if (group.startsWith("src=")) src = group;
-                    else if (group.startsWith("width=")) widthS=group.substring(6);
-                    else if (group.startsWith("height=")) heightS=group.substring(7);
+                    else if (group.startsWith("width=")) {
+                        widthBase = group;
+                        widthS = group.substring(6);
+                    }
+                    else if (group.startsWith("height=")) {
+                        heightBase = group;
+                        heightS = group.substring(7);
+                    }
                 }
 
                 if (isNullOrEmpty(src)) {
-                    newStr +=curStr+endOfStr;
+                    newStr += curStr + endOfStr;
                     continue;
                 }
 
+                //if this is for a TextView, don't use a URL locator
+                if (isForTextView) {
+                    String iconSrc = src;
+                    //change [src=..."] to [src="]
+                    if (iconSrc.indexOf("\"") > 3)
+                        iconSrc = iconSrc.substring(0, iconSrc.indexOf("src=") + 4) + iconSrc.substring(iconSrc.indexOf("\""));
+                    //Then add in the root directory for the game files
+                    src = iconSrc.replace("src=\"/", "src=\"" + srcDir);
+                    curStr = curStr.replace(src, iconSrc);
+
+                    newStr += curStr+endOfStr;
+                    continue;
+                }
+
+                //if this is not a system icon, treat as a URL
+                String newSrc = src;
+                //change [src=..."] to [src="]
+                if (newSrc.indexOf("\"") > 3)
+                    newSrc = newSrc.substring(0, newSrc.indexOf("src=") + 4) + newSrc.substring(newSrc.indexOf("\""));
+                //then change [src="] to a [src="file://] URL
+                if ((newSrc.indexOf("src=\"") == 0) && newSrc.length() > 5) {
+                    if (newSrc.substring(5, 6).matches("^[a-zA-Z0-9]")) {
+                        newSrc = newSrc.replace("src=\"", "src=\"file://" + srcDir);
+                        curStr = curStr.replace(src, newSrc);
+                    } else if (newSrc.indexOf("src=\"/") == 0) {
+                        newSrc = newSrc.replace("src=\"/", "src=\"file://" + srcDir);
+                        curStr = curStr.replace(src, newSrc);
+                    }
+                }
+
+                // Lock the image to the screen width
+/*                int paddingW = Math.round(16 * (Resources.getSystem().getDisplayMetrics().xdpi / Resources.getSystem().getDisplayMetrics().DENSITY_DEFAULT));
+                int paddingH = Math.round(16 * (Resources.getSystem().getDisplayMetrics().ydpi / Resources.getSystem().getDisplayMetrics().DENSITY_DEFAULT));
+                int maxW = Resources.getSystem().getDisplayMetrics().widthPixels - paddingW;
+                int maxH = Resources.getSystem().getDisplayMetrics().heightPixels - paddingH;
+                Utility.WriteLog("maxW = "+maxW);
+                Utility.WriteLog("maxH = "+maxH);*/
                 if (isNullOrEmpty(widthS) && isNullOrEmpty(heightS)) {
-                    newStr +=curStr+endOfStr;
+                    newStr += curStr.replace(">","style=\"width: auto; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"; \">") + endOfStr;
                     continue;
                 }
 
+                // ** Remove leading quote (") character if present **
+                if (!isNullOrEmpty(widthS)) {
+                    if (widthS.startsWith("\"")) { widthS = widthS.substring(1); }
+                    curStr = curStr.replace(widthBase,"");
+                }
+                if (!isNullOrEmpty(heightS)) {
+                    if (heightS.startsWith("\"")) { heightS = heightS.substring(1); }
+                    curStr = curStr.replace(heightBase,"");
+                }
+
+                int w = isNullOrEmpty(widthS) ? 0 : Integer.parseInt(widthS);
+                int h = isNullOrEmpty(heightS) ? 0 : Integer.parseInt(heightS);
+
+                //if width/height are set, reduce them to maxW/maxH
+                if (w > maxW) {
+                    if (!isNullOrEmpty(heightS)) h = Math.round(h*maxW/w);
+                    w = maxW;
+                }
+                if (h > maxH) {
+                    if (!isNullOrEmpty(widthS)) w = Math.round(w*maxH/h);
+                    h = maxH;
+                }
+
+
+                if ((w > 0) && (h > 0))
+                    curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREwidth=\"%s\"PUTSPACEHEREheight=\"%s",newSrc,w,h));
+                else if (w < 0)
+                    curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREheight=\"%s",newSrc,h));
+                else
+                    curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREwidth=\"%s",newSrc,w));
+                curStr = curStr.replace("PUTSPACEHERE"," ");
+                curStr = curStr.replace(">"," style=\"width: auto; max-width: "+maxW+"; height: auto; max-height: "+maxH+"; \">");
+//                curStr = curStr.replace(">","style=\"width: auto; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"px; \">");
+                newStr += curStr + endOfStr;
+//                newStr += curStr.replace(newSrc, String.format("%s\" width=%s height=%s",newSrc,w,h)) + endOfStr;
+
+
+            } catch (Exception e) {
+                Log.e("fixImagesSize","unable parse "+curStr,e);
+            }
+        } while (hasImg);
+        return newStr;
+    }
+
+    private static String fixVideosLinks (String str, String srcDir, int maxW, int maxH) {
+
+        boolean hasVid = str.contains("<video");
+
+        String endOfStr = str;
+        String newStr= str;
+        if (!hasVid) return str;
+
+        Pattern pattern = Pattern.compile("(\\S+)=['\"]?((?:(?!/>|>|\"|'|\\s).)+)");
+        do {
+            int firstVid = endOfStr.indexOf("<video");
+            if (firstVid==-1) {
+                hasVid=false;
+                continue;
+            }
+            hasVid = firstVid >=0;
+            String curStr = endOfStr.substring(firstVid);
+            int endVid = curStr.indexOf(">");
+            curStr = curStr.substring(0,endVid+1);
+            endOfStr = endOfStr.substring(firstVid+curStr.length());
+
+            newStr = newStr.substring(0,newStr.indexOf(curStr));
+            Matcher matcher = pattern.matcher(curStr);
+
+            if (matcher.groupCount()==0) continue;
+
+            //Make sure the video starts and loops automatically
+            if (!curStr.contains(" autoplay ") && !curStr.contains(" autoplay>"))
+                curStr = curStr.replace(">"," autoplay>");
+            if (!curStr.contains(" loop ") && !curStr.contains(" loop>"))
+                curStr = curStr.replace(">"," loop>");
+
+            String src = null, widthS = null, heightS = null, widthBase = null, heightBase = null;
+            try {
+                while (matcher.find()) {
+                    String group = matcher.group();
+                    if (group.startsWith("src=")) src = group;
+                    else if (group.startsWith("width=")) {
+                        widthBase = group;
+                        widthS = group.substring(6);
+                    }
+                    else if (group.startsWith("height=")) {
+                        heightBase = group;
+                        heightS = group.substring(7);
+                    }
+                }
+
+                if (isNullOrEmpty(src)) {
+                    newStr += curStr + endOfStr;
+                    continue;
+                }
+
+                String newSrc = src;
+                //change [src=..."] to [src="]
+                if (newSrc.indexOf("\"") > 3)
+                    newSrc = newSrc.substring(0, newSrc.indexOf("src=") + 4) + newSrc.substring(newSrc.indexOf("\""));
+                //then change [src="] to a [src="file://] URL
+                if ((newSrc.indexOf("src=\"") == 0) && newSrc.length() > 5) {
+                    if (newSrc.substring(5, 6).matches("^[a-zA-Z0-9]")) {
+                        newSrc = newSrc.replace("src=\"", "src=\"file://" + srcDir);
+                        curStr = curStr.replace(src, newSrc);
+                    } else if (newSrc.indexOf("src=\"/") == 0) {
+                        newSrc = newSrc.replace("src=\"/", "src=\"file://" + srcDir);
+                        curStr = curStr.replace(src, newSrc);
+                    }
+                }
+
+                // Lock the image to the screen width
+/*                int paddingW = Math.round(16 * (Resources.getSystem().getDisplayMetrics().xdpi / Resources.getSystem().getDisplayMetrics().DENSITY_DEFAULT));
+                int paddingH = Math.round(16 * (Resources.getSystem().getDisplayMetrics().ydpi / Resources.getSystem().getDisplayMetrics().DENSITY_DEFAULT));
+                int maxW = Resources.getSystem().getDisplayMetrics().widthPixels - paddingW;
+                int maxH = Resources.getSystem().getDisplayMetrics().heightPixels - paddingH;
+*/
                 // ** Remove leading quote (") character if present **
                 if (!isNullOrEmpty(widthS)) {
                     if (widthS.startsWith("\"")) { widthS = widthS.substring(1); }
@@ -164,21 +451,46 @@ public class Utility {
 
                 int w = isNullOrEmpty(widthS) ? 0 : Integer.parseInt(widthS);
                 int h = isNullOrEmpty(heightS) ? 0 : Integer.parseInt(heightS);
-                newStr += curStr.replace(src, String.format("%s?size=%sx%s",src,w,h)) + endOfStr;
+
+                //if width and height are not both present, set width only
+                //width = maxW if video > maxW or width <= 0
+                if (isNullOrEmpty(widthS) || isNullOrEmpty(heightS)) {
+                    if ((w <= 0) || (w > maxW)) w = maxW;
+                    curStr = curStr.replace(">", " width=\"" + w + "\">");
+                    newStr += curStr + endOfStr;
+                    continue;
+                }
+
+                //if width/height are set, reduce them to maxW/maxH
+                if (w > maxW) {
+                    if (!isNullOrEmpty(heightS)) h = Math.round(h*maxW/w);
+                    w = maxW;
+                }
+                if (h > maxH) {
+                    if (!isNullOrEmpty(widthS)) w = Math.round(w*maxH/h);
+                    h = maxH;
+                }
+
+                curStr = curStr.replace(widthBase, "width=\"" + w);
+                curStr = curStr.replace(heightBase, "height=\"" + h);
+
+                newStr += curStr + endOfStr;
+
 
             } catch (Exception e) {
                 Log.e("fixImagesSize","unable parse "+curStr,e);
             }
-        } while (hasImg);
+        } while (hasVid);
         return newStr;
-    }
 
+    }
 
     private static boolean isNullOrEmpty(String string) {
         return (string == null || string.equals(""));
     }
 
     public static String QspStrToStr(String str) {
+Utility.WriteLog("toStr:\n"+str);
         String result = "";
         if (str != null && str.length() > 0) {
             result = str.replaceAll("\r", "");
@@ -189,9 +501,10 @@ public class Utility {
     public static String QspPathTranslate(String str) {
         if (str == null)
             return null;
-        //В QSP папки разделяются знаком \ , как в DOS и Windows, для Android переводим это в / .
-        //Т.к. первый аргумент - регэксп, то эскейпим дважды.
+        //In QSP, the folders are separated by the \ sign, as in DOS and Windows, for Android we translate this into /.
+        //T.k. The first argument is regexp, then we escape twice.
         String result = str.replaceAll("\\\\", "/");
+        result = result.replace("src=\"file:///","/");
         return result;
     }
 
@@ -208,6 +521,8 @@ public class Utility {
     }
 
     public static String GetDefaultPath(Context context) {
+
+Utility.WriteLog("1.");
         //Возвращаем путь к папке с играми.
         if (!android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED))
             return null;
@@ -215,14 +530,23 @@ public class Utility {
 		// ** original code for checking games directory **
         // File sdDir = Environment.getExternalStorageDirectory();
 		// ** begin replacement code for checking storage directory **
+        Utility.WriteLog("2.");
 
+        File sdDir;
 		String strSDCardPath = System.getenv("SECONDARY_STORAGE");
 		if ((null == strSDCardPath) || (strSDCardPath.length() == 0)) {
 			strSDCardPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
+            Utility.WriteLog("3a. "+strSDCardPath);
 		}
-        File sdDir = new File (strSDCardPath);
+        if ((null == strSDCardPath) || (strSDCardPath.length() == 0)) {
+            strSDCardPath = Environment.getExternalStorageDirectory().getPath();
+            Utility.WriteLog("3b. "+strSDCardPath);
+
+        }
 		// ** end replacement code for checking storage directory **
 
+        sdDir = new File (strSDCardPath);
+        Utility.WriteLog("4. "+strSDCardPath);
 
 
 
@@ -232,6 +556,7 @@ public class Utility {
             String tryFull2 = tryFull1 + "/";
             String noMedia = flashCard + "/qsp/.nomedia";
             File f = new File(tryFull1);
+            Utility.WriteLog("5. "+f.getPath());
             if (f.exists()) {
                 CheckNoMedia(noMedia);
                 return tryFull2;

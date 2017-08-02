@@ -12,6 +12,7 @@ import android.gesture.Gesture;
 import android.gesture.GestureOverlayView;
 import android.gesture.GestureStroke;
 import android.gesture.GestureOverlayView.OnGesturePerformedListener;
+import android.graphics.Point;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
@@ -23,7 +24,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.text.format.DateFormat;
+import android.util.DisplayMetrics;
 import android.util.TypedValue;
+import android.view.Display;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -36,6 +40,8 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
@@ -48,16 +54,22 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
+import org.w3c.dom.Text;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Vector;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static android.webkit.WebView.HitTestResult.IMAGE_TYPE;
 
 
 public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGesturePerformedListener, Drawable.Callback {
@@ -93,8 +105,55 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private boolean backAction = false;
     private boolean bigImage;
     private boolean imageDensity;
-    private TextView vars_desc;
-    private TextView main_desc;
+    private WebView vars_desc;
+    private WebView main_desc; // ** changed from TextView
+
+    private int maxW = 0;
+    private int maxH = 0;
+    private float playerHeightLimit = 0;
+
+    //used to detect and parse "exec:" commands
+    private QSPWebViewClient main_descClient;
+    private QSPWebViewClient vars_descClient;
+
+
+    public class QSPWebViewClient extends WebViewClient {
+
+        /* Still working on getting video to autoplay
+        @Override
+        public void onPageFinished(WebView myView, String url) {
+
+            if (url.contains("<video")) {
+                main_desc.getSettings().setJavaScriptEnabled(true);
+                main_desc.loadUrl("javascript:(function() { var firstVideo = document.getElementsByTagName(\"video\")[0]; firstVideo.play(); })()");
+            } else main_desc.getSettings().setJavaScriptEnabled(false);
+
+        }
+         */
+
+            @Override
+        public boolean shouldOverrideUrlLoading(WebView view, String href) {
+
+                if (href.toLowerCase().startsWith("exec:")) {
+                Utility.addSpacesWithChar(href,"&",true,true);
+                if (libraryThreadIsRunning) return true;
+                final String code = href.substring(5);
+                libThreadHandler.post(new Runnable() {
+                    public void run() {
+                        if (libraryThreadIsRunning) return;
+                        libraryThreadIsRunning = true;
+
+                        boolean bExec = QSPExecString(code, true);
+                        CheckQspResult(bExec, "OnUrlClicked: QSPExecString");
+
+                        libraryThreadIsRunning = false;
+                    }
+                });
+
+                return true;
+            } else return false;
+        }
+    }
 
     @Override
     public void invalidateDrawable(Drawable who) {
@@ -237,8 +296,32 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         setContentView(R.layout.main);
         res = getResources();
 
-        main_desc = (TextView) findViewById(R.id.main_desc);
-        vars_desc = (TextView) findViewById(R.id.vars_desc);
+        main_desc = (WebView) findViewById(R.id.main_desc);
+        vars_desc = (WebView) findViewById(R.id.vars_desc);
+
+        main_descClient = new QSPWebViewClient();
+        vars_descClient = new QSPWebViewClient();
+        main_desc.setWebViewClient(main_descClient);
+        vars_desc.setWebViewClient(vars_descClient);
+
+        //used to detect LongClicks on images in main_desc or vars_desc
+        main_desc.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+
+                final WebView.HitTestResult result = main_desc.getHitTestResult();
+
+                if (result.getType() == IMAGE_TYPE) {
+                    String imageSrc = result.getExtra().replace("file:///","/");
+                    Utility.WriteLog(result.getExtra() + " -> " + imageSrc);
+                    ShowPicture(imageSrc);
+                    return true;
+                }
+
+                return true;
+            }
+        } );
+
 
         //Создаем объект для обработки ссылок
         qspLinkMovementMethod = QspLinkMovementMethod.getQspInstance();
@@ -342,9 +425,9 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        //Контекст UI
-        //Ловим кнопку "Back", и не закрываем активити, а только
-        //отправляем в бэкграунд (как будто нажали "Home")
+        // UI Context
+        // Catch the "Back" button, and do not close the activations, but only
+        // send to the background (as if pressed "Home")
         if (sdcard_mounted && keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) {
             if (backAction) {
                 ListView lv = (ListView) findViewById(R.id.acts);
@@ -421,10 +504,10 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 tf = Typeface.MONOSPACE;
                 break;
         }
-        tv.setTypeface(tf);
-        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, Float.parseFloat(settings.getString("fontsize", "16")));
-        tv.setTextColor(textColor);
-        tv.setLinkTextColor(settings.getInt("linkColor", 0xff0000ff));
+//        tv.setTypeface(tf);
+//        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, Float.parseFloat(settings.getString("fontsize", "16")));
+//        tv.setTextColor(textColor);
+//        tv.setLinkTextColor(settings.getInt("linkColor", 0xff0000ff));
     }
 
     private void ApplyViewSettings() {
@@ -434,8 +517,10 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         v.setBackgroundColor(backColor);
         ListView lv = (ListView) findViewById(R.id.inv);
         lv.setCacheColorHint(backColor);
-        ApplyFontSettingsToTextView(main_desc, textColor);
-        ApplyFontSettingsToTextView(vars_desc, textColor);
+        //ApplyFontSettingsToTextView(main_desc, textColor);
+        //ApplyFontSettingsToTextView(vars_desc, textColor);
+//        main_desc.setBackgroundColor(getResources().getColor(R.color.web_background));
+//        vars_desc.setBackgroundColor(getResources().getColor(R.color.web_background));
         if (mActListAdapter != null)
             mActListAdapter.notifyDataSetChanged();
         if (mItemListAdapter != null)
@@ -651,19 +736,19 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         try {
             fIn = new FileInputStream(f);
         } catch (FileNotFoundException e) {
-            Utility.ShowError(uiContext, "Не удалось открыть файл");
+            Utility.ShowError(uiContext, "Could not open file");
             e.printStackTrace();
             return;
         }
         try {
             size = fIn.available();
         } catch (IOException e) {
-            Utility.ShowError(uiContext, "Не удалось получить доступ к файлу");
+            Utility.ShowError(uiContext, "Could not access file");
             e.printStackTrace();
             try {
                 fIn.close();
             } catch (IOException e1) {
-                Utility.ShowError(uiContext, "Не удалось освободить дескриптор файла");
+                Utility.ShowError(uiContext, "Could not release the file handler");
                 e1.printStackTrace();
             }
             return;
@@ -705,7 +790,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
                 runOnUiThread(new Runnable() {
                     public void run() {
-                        //Запускаем таймер
+                        //Start the timer
                         timerHandler.postDelayed(timerUpdateTask, timerInterval);
                     }
                 });
@@ -875,8 +960,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     //анимация иконок при смене содержимого скрытых окон
     private void updateTitle() {
         ImageButton image = (ImageButton) findViewById(R.id.title_button_1);
-/*        image.clearAnimation();
-        if (invUnread) {
+        image.clearAnimation();
+/*        if (invUnread) {
             Animation update = AnimationUtils.loadAnimation(this, R.anim.update);
             image.startAnimation(update);
             image.setBackgroundResource(invBack = R.drawable.btn_bg_pressed);
@@ -1006,7 +1091,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         //Контекст UI
         File f = new File(fileName);
         if (!f.exists()) {
-            Utility.ShowError(uiContext, "Файл не найден");
+            Utility.ShowError(uiContext, "File not found");
             return;
         }
 
@@ -1029,7 +1114,19 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 		saveGameDir = uiContext.getFilesDir().getAbsolutePath();
 
         int padding = main_desc.getPaddingLeft() + main_desc.getPaddingRight();
-        float density = imageDensity ? getResources().getDisplayMetrics().density : 1;
+        DisplayMetrics QSP_displayMetrics = getResources().getDisplayMetrics();
+        playerHeightLimit = new Float(0.5);
+
+
+        Point size = new Point();
+        Display myDisplay = getWindowManager().getDefaultDisplay();
+        myDisplay.getSize(size);
+        float density = imageDensity ? QSP_displayMetrics.density : 1;
+        maxW = Math.round(size.x/density - padding/2);
+        maxH = Math.round(size.y/density * playerHeightLimit);
+
+        Utility.WriteLog("maxW = "+maxW+", maxH = "+maxH+", density = "+density+", playerHeightLimit = "+playerHeightLimit);
+
         imgGetter.setDensity(density);
         imgGetterDesc.setDensity(density);
         imgGetter.setDirectory(curGameDir);
@@ -1040,14 +1137,27 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         imgGetterDesc.setScreenHeight(getWindow().getWindowManager().getDefaultDisplay().getHeight() - padding);
         imgGetterDesc.setFullSize(bigImage);
 
-        //Очищаем все поля
+        //Clear all fields
         final QSPItem[] emptyItems = new QSPItem[0];
         ListView lv = (ListView) findViewById(R.id.acts);
         lv.setAdapter(new QSPListAdapter(uiContext, R.layout.act_item, emptyItems));
         lv = (ListView) findViewById(R.id.inv);
         lv.setAdapter(new QSPListAdapter(uiContext, R.layout.obj_item, emptyItems));
-        main_desc.setText("");
-        vars_desc.setText("");
+//        main_desc.setText("");
+//        vars_desc.setText("");
+        main_desc.loadDataWithBaseURL("","<html></html>","text/html","utf-8","");
+        vars_desc.loadDataWithBaseURL("","<html></html>","text/html","utf-8","");
+        main_desc.getSettings().setLoadsImagesAutomatically(true);
+        vars_desc.getSettings().setLoadsImagesAutomatically(true);
+        main_desc.getSettings().setAllowFileAccess(true);
+        vars_desc.getSettings().setAllowFileAccess(true);
+
+        main_desc.getSettings().setUseWideViewPort(true);
+        vars_desc.getSettings().setUseWideViewPort(true);
+        main_desc.getSettings().setLoadWithOverviewMode(true);
+        vars_desc.getSettings().setLoadWithOverviewMode(true);
+
+
         setCurrentWin(WIN_MAIN);
 
         libThreadHandler.post(new Runnable() {
@@ -1059,18 +1169,18 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                     fIn = new FileInputStream(tqsp);
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
-                    Utility.ShowError(uiContext, "Файл не найден");
+                    Utility.ShowError(uiContext, "File not found");
                     return;
                 }
                 try {
                     size = fIn.available();
                 } catch (IOException e) {
                     e.printStackTrace();
-                    Utility.ShowError(uiContext, "Не удалось получить доступ к файлу");
+                    Utility.ShowError(uiContext, "Could not access file");
                     try {
                         fIn.close();
                     } catch (IOException e1) {
-                        Utility.ShowError(uiContext, "Не удалось освободить дескриптор файла");
+                        Utility.ShowError(uiContext, "Could not release the file handler");
                         e1.printStackTrace();
                     }
                     return;
@@ -1083,7 +1193,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                     fIn.close();
                 } catch (IOException e) {
                     e.printStackTrace();
-                    Utility.ShowError(uiContext, "Не удалось прочесть файл");
+                    Utility.ShowError(uiContext, "Could not read file");
                     return;
                 }
 
@@ -1344,11 +1454,30 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             final String txtMainDesc = QSPGetMainDesc();
             runOnUiThread(new Runnable() {
                 public void run() {
+                    String newPage = txtMainDesc;
+                    //Change txMainDesc to UTF-8 encoding if possible
+                    try {
+//Utility.WriteLog("Base URL: "+newPage);
+                        newPage = Utility.encodeExec(newPage);
+//Utility.WriteLog("After encodeExec: "+newPage);
+                        newPage = URLDecoder.decode(newPage,"UTF-8");
+//Utility.WriteLog("After URLDecoder: "+newPage);
+                    }
+                    catch (UnsupportedEncodingException e) {
+                        Utility.ShowError(uiContext, "URL \""+txtMainDesc+"\n is not UTF-8 compatible."); }
+
                     if (html) {
-                        main_desc.setText(Utility.AttachGifCallback(Utility.QspStrToHtml(txtMainDesc, imgGetterDesc), QspPlayerStart.this));
-                        main_desc.setMovementMethod(QspLinkMovementMethod.getInstance());
+                        main_desc.getSettings().setJavaScriptEnabled(false);
+                        //main_desc.setText(Utility.AttachGifCallback(Utility.QspStrToHtml(txtMainDesc, imgGetterDesc, curGameDir), QspPlayerStart.this));
+                        //main_desc.setMovementMethod(QspLinkMovementMethod.getInstance());
+
+                        newPage = Utility.QspStrToWebView(newPage,curGameDir,maxW,maxH);
+
+                        main_desc.loadDataWithBaseURL("",newPage,"text/html","UTF-8","");
+
                     } else
-                        main_desc.setText(Utility.QspStrToStr(txtMainDesc));
+                        //main_desc.setText(Utility.QspStrToStr(txtMainDesc));
+                        main_desc.loadDataWithBaseURL("",Utility.QspStrToStr(newPage),"text/html","UTF-8","");
                 }
             });
         }
@@ -1361,7 +1490,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 JniResult actsResult = (JniResult) QSPGetActionData(i);
                 if (html)
                     acts[i] = new QSPItem(imgGetter.getDrawable(actsResult.str2),
-                            Utility.QspStrToHtml(actsResult.str1, imgGetter));
+                            Utility.QspStrToHtml(actsResult.str1, imgGetter, curGameDir,maxW,maxH));
                 else
                     acts[i] = new QSPItem(imgGetter.getDrawable(actsResult.str2), actsResult.str1);
             }
@@ -1384,7 +1513,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 JniResult objsResult = (JniResult) QSPGetObjectData(i);
                 if (html)
                     objs[i] = new QSPItem(imgGetter.getDrawable(objsResult.str2),
-                            Utility.QspStrToHtml(objsResult.str1, imgGetter));
+                            Utility.QspStrToHtml(objsResult.str1, imgGetter, curGameDir,maxW,maxH));
                 else
                     objs[i] = new QSPItem(imgGetter.getDrawable(objsResult.str2), objsResult.str1);
             }
@@ -1411,10 +1540,14 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                         updateTitle();
                     }
                     if (html) {
-                        vars_desc.setText(Utility.QspStrToHtml(txtVarsDesc, imgGetter));
-                        vars_desc.setMovementMethod(QspLinkMovementMethod.getInstance());
+                        //vars_desc.setText(Utility.QspStrToHtml(txtVarsDesc, imgGetter, curGameDir));
+                        //vars_desc.setMovementMethod(QspLinkMovementMethod.getInstance());
+                        vars_desc.loadDataWithBaseURL("",Utility.QspStrToWebView(txtVarsDesc,curGameDir,maxW,maxH),"text/html","UTF-8","");
+//                        vars_desc.loadData(Utility.QspStrToWebView(txtVarsDesc,curGameDir),"text/html",null);
                     } else
-                        vars_desc.setText(txtVarsDesc);
+                        //vars_desc.setText(txtVarsDesc);
+                        vars_desc.loadDataWithBaseURL("",Utility.QspStrToStr(txtVarsDesc),"text/html","UTF-8","");
+//                        vars_desc.loadData(Utility.QspStrToStr(txtVarsDesc),"text/html",null);
                 }
             });
         }
@@ -1464,7 +1597,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                         })
                         .create();
                 if (html)
-                    msgBox.setMessage(Utility.QspStrToHtml(msg, imgGetter));
+                    msgBox.setMessage(Utility.QspStrToHtml(msg, imgGetter, curGameDir,maxW,maxH));
                 else
                     msgBox.setMessage(msg);
                 msgBox.setCancelable(false);
@@ -1521,7 +1654,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         Toast.makeText(this, "OpenGame "+file, Toast.LENGTH_LONG).show();
         LoadSlot(file);
     }
-    private void ShowPicture(String file) {
+    private void ShowPicture(String file)
+    {
         //Контекст библиотеки
         if (file == null || file.length() == 0)
             return;
@@ -1531,7 +1665,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         runOnUiThread(new Runnable() {
             public void run() {
                 String prefix = "";
-                if (curGameDir != null)
+
+                if ((curGameDir != null) && !fileName.startsWith(curGameDir))
                     prefix = curGameDir;
 
                 //Проверяем, существует ли файл.
@@ -1573,7 +1708,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             public void run() {
                 inputboxResult = "";
                 if (html)
-                    inputboxDialog.setMessage(Utility.QspStrToHtml(inputboxTitle, imgGetter));
+                    inputboxDialog.setMessage(Utility.QspStrToHtml(inputboxTitle, imgGetter, curGameDir,maxW,maxH));
                 else
                     inputboxDialog.setMessage(inputboxTitle);
                 inputboxDialog.show();
@@ -1682,11 +1817,11 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             error.str2 = QSPGetErrorDesc(error.int1);
             String locName = (error.str1 == null) ? "" : error.str1;
             String errDesc = (error.str2 == null) ? "" : error.str2;
-            final String message = "Локация: " + locName + "\n" +
-                    "Действие: " + String.valueOf(error.int2) + "\n" +
-                    "Строка: " + String.valueOf(error.int3) + "\n" +
-                    "Номер ошибки: " + String.valueOf(error.int1) + "\n" +
-                    "Описание: " + errDesc;
+            final String message = "Location: " + locName + "\n" +
+                    "Action: " + String.valueOf(error.int2) + "\n" +
+                    "Line: " + String.valueOf(error.int3) + "\n" +
+                    "Error number: " + String.valueOf(error.int1) + "\n" +
+                    "Description: " + errDesc;
             runOnUiThread(new Runnable() {
                 public void run() {
                     Utility.ShowError(uiContext, message);
@@ -1714,6 +1849,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     }
 
     public void OnUrlClicked(String href) {
+
         //Контекст UI
         if ((href == null) || (href.length() == 0))
             return;
@@ -1748,7 +1884,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 try {
                     startActivity(viewIntent);
                 } catch (ActivityNotFoundException viewException) {
-                    Utility.ShowError(uiContext, "Не удалось найти браузер.");
+                    Utility.ShowError(uiContext, "Could not find browser.");
                 }
             }
         }
@@ -1802,6 +1938,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             if (libraryThreadIsRunning)
                 return;
             final int itemIndex = position;
+Utility.WriteLog("OnItemClickListener activated");
             libThreadHandler.post(new Runnable() {
                 public void run() {
                     if (libraryThreadIsRunning)
