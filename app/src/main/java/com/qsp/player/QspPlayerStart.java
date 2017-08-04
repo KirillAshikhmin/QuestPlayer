@@ -135,7 +135,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         public boolean shouldOverrideUrlLoading(WebView view, String href) {
 
                 if (href.toLowerCase().startsWith("exec:")) {
-                Utility.addSpacesWithChar(href,"&",true,true);
+
                 if (libraryThreadIsRunning) return true;
                 final String code = href.substring(5);
                 libThreadHandler.post(new Runnable() {
@@ -338,7 +338,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                         inputboxResult = edit.getText().toString();
                         edit.setText("");
                         dialogHasResult = true;
-                        Utility.WriteLog("InputBox(UI): OK clicked, unparking library thread");
+                        Utility.WriteLog(getString(R.string.inputBoxUIMsg));
                         setThreadUnpark();
                     }
                 })
@@ -347,7 +347,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
         if (Utility.GetGamesPath(this) == null) {
             sdcard_mounted = false;
-            Utility.ShowError(uiContext, "SD-карта не подключена, Quest Player не может быть запущен. Подключите SD-карту и перезапустите Quest Player.");
+            Utility.ShowError(uiContext, getString(R.string.SDCardNotConnected));
         } else {
             sdcard_mounted = true;
             if (!gameIsRunning) {
@@ -402,7 +402,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         Utility.WriteLog("onPause\\");
 
         if (gameIsRunning && !waitForImageBox) {
-            Utility.WriteLog("onPause: pausing game");
+            Utility.WriteLog(getString(R.string.pauseGameMsg));
             //Останавливаем таймер
             timerHandler.removeCallbacks(timerUpdateTask);
 
@@ -549,7 +549,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                         if (which == 0) {
                             ShowGameStock();
                         } else if (which == 1) {
-                            Utility.WriteLog("App closed by user! Going to background");
+                            Utility.WriteLog(getString(R.string.appCloseByUser));
                             moveTaskToBack(true);
                         }
                     }
@@ -573,16 +573,16 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             int id = rootItem.getItemId();
             menuMain.removeItem(id);
             slotsMenu = menuMain.addSubMenu(Menu.NONE, id, isLoad ? 65535 : 65536, name);
-            slotsMenu.setHeaderTitle("Select a slot");
+            slotsMenu.setHeaderTitle(getString(R.string.selectSlotTitle));
 
         }
 
         int position=0;
         for (int i = 0; i < SLOTS_MAX; i++) {
             String title = String.valueOf(i + 1).concat(": ");
+            String Slotname = curSaveTitle + String.valueOf(i + 1).concat(".sav");
+Utility.WriteLog(Slotname);
 
-            String Slotname = String.valueOf(i + 1).concat(".sav");
-			
             File checkSlot = new File(saveGameDir.concat(Slotname));
             if (checkSlot.exists()) {
                 String datetime = (String) DateFormat.format("yyyy-MM-dd kk:mm:ss", checkSlot.lastModified());
@@ -630,7 +630,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
             case R.id.menu_exit:
                 //Выбираем игру
-                Utility.WriteLog("App closed by user! Going to background");
+                Utility.WriteLog(getString(R.string.appCloseByUser));
                 moveTaskToBack(true);
                 return true;
 
@@ -645,7 +645,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 try {
                     startActivity(updateIntent);
                 } catch (ActivityNotFoundException e) {
-                    Utility.ShowError(uiContext, "Не найдено приложение Market.");
+                    Utility.ShowError(uiContext, getString(R.string.marketNotFound));
                     return false;
                 }
                 return true;
@@ -718,7 +718,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
     private void LoadSlot(int index) {
         //Контекст UI
-        String path = String.valueOf(index).concat(".sav");
+        String path = curSaveTitle + String.valueOf(index).concat(".sav");
         LoadSlot(path);
     }
 
@@ -727,7 +727,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         String path = saveGameDir.concat(filename);
         File f = new File(path);
         if (!f.exists()) {
-            Utility.WriteLog("LoadSlot: failed, file not found");
+            Utility.WriteLog(getString(R.string.LSF_fileNotFound));
             return;
         }
 
@@ -736,19 +736,19 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         try {
             fIn = new FileInputStream(f);
         } catch (FileNotFoundException e) {
-            Utility.ShowError(uiContext, "Could not open file");
+            Utility.ShowError(uiContext, getString(R.string.openFileFail));
             e.printStackTrace();
             return;
         }
         try {
             size = fIn.available();
         } catch (IOException e) {
-            Utility.ShowError(uiContext, "Could not access file");
+            Utility.ShowError(uiContext, getString(R.string.accessFileFail));
             e.printStackTrace();
             try {
                 fIn.close();
             } catch (IOException e1) {
-                Utility.ShowError(uiContext, "Could not release the file handler");
+                Utility.ShowError(uiContext, getString(R.string.fileHandleReleaseFail));
                 e1.printStackTrace();
             }
             return;
@@ -772,7 +772,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         libThreadHandler.post(new Runnable() {
             public void run() {
                 if (libraryThreadIsRunning) {
-                    Utility.WriteLog("LoadSlot: failed, library is already running");
+                    Utility.WriteLog(getString(R.string.LSF_libRun));
                     return;
                 }
                 libraryThreadIsRunning = true;
@@ -784,7 +784,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 libraryThreadIsRunning = false;
 
                 if (!result) {
-                    Utility.WriteLog("LoadSlot: failed, cannot load data from byte buffer");
+                    Utility.WriteLog(getString(R.string.LSF_dataBuff));
                     return;
                 }
 
@@ -800,14 +800,14 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
     private void c(int index) {
         //Контекст UI
-        final String path = String.valueOf(index).concat(".sav");
+        final String path = curSaveTitle + String.valueOf(index).concat(".sav");
         SaveSlot(path);
     }
 
 
     private void SaveSlot(int index) {
         //Контекст UI
-        String path = String.valueOf(index).concat(".sav");
+        String path = curSaveTitle + String.valueOf(index).concat(".sav");
         SaveSlot(path);
     }
 
@@ -818,7 +818,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         libThreadHandler.post(new Runnable() {
             public void run() {
                 if (libraryThreadIsRunning) {
-                    Utility.WriteLog("SaveSlot: failed, library is already running");
+                    Utility.WriteLog(getString(R.string.SSF_libRun));
                     return;
                 }
                 libraryThreadIsRunning = true;
@@ -827,7 +827,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
                 if (dataToSave == null) {
                     CheckQspResult(false, "SaveSlot: QSPSaveGameAsData");
-                    Utility.WriteLog("SaveSlot: failed, cannot create save data");
+                    Utility.WriteLog(getString(R.string.SSF_noCreate));
                     return;
                 }
 
@@ -899,26 +899,26 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
      * возобновляет работу треда сохраненного в указателе parkThread
      */
     protected boolean setThreadUnpark() {
-        Utility.WriteLog("setThreadUnPark: enter ");
+        Utility.WriteLog("setThreadUnPark: "+getString(R.string.enterS)+" ");
         //Контекст UI
         if (parkThread != null && parkThread.isAlive()) {
             LockSupport.unpark(parkThread);
-            Utility.WriteLog("setThreadUnPark: success ");
+            Utility.WriteLog("setThreadUnPark: "+getString(R.string.successS)+" ");
             return true;
         }
-        Utility.WriteLog("setThreadUnPark: failed, ");
+        Utility.WriteLog("setThreadUnPark: "+getString(R.string.failedS)+" | ");
         if (parkThread == null)
-            Utility.WriteLog("parkThread is null ");
+            Utility.WriteLog("parkThread: "+getString(R.string.isNullS)+" ");
         else
-            Utility.WriteLog("parkThread is dead ");
+            Utility.WriteLog("parkThread: "+getString(R.string.isDeadS)+" ");
         return false;
     }
 
     protected void StartLibThread() {
-        Utility.WriteLog("StartLibThread: enter ");
+        Utility.WriteLog("StartLibThread()");
         //Контекст UI
         if (libThread != null) {
-            Utility.WriteLog("StartLibThread: failed, libThread is null");
+            Utility.WriteLog("StartLibThread: exit | libThread = null");
             return;
         }
         //Запускаем поток библиотеки
@@ -926,23 +926,23 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             public void run() {
                 Looper.prepare();
                 libThreadHandler = new Handler();
-                Utility.WriteLog("LibThread runnable: libThreadHandler is set");
+                Utility.WriteLog("LibThread runnable: libThreadHandler = new Handler()");
                 Looper.loop();
-                Utility.WriteLog("LibThread runnable: library thread exited");
+                Utility.WriteLog("LibThread runnable: libThread exit");
             }
         };
         libThread = t;
         t.start();
-        Utility.WriteLog("StartLibThread: success ");
+        Utility.WriteLog("StartLibThread.start()");
     }
 
     protected void StopLibThread() {
-        Utility.WriteLog("StopLibThread: enter ");
+        Utility.WriteLog("StopLibThread()");
         //Контекст UI
         //Останавливаем поток библиотеки
         libThreadHandler.getLooper().quit();
         libThread = null;
-        Utility.WriteLog("StopLibThread: success ");
+        Utility.WriteLog("StopLibThread: exit");
     }
     //******************************************************************************
     //******************************************************************************
@@ -1012,13 +1012,13 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 toggleExt(false);
                 invUnread = false;
                 invBack = 0;
-                setTitle("Inventory and other menus");
+                setTitle(getString(R.string.invTitle));
                 break;
             case WIN_MAIN:
                 toggleInv(false);
                 toggleMain(true);
                 toggleExt(false);
-                setTitle("Description");
+                setTitle(getString(R.string.mainDescTitle));
                 break;
             case WIN_EXT:
                 toggleInv(false);
@@ -1027,7 +1027,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 varUnread = false;
                 varBack = 0;
 // "Доп. описание"
-                setTitle("Character Information");
+                setTitle(getString(R.string.varDescTitle));
                 break;
         }
         currentWin = win;
@@ -1080,7 +1080,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
         //Очищаем ВСЕ на выходе
         if (qspInited) {
-            Utility.WriteLog("onDestroy: stopping game");
+            Utility.WriteLog("onDestroy: "+getString(R.string.stopGame));
             StopGame(false);
         }
         //Останавливаем поток библиотеки
@@ -1091,17 +1091,17 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         //Контекст UI
         File f = new File(fileName);
         if (!f.exists()) {
-            Utility.ShowError(uiContext, "File not found");
+            Utility.ShowError(uiContext, getString(R.string.fileNotFound));
             return;
         }
 
         if (libThreadHandler == null) {
-            Utility.WriteLog("runGame: failed, libThreadHandler is null");
+            Utility.WriteLog("runGame: "+getString(R.string.failedS)+", libThreadHandler "+getString(R.string.isNullS));
             return;
         }
 
         if (libraryThreadIsRunning) {
-            Utility.WriteLog("runGame: failed, library thread is already running");
+            Utility.WriteLog("runGame: "+getString(R.string.failedS)+" | "+getString(R.string.libRunError)+".");
             return;
         }
 
@@ -1110,7 +1110,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         final String gameFileName = fileName;
         curGameFile = gameFileName;
         curGameDir = gameFileName.substring(0, gameFileName.lastIndexOf(File.separator, gameFileName.length() - 1) + 1);
-		
+        curSaveTitle = Utility.safetyString(gameFileName);
+
 		saveGameDir = uiContext.getFilesDir().getAbsolutePath();
 
         int padding = main_desc.getPaddingLeft() + main_desc.getPaddingRight();
@@ -1169,18 +1170,18 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                     fIn = new FileInputStream(tqsp);
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
-                    Utility.ShowError(uiContext, "File not found");
+                    Utility.ShowError(uiContext, getString(R.string.fileNotFound));
                     return;
                 }
                 try {
                     size = fIn.available();
                 } catch (IOException e) {
                     e.printStackTrace();
-                    Utility.ShowError(uiContext, "Could not access file");
+                    Utility.ShowError(uiContext, getString(R.string.accessFileFail));
                     try {
                         fIn.close();
                     } catch (IOException e1) {
-                        Utility.ShowError(uiContext, "Could not release the file handler");
+                        Utility.ShowError(uiContext, getString(R.string.fileHandleReleaseFail));
                         e1.printStackTrace();
                     }
                     return;
@@ -1193,7 +1194,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                     fIn.close();
                 } catch (IOException e) {
                     e.printStackTrace();
-                    Utility.ShowError(uiContext, "Could not read file");
+                    Utility.ShowError(uiContext, getString(R.string.readFileError));
                     return;
                 }
 
@@ -1273,6 +1274,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         }
         curGameDir = "";
         curGameFile = "";
+        curSaveTitle = "";
 
         //Очищаем библиотеку
         if (restart || libraryThreadIsRunning)
@@ -1289,6 +1291,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     }
 
     private void PlayFileUI(String file, int volume) {
+        if (!settings.getBoolean("sound",true)) return;
+
         //Контекст UI
         if (file == null || file.length() == 0)
             return;
@@ -1361,6 +1365,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     }
 
     private float GetRealVolume(int volume) {
+Utility.WriteLog("sound test");
         float result = 0;
         if (settings.getBoolean("sound", true))
             result = ((float) volume) / 100;
@@ -1457,21 +1462,18 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                     String newPage = txtMainDesc;
                     //Change txMainDesc to UTF-8 encoding if possible
                     try {
-//Utility.WriteLog("Base URL: "+newPage);
                         newPage = Utility.encodeExec(newPage);
-//Utility.WriteLog("After encodeExec: "+newPage);
                         newPage = URLDecoder.decode(newPage,"UTF-8");
-//Utility.WriteLog("After URLDecoder: "+newPage);
                     }
                     catch (UnsupportedEncodingException e) {
-                        Utility.ShowError(uiContext, "URL \""+txtMainDesc+"\n is not UTF-8 compatible."); }
+                        Utility.ShowError(uiContext, getString(R.string.urlNotComp).replace("-URLTEXT-",txtMainDesc)); }
 
                     if (html) {
                         main_desc.getSettings().setJavaScriptEnabled(false);
                         //main_desc.setText(Utility.AttachGifCallback(Utility.QspStrToHtml(txtMainDesc, imgGetterDesc, curGameDir), QspPlayerStart.this));
                         //main_desc.setMovementMethod(QspLinkMovementMethod.getInstance());
 
-                        newPage = Utility.QspStrToWebView(newPage,curGameDir,maxW,maxH);
+                        newPage = Utility.QspStrToWebView(newPage,curGameDir,maxW,maxH,settings.getBoolean("sound",true));
 
                         main_desc.loadDataWithBaseURL("",newPage,"text/html","UTF-8","");
 
@@ -1542,7 +1544,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                     if (html) {
                         //vars_desc.setText(Utility.QspStrToHtml(txtVarsDesc, imgGetter, curGameDir));
                         //vars_desc.setMovementMethod(QspLinkMovementMethod.getInstance());
-                        vars_desc.loadDataWithBaseURL("",Utility.QspStrToWebView(txtVarsDesc,curGameDir,maxW,maxH),"text/html","UTF-8","");
+                        vars_desc.loadDataWithBaseURL("",Utility.QspStrToWebView(txtVarsDesc,curGameDir,maxW,maxH,settings.getBoolean("sound",true)),"text/html","UTF-8","");
 //                        vars_desc.loadData(Utility.QspStrToWebView(txtVarsDesc,curGameDir),"text/html",null);
                     } else
                         //vars_desc.setText(txtVarsDesc);
@@ -1572,7 +1574,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private void ShowMessage(String message) {
         //Контекст библиотеки
         if (libThread == null) {
-            Utility.WriteLog("ShowMessage: failed, libThread is null");
+            Utility.WriteLog("ShowMessage: "+getString(R.string.failedS)+", libThread "+getString(R.string.isNullS));
             return;
         }
 
@@ -1591,7 +1593,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                         .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int whichButton) {
                                 dialogHasResult = true;
-                                Utility.WriteLog("ShowMessage(UI): OK clicked, unparking library thread");
+                                Utility.WriteLog("ShowMessage(UI): OK, unparking libThread");
                                 setThreadUnpark();
                             }
                         })
@@ -1602,16 +1604,16 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                     msgBox.setMessage(msg);
                 msgBox.setCancelable(false);
                 msgBox.show();
-                Utility.WriteLog("ShowMessage(UI): dialog showed");
+                Utility.WriteLog("ShowMessage(UI): msgBox.show()");
             }
         });
 
-        Utility.WriteLog("ShowMessage: parking library thread");
+        Utility.WriteLog("ShowMessage: parking libThread");
         while (!dialogHasResult) {
             setThreadPark();
         }
         parkThread = null;
-        Utility.WriteLog("ShowMessage: library thread unparked, finishing");
+        Utility.WriteLog("ShowMessage: libThread unparked, "+getString(R.string.exitedS));
     }
 
     private void PlayFile(String file, int volume) {
@@ -1690,7 +1692,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private String InputBox(String prompt) {
         //Контекст библиотеки
         if (libThread == null) {
-            Utility.WriteLog("InputBox: failed, libThread is null");
+            Utility.WriteLog("InputBox: failed, libThread "+getString(R.string.isNullS));
             return "";
         }
 
@@ -1712,16 +1714,16 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 else
                     inputboxDialog.setMessage(inputboxTitle);
                 inputboxDialog.show();
-                Utility.WriteLog("InputBox(UI): dialog showed");
+                Utility.WriteLog("InputBox(UI): inputboxDialog.show()");
             }
         });
 
-        Utility.WriteLog("InputBox: parking library thread");
+        Utility.WriteLog("InputBox: parking libThread");
         while (!dialogHasResult) {
             setThreadPark();
         }
         parkThread = null;
-        Utility.WriteLog("InputBox: library thread unparked, finishing");
+        Utility.WriteLog("InputBox: libThread unparked, "+getString(R.string.exitedS));
         return inputboxResult;
     }
 
@@ -1741,7 +1743,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private int ShowMenu() {
         //Контекст библиотеки
         if (libThread == null) {
-            Utility.WriteLog("ShowMenu: failed, libThread is null");
+            Utility.WriteLog("ShowMenu: "+getString(R.string.failedS)+", libThread "+getString(R.string.isNullS));
             return -1;
         }
 
@@ -1762,7 +1764,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                             public void onClick(DialogInterface dialog, int which) {
                                 menuResult = which;
                                 dialogHasResult = true;
-                                Utility.WriteLog("ShowMenu(UI): menu item selected, unparking library thread");
+                                Utility.WriteLog("ShowMenu(UI): menuResult, unparking libThread");
                                 setThreadUnpark();
                             }
                         })
@@ -1770,21 +1772,21 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                             @Override
                             public void onCancel(DialogInterface dialog) {
                                 dialogHasResult = true;
-                                Utility.WriteLog("ShowMenu(UI): menu cancelled, unparking library thread");
+                                Utility.WriteLog("ShowMenu(UI): "+getString(R.string.exitedS)+", unparking libThread");
                                 setThreadUnpark();
                             }
                         })
                         .show();
-                Utility.WriteLog("ShowMenu(UI): dialog showed");
+                Utility.WriteLog("ShowMenu(UI): .show()");
             }
         });
 
-        Utility.WriteLog("ShowMenu: parking library thread");
+        Utility.WriteLog("ShowMenu: parking libThread");
         while (!dialogHasResult) {
             setThreadPark();
         }
         parkThread = null;
-        Utility.WriteLog("ShowMenu: library thread unparked, finishing");
+        Utility.WriteLog("ShowMenu: libThread unparked, "+getString(R.string.exitedS));
 
         return menuResult;
     }
@@ -1799,7 +1801,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         try {
             Thread.sleep(msecs);
         } catch (InterruptedException e) {
-            Utility.WriteLog("WAIT in library thread was interrupted");
+            Utility.WriteLog("WAIT - libThread(InterruptedException)");
             e.printStackTrace();
         }
     }
@@ -1884,7 +1886,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 try {
                     startActivity(viewIntent);
                 } catch (ActivityNotFoundException viewException) {
-                    Utility.ShowError(uiContext, "Could not find browser.");
+                    Utility.ShowError(uiContext, getString(R.string.noBrowser));
                 }
             }
         }
@@ -1938,7 +1940,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             if (libraryThreadIsRunning)
                 return;
             final int itemIndex = position;
-Utility.WriteLog("OnItemClickListener activated");
+Utility.WriteLog("OnItemClickListener()");
             libThreadHandler.post(new Runnable() {
                 public void run() {
                     if (libraryThreadIsRunning)
@@ -1977,6 +1979,7 @@ Utility.WriteLog("OnItemClickListener activated");
 
     String curGameDir;
     String curGameFile;
+    String curSaveTitle;
 
 // saveGameDir identifies internal data storage for app; resolves write-permission problem with Android SD Cards
     String saveGameDir;

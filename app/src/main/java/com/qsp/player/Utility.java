@@ -125,7 +125,7 @@ public class Utility {
         return Html.fromHtml("");
     }
 
-    public static String QspStrToWebView(String str, String srcDir, int maxW, int maxH) {
+    public static String QspStrToWebView(String str, String srcDir, int maxW, int maxH, boolean audioIsOn) {
         if (str != null && str.length() > 0) {
 //            Utility.WriteLog(str);
             str = str.replaceAll("\r", "<br>");
@@ -134,7 +134,7 @@ public class Utility {
 
             str = fixImagesSize(str,srcDir,false,maxW,maxH);
 
-            str = fixVideosLinks(str,srcDir,maxW,maxH);
+            str = fixVideosLinks(str,srcDir,maxW,maxH,audioIsOn);
 
             str = "<html><head>"
                     + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
@@ -144,7 +144,7 @@ public class Utility {
                     + str
                     + "</body></html>";
 
-            Utility.WriteLog("toWebView:\n"+ str);
+Utility.WriteLog("toWebView:\n"+ str);
 
             return str;
 
@@ -226,7 +226,7 @@ public class Utility {
             }
 
             //Replace all '+' with the URL-codable '+' and attach to newStr
-            newStr += execStr.replace("+","%2b");
+            newStr += addSpacesWithChar(execStr.replace("+","%2b"),"&",true,true);
 
             hasExec = endOfStr.contains("exec:");
         } while (hasExec);
@@ -368,7 +368,7 @@ public class Utility {
         return newStr;
     }
 
-    private static String fixVideosLinks (String str, String srcDir, int maxW, int maxH) {
+    private static String fixVideosLinks (String str, String srcDir, int maxW, int maxH,boolean audioIsOn) {
 
         boolean hasVid = str.contains("<video");
 
@@ -399,6 +399,8 @@ public class Utility {
                 curStr = curStr.replace(">"," autoplay>");
             if (!curStr.contains(" loop ") && !curStr.contains(" loop>"))
                 curStr = curStr.replace(">"," loop>");
+            if (!audioIsOn && !curStr.contains(" muted ") && !curStr.contains(" muted>"))
+                curStr = curStr.replace(">"," muted>");
 
             String src = null, widthS = null, heightS = null, widthBase = null, heightBase = null;
             try {
@@ -671,4 +673,28 @@ Utility.WriteLog("1.");
         }
         return true;
     }
+
+    //Remove all non-alphanumeric characters ("_" acceptable) from String for use as a file name
+    public static String safetyString(String target) {
+        int i = 0;
+        String newStr = target;
+
+        if (target.substring(i).contains("/"))
+        do {
+            i = newStr.substring(i).indexOf("/");
+            newStr = newStr.substring(i);
+            i++;
+        } while (newStr.substring(i).contains("/"));
+
+        newStr = newStr.replaceAll("[^a-zA-Z0-9_.]","");
+
+        if (newStr == "") {
+            newStr = "Game" + target.length();
+            Utility.WriteLog("\""+ target + "\" could not be parsed. Using \""+newStr+"\" for save file prefix.");
+        }
+        Utility.WriteLog("saveFile = "+newStr);
+
+        return newStr;
+    }
+
 }

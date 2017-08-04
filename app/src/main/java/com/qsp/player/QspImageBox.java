@@ -38,7 +38,7 @@ public class QspImageBox extends Activity implements OnClickListener {
             box.setOnClickListener(null);
             mAttacher = new PhotoViewAttacher(box);
             if (!helpShowed) {
-                Toast.makeText(QspImageBox.this,"Now you can scale the image. To close the window, click again on this button.", Toast.LENGTH_LONG).show();
+                Toast.makeText(QspImageBox.this,getString(R.string.scaleImgHelp1), Toast.LENGTH_LONG).show();
                 helpShowed=true;
             }
             isBtnClosed=true;
@@ -88,7 +88,7 @@ public class QspImageBox extends Activity implements OnClickListener {
         //assign to view
         box.setImageDrawable(drawable);
         if (!basicHelpShowed) {
-            Toast.makeText(QspImageBox.this,"Click the magnifying glass in the upper-right corner to examine the image closer.", Toast.LENGTH_LONG).show();
+            Toast.makeText(QspImageBox.this,getString(R.string.scaleImgHelp2), Toast.LENGTH_LONG).show();
             basicHelpShowed = true;
         }
     }
