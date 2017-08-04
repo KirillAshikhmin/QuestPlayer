@@ -27,13 +27,16 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     >
-<TextView android:id="@+id/main_desc"
+<WebView android:id="@+id/main_desc"
     android:layout_width="fill_parent" 
-    android:layout_height="wrap_content" 
+    android:layout_height="wrap_content"
     android:text=""
     android:textSize="16sp"
     android:paddingLeft="16dp"
     android:paddingRight="16dp"
+	android:background="@color/web_background"
+	android:textColor="@color/web_text"
+	android:scrollbars="none"
     />
 <ListView
     android:id="@+id/acts"
@@ -52,15 +55,18 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
 >
-<TextView 
+<WebView 
 	android:id="@+id/vars_desc"
     android:layout_width="fill_parent" 
-    android:layout_height="wrap_content" 
+    android:layout_height="wrap_content"
     android:text=""
     android:textSize="16sp"
     android:paddingLeft="16dp"
     android:paddingRight="16dp"
-    />
+	android:background="@color/web_background"
+	android:textColor="@color/web_text"
+	android:scrollbars="none"
+/>
 </ScrollView>
 </android.gesture.GestureOverlayView>
 </LinearLayout>
