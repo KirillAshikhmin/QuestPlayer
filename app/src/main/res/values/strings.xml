@@ -1,52 +1,144 @@
 <?xml version="1.0" encoding="utf-8"?>
+
+<!-- ** English/Default version ** -->
 <resources>
-	<!-- Настройки  -->
-    <string name="appTheme">Тема оформления</string>
-    <string name="fontSize">Размер шрифта</string>
-    <string name="typeface">Стиль шрифта</string>
-    <string name="fullscreenSum">скрывать строку состояния</string>
-    <string name="fullscreen_off">показывать строку состояния</string>
-    <string name="fullscreenTitle">Полноэкранный режим</string>
-    <string name="gestures_off">смена экрана только тапом иконки</string>
-    <string name="gestures_sum">смена экрана при помощи жестов</string>
-    <string name="using_gestures">Жесты</string>
-    <string name="interface_scr_sum">настройка внешнего вида плеера</string>
-    <string name="interface_screen">Настройки отображения</string>
-    <string name="soundSum">использование звуков и музыки</string>
-    <string name="soundTitle">Звук</string>
-	<string name="dialog_color_picker">Выбор цвета</string> 
-  	<string name="textColor">Цвет текста</string> 
-  	<string name="backColor">Цвет фона</string> 
-  	<string name="linkColor">Цвет ссылок</string> 
-    <string name="opt_show_acts_hot_keys">Показ горячих клавиш для действий</string>
-    <string name="opt_highlight_acts">Подсветка действий</string>
-    <string name="opt_back_action">Кнопка Назад выполняет 1 действие</string>
-    <string name="opt_big_image">Большие изображения</string>
-    <string name="opt_image_density">Изображения в зависимости от экрана</string>
-    <string name="optdesc_highlight_acts">Использовать для действий цвет, отличный от цвета описания</string>
-    <string name="optdesc_back_action">Нажатие на кнопку "Назад" выполняет первое из доступных действий</string>
-    <string name="optdesc_big_image">Растягивать изображения на всю ширину экрана</string>
-    <string name="optdesc_image_density">Растягивать изображения в зависимости от типа экрана</string>
+	<!-- Настройки Settings -->
+    <string name="appTheme">Theme</string>
+    <string name="fontSize">Font Size</string>
+    <string name="typeface">Font Style</string>
+    <string name="fullscreenSum">Hide Status Bar</string>
+    <string name="fullscreen_off">Show Stsatus Bar</string>
+    <string name="fullscreenTitle">Full Screen</string>
+    <string name="gestures_off">Switch tab by Icons</string>
+    <string name="gestures_sum">Switch tab by Swap</string>
+    <string name="using_gestures">Gestures</string>
+    <string name="interface_scr_sum">Interface Setting</string>
+    <string name="interface_screen">Display Setting</string>
+    <string name="soundSum">Sound and Music</string>
+    <string name="soundTitle">Sound</string>
+    <string name="dialog_color_picker">Choose Color</string>
+    <string name="textColor">Text Color</string>
+    <string name="backColor">Background Color</string>
+    <string name="linkColor">Link Color</string>
+    <string name="opt_show_acts_hot_keys">Show Hotkey for Actions</string>
+    <string name="opt_highlight_acts">Enforced Actions</string>
+    <string name="optdesc_highlight_acts">Show Actions with Seleceted Color</string>
+    <string name="actsColor">Action Color</string>
+	<string name="opt_back_action">Back Button as 1st action</string>
+	<string name="opt_big_image">Image Fit to Width</string>
+	<string name="opt_image_density">Image Fit to Screen</string>
+	<string name="optdesc_back_action">press the Back button the executes the first available actions</string>
+	<string name="optdesc_big_image">Stretch image to the full width of the screen</string>
+	<string name="optdesc_image_density">Stretch the image depending on the screen density</string>
+    <string name="gamesdirTitle">Path to game files</string>
+    <string name="gamesdirSum">Directory where game files are stored</string>
+    <string name="langTitle">Language</string>
 
-    <!-- Меню -->
-    <string name="menu_gamestock">Полка игр</string>
-    <string name="menu_options">Настройки</string>
-    <string name="menu_about">О программе</string>
-    <string name="menu_newgame">Начать заново</string>
-    <string name="menu_resumegame">Продолжить игру</string>
-    <string name="menu_load">Загрузить</string>
-    <string name="menu_save">Сохранить</string>
-    <string name="menu_deletegames">Удаление игр</string>
-    <string name="menu_openfile">Открыть файл</string>
-    <string name="menu_closeapp">Закрыть Quest Player</string>
-
-    <!-- Вкладки -->
-    <string name="tab_downloaded">Загружено</string>
-    <string name="tab_starred">Отмечено</string>
-    <string name="tab_all">Все</string>
-    
-    <!-- Прочее -->
-    <string name="app_name">Quest Player Fork</string>
+	<!-- Меню Menu -->
+    <string name="menu_gamestock">Game Stock</string>
+    <string name="menu_options">Settings</string>
+    <string name="menu_about">About(GooglePlay)</string>
+    <string name="menu_newgame">Restart Game</string>
+    <string name="menu_resumegame">Resume Game</string>
+    <string name="menu_load">Load</string>
+    <string name="menu_save">Save</string>
+    <string name="menu_deletegames">Delete Game</string>
+    <string name="menu_openfile">Open Game File</string>
+    <string name="menu_closeapp">Close QuestPlayer</string>
+	
+	<!-- Вкладки Tabs -->	
+    <string name="tab_all">Online</string>
+    <string name="tab_downloaded">Local</string>
+    <string name="tab_starred">Marked</string>		
+	
+	<!-- Прочее Other -->	
+    <string name="app_name">Quest Player</string>
     <string name="market_details_url">market://details?id=com.qsp.player</string>
-    <string name="actsColor">Цвет действий</string>
+	<string name="translator">illume</string>
+
+    <!-- Прочее Other Part 2: QspGameStock -->
+    <string name="gamelistLoadError">The game list could not be loaded. Check your internet connection.</string>
+    <string name="playGameCmd">Play</string>
+    <string name="dlGameCmd">Download</string>
+    <string name="gameLoadNetError">The game could not be loaded. Check your internet connection.</string>
+    <string name="cacheCreateError">Cannot create cache folder.</string>
+    <string name="dlWaiting">Downloading...</string>
+    <string name="dlGameError">Error while trying to download file</string>
+    <string name="cantDlGameError">Could not download game -GAMENAME-.</string>
+    <string name="genGameLoadError">Error loading game</string>
+    <string name="cantUnzipGameError">Unable to unzip the game -GAMENAME-.</string>
+    <string name="gameDlSuccess">Game downloaded</string>
+    <string name="gameUploadSuccess">Game -GAMENAME- successfully uploaded.</string>
+    <string name="unpackMsg">Unpacked...</string>
+    <string name="decompMsg">Decompress</string>
+    <string name="unzipMsg">Unzipping -FILENAME-</string>
+    <string name="unzipMsgShort">unzip</string>
+    <string name="gameInfoFileCreateError">Creating game info file failed.</string>
+    <string name="gameInfoFileWriteError">Writing to game info file failed.</string>
+    <string name="noCardAccess">No access to the flash card.</string>
+    <string name="gameInfoFileReadError">Reading game info file failed.</string>
+    <string name="parseGameInfoXMLError">Exception occurred while trying to parse game info, XML corrupted at line -LINENUM- column -COLNUM-.</string>
+    <string name="parseGameInfoUnkError">Exception occurred while trying to parse game info, unknown error.</string>
+    <string name="gamelistLoadWait">Loading a list of games</string>
+    <string name="gamelistLoadExcept">Exception occurred while trying to load game list.</string>
+    <string name="pathNotFound">Could not find path: -PATHNAME-</string>
+    <string name="gameFileSelect">Select a game file</string>
+    <string name="gameFileDeleteTitle">Delete game</string>
+    <string name="gameFileDeleteQuery">Delete game -GAMENAME-?</string>
+    <string name="gameFileDeleteSuccess">The game has been deleted.</string>
+    <string name="gameAuthorText">Author: -AUTHOR-</string>
+
+    <!-- Прочее Other Part 3: QspImageBox -->
+    <string name="scaleImgHelp1">Now you can scale the image. To close the window, click again on this button.</string>
+    <string name="scaleImgHelp2">Click the magnifying glass in the upper-right corner to examine the image closer.</string>
+
+    <!-- Прочее Other Part 4: QspPlayerStart -->
+    <string name="inputBoxUIMsg">InputBox(UI): OK clicked, unparking library thread.</string>
+    <string name="SDCardNotConnected">"SD card is not connected: Quest Player cannot start. Connect the SD card and restart Quest Player.</string>
+    <string name="pauseGameMsg">onPause: pausing game</string>
+    <string name="appCloseByUser">App closed by user! Going to background.</string>
+    <string name="selectSlotTitle">Select a slot</string>
+    <string name="marketNotFound">Market Intent not found.</string>
+    <string name="LSF_fileNotFound">LoadSlot: failed, file not found.</string>
+    <string name="openFileFail">Could not open file.</string>
+    <string name="accessFileFail">Could not access file.</string>
+    <string name="fileHandleReleaseFail">Could not release the file handler.</string>
+    <string name="LSF_libRun">LoadSlot: failed, library is already running.</string>
+    <string name="LSF_dataBuff">LoadSlot: failed, cannot load data from byte buffer.</string>
+    <string name="SSF_libRun">SaveSlot: failed, library is already running.</string>
+    <string name="SSF_noCreate">SaveSlot: failed, cannot create save data.</string>
+
+<!-- These all refer to a single subroutine in the format "SUBROUTINE: TEXT"-->
+    <string name="enterS">enter</string>
+    <string name="successS">success</string>
+    <string name="failedS">failed</string>
+    <string name="isNullS">is null</string>
+    <string name="isDeadS">is dead</string>
+    <string name="isSetS">is set</string>
+    <string name="exitedS">exited</string>
+
+    <string name="invTitle">Inventory and other menus</string>
+    <string name="mainDescTitle">Description</string>
+    <string name="varDescTitle">Character Information</string>
+
+    <string name="stopGame">stopping game</string>
+    <string name="fileNotFound">File not found.</string>
+    <string name="libRunError">library thread is already running</string>
+    <string name="readFileError">Could not read file.</string>
+    <string name="urlNotComp">URL -URLTEXT- is not UTF-8 compatible.</string>
+    <string name="noBrowser">Could not find browser.</string>
+
+<!--
+    <string name="">Text</string>
+    <string name="">Text</string>
+    <string name="">Text</string>
+    <string name="">Text</string>
+    <string name="">Text</string>
+    <string name="">Text</string>
+    <string name="">Text</string>
+    <string name="">Text</string>
+    <string name="">Text</string>
+    <string name="">Text</string>
+-->
 </resources>
+

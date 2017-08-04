@@ -17,8 +17,20 @@
 <item>20</item>
 <item>22</item>
 </string-array>
-<string-array name="themeName"><item>Темная</item>
-<item>Светлая</item>
-<item>Рабочий стол</item>
+<string-array name="themeName"><item>Dark</item>
+<!-- <item>Светлая</item>
+<item>Рабочий стол</item> -->
+<item>Light</item>
+<item>Desktop</item>
 </string-array>
+    <string-array name="langName">
+        <item>English</item>
+        <item>Russian</item>
+        <item>Chinese</item>
+    </string-array>
+    <string-array name="langValue">
+        <item>en</item>
+        <item>ru</item>
+        <item>zh</item>
+    </string-array>
 </resources>

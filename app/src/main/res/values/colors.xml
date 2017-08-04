@@ -5,5 +5,7 @@
     <color name="title_text">#ffffffff</color>
     <color name="title_background2">#ff000000</color>
     <color name="title_separator">#40ffffff</color>
+    <color name="web_text">#ffffffff</color>
+    <color name="web_background">#ff000000</color>
 
 </resources>
