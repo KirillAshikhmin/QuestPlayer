@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
         android:key="main_screen">
     <PreferenceScreen
@@ -19,5 +19,8 @@
 	</PreferenceScreen>
 	<CheckBoxPreference android:key="sound" android:title="@string/soundTitle" android:summary="@string/soundSum" android:defaultValue="true"/>
     <CheckBoxPreference android:key="gestures" android:title="@string/using_gestures" android:enabled="true" android:summaryOff="@string/gestures_off" android:summaryOn="@string/gestures_sum"/>
-    <EditTextPreference android:key="gamesdir" android:title="Путь к файлам игр" android:enabled="true" android:summary="каталог, где хранятся файлы игр" />
+    <!--    <EditTextPreference android:key="gamesdir" android:title="Путь к файлам игр" android:enabled="true" android:summary="каталог, где хранятся файлы игр" />
+	-->
+	<EditTextPreference android:key="gamesdir" android:title="@string/gamesdirTitle" android:enabled="true" android:summary="Directory where game files are stored" />
+	<ListPreference android:key="lang" android:title="@string/langTitle" android:entries="@array/langName" android:entryValues="@array/langValue" android:defaultValue="0"/>
 </PreferenceScreen> 
