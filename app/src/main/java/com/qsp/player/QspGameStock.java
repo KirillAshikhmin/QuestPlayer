@@ -17,6 +17,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -34,10 +35,15 @@ import android.app.TabActivity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.text.TextUtils;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -124,7 +130,11 @@ public class QspGameStock extends TabActivity {
     String					backPath;
     ArrayList<File> 		qspGamesBrowseList;
     ArrayList<File> 		qspGamesToDeleteList;
-	
+
+	SharedPreferences settings;
+	String userSetLang;
+	String curLang = Locale.getDefault().getLanguage();
+
 	HashMap<String, GameItem> gamesMap;
 	
 	ListView lvAll;
@@ -140,14 +150,25 @@ public class QspGameStock extends TabActivity {
     	Utility.WriteLog("[G]constructor\\");
     	gamesMap = new HashMap<String, GameItem>();
     }
-    
+
+
+	private void setLocale(String lang) {
+
+		Locale myLocale = new Locale(lang);
+		Resources newRes = getResources();
+		DisplayMetrics dm = newRes.getDisplayMetrics();
+		Configuration conf = newRes.getConfiguration();
+		conf.locale = myLocale;
+		newRes.updateConfiguration(conf, dm);
+	}
 
     @Override
 	protected void onCreate(Bundle savedInstanceState) {
     	Utility.WriteLog("[G]onCreate\\");
         // Be sure to call the super class.
         super.onCreate(savedInstanceState);
-        
+		settings = PreferenceManager.getDefaultSharedPreferences(this);
+
         Intent gameStockIntent = getIntent();
         gameIsRunning = gameStockIntent.getBooleanExtra("game_is_running", false);
         
@@ -192,10 +213,24 @@ public class QspGameStock extends TabActivity {
     @Override
     public void onResume()
     {
-    	Utility.WriteLog("[G]onResume\\");
+		Utility.WriteLog("[G]onResume\\");
+
+		//Set the language if it has changed
+		userSetLang = settings.getString("lang","en");
+		Utility.WriteLog("userSetLang = "+userSetLang+", curLang = "+curLang);
+		if (!curLang.equals(userSetLang)) {
+			Utility.WriteLog("GameStock:"+userSetLang+" <> "+curLang+", setting language");
+			curLang = userSetLang;
+			setLocale(userSetLang);
+            settings = PreferenceManager.getDefaultSharedPreferences(this);
+			Utility.WriteLog(curLang+" <- "+userSetLang);
+		} else
+			Utility.WriteLog("GameStock:"+userSetLang+" == "+curLang+", no change");
+
     	super.onResume();
     	isActive = true;
-    	Utility.WriteLog("[G]onResume/");
+
+		Utility.WriteLog("[G]onResume/");
     }
     
     @Override

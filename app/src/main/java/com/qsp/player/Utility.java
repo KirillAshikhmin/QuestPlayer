@@ -524,7 +524,6 @@ Utility.WriteLog("toStr:\n"+str);
 
     public static String GetDefaultPath(Context context) {
 
-Utility.WriteLog("1.");
         //Возвращаем путь к папке с играми.
         if (!android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED))
             return null;
@@ -532,23 +531,19 @@ Utility.WriteLog("1.");
 		// ** original code for checking games directory **
         // File sdDir = Environment.getExternalStorageDirectory();
 		// ** begin replacement code for checking storage directory **
-        Utility.WriteLog("2.");
 
         File sdDir;
 		String strSDCardPath = System.getenv("SECONDARY_STORAGE");
 		if ((null == strSDCardPath) || (strSDCardPath.length() == 0)) {
 			strSDCardPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
-            Utility.WriteLog("3a. "+strSDCardPath);
 		}
         if ((null == strSDCardPath) || (strSDCardPath.length() == 0)) {
             strSDCardPath = Environment.getExternalStorageDirectory().getPath();
-            Utility.WriteLog("3b. "+strSDCardPath);
 
         }
 		// ** end replacement code for checking storage directory **
 
         sdDir = new File (strSDCardPath);
-        Utility.WriteLog("4. "+strSDCardPath);
 
 
 
@@ -558,7 +553,6 @@ Utility.WriteLog("1.");
             String tryFull2 = tryFull1 + "/";
             String noMedia = flashCard + "/qsp/.nomedia";
             File f = new File(tryFull1);
-            Utility.WriteLog("5. "+f.getPath());
             if (f.exists()) {
                 CheckNoMedia(noMedia);
                 return tryFull2;
@@ -584,7 +578,7 @@ Utility.WriteLog("1.");
 
     public static void ShowError(Context context, String message) {
         new AlertDialog.Builder(context)
-                .setTitle("Ошибка")
+                .setTitle(R.string.errorTitle)
                 .setMessage(message)
                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
@@ -696,5 +690,7 @@ Utility.WriteLog("1.");
 
         return newStr;
     }
+
+
 
 }

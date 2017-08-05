@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.gesture.Gesture;
 import android.gesture.GestureOverlayView;
@@ -65,6 +66,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Locale;
+import java.util.StringTokenizer;
 import java.util.Vector;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
@@ -105,6 +108,9 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private boolean backAction = false;
     private boolean bigImage;
     private boolean imageDensity;
+    private String userSetLang;
+    private String curLang = Locale.getDefault().getLanguage();
+
     private WebView vars_desc;
     private WebView main_desc; // ** changed from TextView
 
@@ -116,6 +122,15 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private QSPWebViewClient main_descClient;
     private QSPWebViewClient vars_descClient;
 
+    private void setLocale(String lang) {
+
+        Locale myLocale = new Locale(lang);
+        Resources newRes = getResources();
+        DisplayMetrics dm = newRes.getDisplayMetrics();
+        Configuration conf = newRes.getConfiguration();
+        conf.locale = myLocale;
+        newRes.updateConfiguration(conf, dm);
+    }
 
     public class QSPWebViewClient extends WebViewClient {
 
@@ -143,7 +158,14 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                         if (libraryThreadIsRunning) return;
                         libraryThreadIsRunning = true;
 
-                        boolean bExec = QSPExecString(code, true);
+                        //Exec commands with special characters in WebView must be
+                        //changed back to special characters
+                        String tempCode = "";
+                        try {
+                            tempCode = URLDecoder.decode(code,"UTF-8");
+                        } catch (UnsupportedEncodingException e) { }
+
+                        boolean bExec = QSPExecString(tempCode, true);
                         CheckQspResult(bExec, "OnUrlClicked: QSPExecString");
 
                         libraryThreadIsRunning = false;
@@ -295,6 +317,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
         res = getResources();
+        userSetLang = settings.getString("lang","en");
 
         main_desc = (WebView) findViewById(R.id.main_desc);
         vars_desc = (WebView) findViewById(R.id.vars_desc);
@@ -382,6 +405,19 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         bigImage = settings.getBoolean("big_image", false);
         imageDensity = settings.getBoolean("image_density", true);
         highlightActs = settings.getBoolean("highlight_acts", true);
+
+        //Set the language if it has changed
+        userSetLang = settings.getString("lang","en");
+        Utility.WriteLog("userSetLang = "+userSetLang+", curLang = "+curLang);
+        if (!curLang.equals(userSetLang)) {
+            Utility.WriteLog(userSetLang+" <> "+curLang+", setting language");
+            curLang = userSetLang;
+            setLocale(userSetLang);
+            Utility.WriteLog(curLang+" <- "+userSetLang);
+        } else
+            Utility.WriteLog(userSetLang+" == "+curLang+", no change");
+
+
         ApplyViewSettings();
 
         if (sdcard_mounted && gameIsRunning && !waitForImageBox) {
@@ -581,7 +617,6 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         for (int i = 0; i < SLOTS_MAX; i++) {
             String title = String.valueOf(i + 1).concat(": ");
             String Slotname = curSaveTitle + String.valueOf(i + 1).concat(".sav");
-Utility.WriteLog(Slotname);
 
             File checkSlot = new File(saveGameDir.concat(Slotname));
             if (checkSlot.exists()) {
@@ -1462,8 +1497,18 @@ Utility.WriteLog("sound test");
                     String newPage = txtMainDesc;
                     //Change txMainDesc to UTF-8 encoding if possible
                     try {
+                        Utility.WriteLog("Before change:\n"+newPage);
                         newPage = Utility.encodeExec(newPage);
+                        Utility.WriteLog("After encodeExec():\n"+newPage);
+
+                        //Decode the URL, but be sure to remove any % signs before doing so
+                        //as these can cause crashes. Change back after URLDecoder.
+                        newPage = newPage.replace("%","-PERCENTSIGN-");
                         newPage = URLDecoder.decode(newPage,"UTF-8");
+                        newPage = newPage.replace("-PERCENTSIGN-","%");
+
+
+                        Utility.WriteLog("After URLDecoder():\n"+newPage);
                     }
                     catch (UnsupportedEncodingException e) {
                         Utility.ShowError(uiContext, getString(R.string.urlNotComp).replace("-URLTEXT-",txtMainDesc)); }
@@ -2091,4 +2136,5 @@ Utility.WriteLog("OnItemClickListener()");
     static {
         System.loadLibrary("ndkqsp");
     }
+
 }
