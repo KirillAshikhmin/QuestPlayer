@@ -9,6 +9,7 @@ TO DO:
 1. Give player option to change max height of images relative to screen size
 2. Auto-play videos on page
 3. Fix table formatting
+4. Finish translations of strings.xml and prefs.xml files
 
 Version 1.5.0 changes:
 1. Multi-language support added (partial Russian translation, Chinese translation soon)
