@@ -32,7 +32,8 @@
 	<string name="optdesc_image_density">Stretch the image depending on the screen density</string>
     <string name="gamesdirTitle">Path to game files</string>
     <string name="gamesdirSum">Directory where game files are stored</string>
-    <string name="langTitle">Language</string>
+    <string name="langTitle">Language (please restart app after changing)</string>
+    <string name="errorTitle">Error</string>
 
 	<!-- Меню Menu -->
     <string name="menu_gamestock">Game Stock</string>
@@ -53,8 +54,6 @@
 	
 	<!-- Прочее Other -->	
     <string name="app_name">Quest Player</string>
-    <string name="market_details_url">market://details?id=com.qsp.player</string>
-	<string name="translator">illume</string>
 
     <!-- Прочее Other Part 2: QspGameStock -->
     <string name="gamelistLoadError">The game list could not be loaded. Check your internet connection.</string>
@@ -64,29 +63,21 @@
     <string name="cacheCreateError">Cannot create cache folder.</string>
     <string name="dlWaiting">Downloading...</string>
     <string name="dlGameError">Error while trying to download file</string>
-    <string name="cantDlGameError">Could not download game -GAMENAME-.</string>
     <string name="genGameLoadError">Error loading game</string>
-    <string name="cantUnzipGameError">Unable to unzip the game -GAMENAME-.</string>
     <string name="gameDlSuccess">Game downloaded</string>
-    <string name="gameUploadSuccess">Game -GAMENAME- successfully uploaded.</string>
     <string name="unpackMsg">Unpacked...</string>
     <string name="decompMsg">Decompress</string>
-    <string name="unzipMsg">Unzipping -FILENAME-</string>
     <string name="unzipMsgShort">unzip</string>
     <string name="gameInfoFileCreateError">Creating game info file failed.</string>
     <string name="gameInfoFileWriteError">Writing to game info file failed.</string>
     <string name="noCardAccess">No access to the flash card.</string>
     <string name="gameInfoFileReadError">Reading game info file failed.</string>
-    <string name="parseGameInfoXMLError">Exception occurred while trying to parse game info, XML corrupted at line -LINENUM- column -COLNUM-.</string>
     <string name="parseGameInfoUnkError">Exception occurred while trying to parse game info, unknown error.</string>
     <string name="gamelistLoadWait">Loading a list of games</string>
     <string name="gamelistLoadExcept">Exception occurred while trying to load game list.</string>
-    <string name="pathNotFound">Could not find path: -PATHNAME-</string>
     <string name="gameFileSelect">Select a game file</string>
     <string name="gameFileDeleteTitle">Delete game</string>
-    <string name="gameFileDeleteQuery">Delete game -GAMENAME-?</string>
     <string name="gameFileDeleteSuccess">The game has been deleted.</string>
-    <string name="gameAuthorText">Author: -AUTHOR-</string>
 
     <!-- Прочее Other Part 3: QspImageBox -->
     <string name="scaleImgHelp1">Now you can scale the image. To close the window, click again on this button.</string>
@@ -108,7 +99,39 @@
     <string name="SSF_libRun">SaveSlot: failed, library is already running.</string>
     <string name="SSF_noCreate">SaveSlot: failed, cannot create save data.</string>
 
-<!-- These all refer to a single subroutine in the format "SUBROUTINE: TEXT"-->
+    <string name="invTitle">Inventory</string>
+    <string name="mainDescTitle">Description</string>
+    <string name="varDescTitle">Character</string>
+
+    <string name="stopGame">stopping game</string>
+    <string name="fileNotFound">File not found.</string>
+    <string name="libRunError">library thread is already running</string>
+    <string name="readFileError">Could not read file.</string>
+    <string name="noBrowser">Could not find browser.</string>
+
+    <string name="gameAuthorText">Author: -AUTHOR-</string>
+    <string name="cantDlGameError">Could not download game -GAMENAME-.</string>
+    <string name="cantUnzipGameError">Unable to unzip the game -GAMENAME-.</string>
+    <string name="gameUploadSuccess">Game -GAMENAME- successfully uploaded.</string>
+    <string name="unzipMsg">Unzipping -FILENAME-</string>
+    <string name="parseGameInfoXMLError">Exception occurred while trying to parse game info, XML corrupted at line -LINENUM- column -COLNUM-.</string>
+    <string name="pathNotFound">Could not find path: -PATHNAME-</string>
+    <string name="gameFileDeleteQuery">Delete game -GAMENAME-?</string>
+    <string name="urlNotComp">URL -URLTEXT- is not UTF-8 compatible.</string>
+
+    <string name="loadingURL">Loading...</string>
+    <string name="langSummary">Please restart after changing</string>
+
+
+    <!-- ***************************************** -->
+    <!-- WARNING: DO NOT TRANSLATE BELOW THIS LINE -->
+    <!-- ***************************************** -->
+
+    <string name="defaultLang">en</string>
+    <string name="market_details_url">market://details?id=com.qsp.player</string>
+    <string name="translator">illume</string>
+
+    <!-- These all write a log in the format "SUBROUTINE: nameS"-->
     <string name="enterS">enter</string>
     <string name="successS">success</string>
     <string name="failedS">failed</string>
@@ -117,28 +140,9 @@
     <string name="isSetS">is set</string>
     <string name="exitedS">exited</string>
 
-    <string name="invTitle">Inventory and other menus</string>
-    <string name="mainDescTitle">Description</string>
-    <string name="varDescTitle">Character Information</string>
+    <!-- ***************************************** -->
+    <!-- ******** END UNTRANSLATE REGION ********* -->
+    <!-- ***************************************** -->
 
-    <string name="stopGame">stopping game</string>
-    <string name="fileNotFound">File not found.</string>
-    <string name="libRunError">library thread is already running</string>
-    <string name="readFileError">Could not read file.</string>
-    <string name="urlNotComp">URL -URLTEXT- is not UTF-8 compatible.</string>
-    <string name="noBrowser">Could not find browser.</string>
-
-<!--
-    <string name="">Text</string>
-    <string name="">Text</string>
-    <string name="">Text</string>
-    <string name="">Text</string>
-    <string name="">Text</string>
-    <string name="">Text</string>
-    <string name="">Text</string>
-    <string name="">Text</string>
-    <string name="">Text</string>
-    <string name="">Text</string>
--->
 </resources>
 
