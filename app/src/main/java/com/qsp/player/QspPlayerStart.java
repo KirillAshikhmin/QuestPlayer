@@ -117,6 +117,13 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private int maxW = 0;
     private int maxH = 0;
     private float playerHeightLimit = 0;
+    public static String freshPageURL = "<html><head>"
+            + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+            + "<style type=\"text/css\">body{margin: 0; padding: 0; color: white; background-color: black;}"
+            + "</style></head>"
+            + "<body>"
+            + "REPLACETEXT"
+            + "</body></html>";
 
     //used to detect and parse "exec:" commands
     private QSPWebViewClient main_descClient;
@@ -638,10 +645,10 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         if (files.length>0) {
             for (File file : files) {
                 String fname = file.getName();
-                fname = fname.substring(0,fname.length()-4);
+                fname = curSaveTitle + fname.substring(fname.length()-5,fname.length()-4);
                 boolean isSlot = false;
-                for (int i = 0; i <= SLOTS_MAX; i++) {
-                    if (fname.toString().equals(String.valueOf(i))) {
+                for (int i = 0; i <= SLOTS_MAX+1; i++) {
+                    if (fname.equals(curSaveTitle+String.valueOf(i))) {
                         isSlot=true;
                         break;
                     }
@@ -1123,6 +1130,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     }
 
     private void runGame(String fileName) {
+Utility.WriteLog("runGame\\");
         //Контекст UI
         File f = new File(fileName);
         if (!f.exists()) {
@@ -1140,19 +1148,22 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             return;
         }
 
+        Utility.WriteLog("1.");
         final boolean inited = qspInited;
         qspInited = true;
         final String gameFileName = fileName;
         curGameFile = gameFileName;
         curGameDir = gameFileName.substring(0, gameFileName.lastIndexOf(File.separator, gameFileName.length() - 1) + 1);
+        Utility.WriteLog("2.");
         curSaveTitle = Utility.safetyString(gameFileName);
+        Utility.WriteLog("3.");
 
 		saveGameDir = uiContext.getFilesDir().getAbsolutePath();
-
         int padding = main_desc.getPaddingLeft() + main_desc.getPaddingRight();
         DisplayMetrics QSP_displayMetrics = getResources().getDisplayMetrics();
         playerHeightLimit = new Float(0.5);
 
+        Utility.WriteLog("4.");
 
         Point size = new Point();
         Display myDisplay = getWindowManager().getDefaultDisplay();
@@ -1181,8 +1192,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         lv.setAdapter(new QSPListAdapter(uiContext, R.layout.obj_item, emptyItems));
 //        main_desc.setText("");
 //        vars_desc.setText("");
-        main_desc.loadDataWithBaseURL("","<html></html>","text/html","utf-8","");
-        vars_desc.loadDataWithBaseURL("","<html></html>","text/html","utf-8","");
+        main_desc.loadDataWithBaseURL("",freshPageURL.replace("REPLACE",""),"text/html","utf-8","");
+        vars_desc.loadDataWithBaseURL("",freshPageURL.replace("REPLACE",""),"text/html","utf-8","");
         main_desc.getSettings().setLoadsImagesAutomatically(true);
         vars_desc.getSettings().setLoadsImagesAutomatically(true);
         main_desc.getSettings().setAllowFileAccess(true);
@@ -1284,6 +1295,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 }
             }
         });
+        Utility.WriteLog("runGame/");
     }
 
     private void StopGame(boolean restart) {
@@ -1496,35 +1508,42 @@ Utility.WriteLog("sound test");
                 public void run() {
                     String newPage = txtMainDesc;
                     //Change txMainDesc to UTF-8 encoding if possible
-                    try {
-                        Utility.WriteLog("Before change:\n"+newPage);
-                        newPage = Utility.encodeExec(newPage);
-                        Utility.WriteLog("After encodeExec():\n"+newPage);
+                    if (newPage == null || newPage.equals(""))
+                        main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", ""), "text/html", "UTF-8", "");
+                    else {
+                        try {
+                            newPage = Utility.replaceHrefPlusSymbols(newPage);
+                            Utility.WriteLog("Before change:\n" + newPage);
+                            newPage = Utility.encodeExec(newPage);
+                            Utility.WriteLog("After encodeExec():\n" + newPage);
 
-                        //Decode the URL, but be sure to remove any % signs before doing so
-                        //as these can cause crashes. Change back after URLDecoder.
-                        newPage = newPage.replace("%","-PERCENTSIGN-");
-                        newPage = URLDecoder.decode(newPage,"UTF-8");
-                        newPage = newPage.replace("-PERCENTSIGN-","%");
+                            //Decode the URL, but be sure to remove any % signs before doing so
+                            //as these can cause crashes. Change back after URLDecoder.
+                            newPage = newPage.replace("%", "-PERCENTSIGN-");
+                            newPage = URLDecoder.decode(newPage, "UTF-8");
+                            newPage = newPage.replace("-PERCENTSIGN-", "%");
 
+                            //Return the visible (+) symbols to their normal form
+                            newPage = newPage.replace("QSPPLUSSYMBOLCODE","+");
 
-                        Utility.WriteLog("After URLDecoder():\n"+newPage);
+                            Utility.WriteLog("After URLDecoder():\n" + newPage);
+                        } catch (UnsupportedEncodingException e) {
+                            Utility.ShowError(uiContext, getString(R.string.urlNotComp).replace("-URLTEXT-", txtMainDesc));
+                        }
+
+                        if (html) {
+                            main_desc.getSettings().setJavaScriptEnabled(false);
+
+                            main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
+
+                            newPage = Utility.QspStrToWebView(newPage, curGameDir, maxW, maxH, settings.getBoolean("sound", true));
+                            main_desc.loadDataWithBaseURL("", newPage, "text/html", "UTF-8", "");
+
+                        } else {
+                            main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
+                            main_desc.loadDataWithBaseURL("", Utility.QspStrToStr(newPage), "text/html", "UTF-8", "");
+                        }
                     }
-                    catch (UnsupportedEncodingException e) {
-                        Utility.ShowError(uiContext, getString(R.string.urlNotComp).replace("-URLTEXT-",txtMainDesc)); }
-
-                    if (html) {
-                        main_desc.getSettings().setJavaScriptEnabled(false);
-                        //main_desc.setText(Utility.AttachGifCallback(Utility.QspStrToHtml(txtMainDesc, imgGetterDesc, curGameDir), QspPlayerStart.this));
-                        //main_desc.setMovementMethod(QspLinkMovementMethod.getInstance());
-
-                        newPage = Utility.QspStrToWebView(newPage,curGameDir,maxW,maxH,settings.getBoolean("sound",true));
-
-                        main_desc.loadDataWithBaseURL("",newPage,"text/html","UTF-8","");
-
-                    } else
-                        //main_desc.setText(Utility.QspStrToStr(txtMainDesc));
-                        main_desc.loadDataWithBaseURL("",Utility.QspStrToStr(newPage),"text/html","UTF-8","");
                 }
             });
         }

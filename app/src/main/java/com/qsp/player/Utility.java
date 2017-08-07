@@ -136,14 +136,16 @@ public class Utility {
 
             str = fixVideosLinks(str,srcDir,maxW,maxH,audioIsOn);
 
-            str = "<html><head>"
+
+            str = QspPlayerStart.freshPageURL.replace("REPLACETEXT", str);
+/*            str = "<html><head>"
                     + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
                     + "<style type=\"text/css\">body{margin: 0; padding: 0; color: white; background-color: black;}"
                     + "</style></head>"
                     + "<body>"
                     + str
                     + "</body></html>";
-
+*/
 Utility.WriteLog("toWebView:\n"+ str);
 
             return str;
@@ -198,41 +200,93 @@ Utility.WriteLog("toWebView:\n"+ str);
         return newStr;
     }
 
+    //This encodes all (+) symbols found in Href tags to (%2b) for URLDecoder; all other (+)
+    //symbols are changed to QSPPLUSSYMBOLCODE for later replacement
+    public static String replaceHrefPlusSymbols(String str) {
+        String curStr = "";
+        String newStr = "";
+
+        if (!str.toLowerCase().contains("href") || !str.contains("<") || !str.contains(">")) return str;
+
+        int startStr = 0;
+        int endStr = 0;
+
+        String remainingStr = str;
+
+        do {
+            //Mark the next (<)
+            endStr = remainingStr.indexOf("<");
+            //if (<) is not at the end of remainingStr, encode all (+), save up to (<) and then
+            //delete it from remainingStr
+            if (endStr < remainingStr.length()) {
+                if (endStr > 0) newStr += remainingStr.substring(0, endStr).replace("+","QSPPLUSSYMBOLCODE");
+                remainingStr = remainingStr.substring(endStr);
+            }
+            //if (<) is at the end, just add the rest of remainingStr to newStr and exit
+            else break;
+
+            //Same as with (<), but mark to (>) and save (<...>) as curStr for processing
+            if (remainingStr.contains(">")) {
+                endStr = remainingStr.indexOf(">");
+                curStr = remainingStr.substring(0,endStr);
+                remainingStr = remainingStr.substring(endStr);
+            }
+            else break;
+
+            //Replace all the (+) symbols within the (<...href...>) block with (%2b) then
+            //add the processed curStr to newStr
+            if (curStr.contains("href") && curStr.contains("+")) {
+                newStr += curStr.replace("+","%2b");
+            }
+            //if (href) is not present in (<...>), add curStr to newStr and continue
+            else newStr += curStr;
+
+        } while (remainingStr.toLowerCase().contains("<"));
+
+        newStr += remainingStr.replace("+","QSPPLUSSYMBOLCODE");
+        return newStr;
+    }
+
     //This function corrects all "exec:" commands so that the '+' is not lost when the URL is
     //loaded into WebView but instead becomes "%2b"
     public static String encodeExec(String str) {
         boolean hasExec = str.contains("exec:");
         if (!hasExec) return str;
 
-        String endOfStr = str;
+        String endOfExecStr = str;
         String newStr = "";
         String execStr;
+        int execIndex;
+        int quoteIndex;
 
         do {
-            int execIndex = endOfStr.toLowerCase().indexOf("exec:");
-            newStr += endOfStr.substring(0, execIndex);
+            execIndex = endOfExecStr.toLowerCase().indexOf("exec:");
+            newStr += addSpacesWithChar(replaceHrefPlusSymbols(endOfExecStr.substring(0, execIndex)),"&",true,true);
 
-            int quoteIndex = endOfStr.indexOf("\"");
+
+            quoteIndex = endOfExecStr.indexOf("\"");
 
             //execStr includes 'exec:' to the next '"' or to the end of endOfStr
             //endOfStr starts after execStr or becomes ""
             if (quoteIndex > execIndex) {
-                execStr = endOfStr.substring(execIndex, quoteIndex);
-                endOfStr = endOfStr.substring(quoteIndex);
+                execStr = endOfExecStr.substring(execIndex, quoteIndex);
+                endOfExecStr = endOfExecStr.substring(quoteIndex);
             }
             else {
-                execStr = endOfStr.substring(execIndex);
-                endOfStr = "";
+                execStr = endOfExecStr.substring(execIndex);
+                endOfExecStr = "";
             }
 
             //Replace all '+' with the URL-codable '+' and attach to newStr
-            newStr += addSpacesWithChar(execStr.replace("+","%2b"),"&",true,true);
 
-            hasExec = endOfStr.contains("exec:");
+            newStr += addSpacesWithChar(replaceHrefPlusSymbols(execStr),"&",true,true);
+//            newStr += addSpacesWithChar(execStr.replace("+","%2b"),"&",true,true);
+
+            hasExec = endOfExecStr.contains("exec:");
         } while (hasExec);
         //Utility.WriteLog("testend");
 
-        newStr += endOfStr;
+        newStr += endOfExecStr;
         return newStr;
     }
 
@@ -320,7 +374,7 @@ Utility.WriteLog("toWebView:\n"+ str);
                 Utility.WriteLog("maxW = "+maxW);
                 Utility.WriteLog("maxH = "+maxH);*/
                 if (isNullOrEmpty(widthS) && isNullOrEmpty(heightS)) {
-                    newStr += curStr.replace(">","style=\"width: auto; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"; \">") + endOfStr;
+                    newStr += curStr.replace(">","style=\"width: 100%; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"; \">") + endOfStr;
                     continue;
                 }
 
@@ -355,7 +409,7 @@ Utility.WriteLog("toWebView:\n"+ str);
                 else
                     curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREwidth=\"%s",newSrc,w));
                 curStr = curStr.replace("PUTSPACEHERE"," ");
-                curStr = curStr.replace(">"," style=\"width: auto; max-width: "+maxW+"; height: auto; max-height: "+maxH+"; \">");
+                curStr = curStr.replace(">"," style=\"width: 100%; max-width: "+maxW+"; height: auto; max-height: "+maxH+"; \">");
 //                curStr = curStr.replace(">","style=\"width: auto; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"px; \">");
                 newStr += curStr + endOfStr;
 //                newStr += curStr.replace(newSrc, String.format("%s\" width=%s height=%s",newSrc,w,h)) + endOfStr;
@@ -670,20 +724,28 @@ Utility.WriteLog("toStr:\n"+str);
 
     //Remove all non-alphanumeric characters ("_" acceptable) from String for use as a file name
     public static String safetyString(String target) {
+        if (isNullOrEmpty(target)) return "GameX";
+
         int i = 0;
         String newStr = target;
 
-        if (target.substring(i).contains("/"))
-        do {
-            i = newStr.substring(i).indexOf("/");
-            newStr = newStr.substring(i);
-            i++;
-        } while (newStr.substring(i).contains("/"));
+        Utility.WriteLog("1ss. "+newStr);
+        if ( newStr.contains("/") && (i < newStr.length()) )
+            do {
+                Utility.WriteLog("2ssA. "+i+" -> "+newStr);
+                i = newStr.substring(i).indexOf("/")+1;
+                Utility.WriteLog("2ssB. "+i+" -> "+newStr);
+                newStr = newStr.substring(i);
+                Utility.WriteLog("2ssC. "+i+" -> "+newStr);
+            } while ( newStr.contains("/") && (i < newStr.length()) );
+
+        Utility.WriteLog("3ss.");
 
         newStr = newStr.replaceAll("[^a-zA-Z0-9_.]","");
+        Utility.WriteLog("4ss.");
 
         if (newStr == "") {
-            newStr = "Game" + target.length();
+            newStr = "GameX" + target.length();
             Utility.WriteLog("\""+ target + "\" could not be parsed. Using \""+newStr+"\" for save file prefix.");
         }
         Utility.WriteLog("saveFile = "+newStr);
