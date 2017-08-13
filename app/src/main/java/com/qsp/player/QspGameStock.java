@@ -152,9 +152,30 @@ public class QspGameStock extends TabActivity {
     }
 
 
-	private void setLocale(String lang) {
+	private void setGSLocale(String lang) {
+		Locale myLocale;
+		Utility.WriteLog("Base Language = "+lang);
 
-		Locale myLocale = new Locale(lang);
+        //if TAIWAN
+		if (lang.equals("zh-rTW")) {
+			myLocale = Locale.TAIWAN;
+			Utility.WriteLog("Language = TAIWAN, "+lang);
+		}
+		//if CHINA
+		else if (lang.equals("zh-rCN")) {
+            myLocale = Locale.CHINA;
+            Utility.WriteLog("Language = CHINA, "+lang);
+        }
+        //if lang doesn't contain a region code
+        else if (!lang.contains("-r"))
+            myLocale = new Locale(lang);
+        //if lang is not TAIWAN, CHINA, or short, use country+region
+        else {
+			String myRegion = lang.substring(lang.indexOf("-r")+2);
+			String myLang = lang.substring(0,2);
+			Utility.WriteLog("Language = "+myLang+", Region = "+myRegion);
+			myLocale = new Locale(lang,myRegion);
+		}
 		Resources newRes = getResources();
 		DisplayMetrics dm = newRes.getDisplayMetrics();
 		Configuration conf = newRes.getConfiguration();
@@ -221,7 +242,7 @@ public class QspGameStock extends TabActivity {
 		if (!curLang.equals(userSetLang)) {
 			Utility.WriteLog("GameStock:"+userSetLang+" <> "+curLang+", setting language");
 			curLang = userSetLang;
-			setLocale(userSetLang);
+			setGSLocale(userSetLang);
             settings = PreferenceManager.getDefaultSharedPreferences(this);
 			Utility.WriteLog(curLang+" <- "+userSetLang);
 		} else

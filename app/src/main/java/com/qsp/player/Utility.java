@@ -24,6 +24,7 @@ import android.net.NetworkInfo;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.support.annotation.RequiresPermission;
+import android.support.v4.content.PermissionChecker;
 import android.text.Editable;
 import android.text.Html;
 import android.text.Html.ImageGetter;
@@ -366,15 +367,9 @@ Utility.WriteLog("toWebView:\n"+ str);
                     }
                 }
 
-                // Lock the image to the screen width
-/*                int paddingW = Math.round(16 * (Resources.getSystem().getDisplayMetrics().xdpi / Resources.getSystem().getDisplayMetrics().DENSITY_DEFAULT));
-                int paddingH = Math.round(16 * (Resources.getSystem().getDisplayMetrics().ydpi / Resources.getSystem().getDisplayMetrics().DENSITY_DEFAULT));
-                int maxW = Resources.getSystem().getDisplayMetrics().widthPixels - paddingW;
-                int maxH = Resources.getSystem().getDisplayMetrics().heightPixels - paddingH;
-                Utility.WriteLog("maxW = "+maxW);
-                Utility.WriteLog("maxH = "+maxH);*/
                 if (isNullOrEmpty(widthS) && isNullOrEmpty(heightS)) {
-                    newStr += curStr.replace(">","style=\"width: 100%; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"; \">") + endOfStr;
+//                    newStr += curStr.replace(">","style=\"width: 100%; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"; \">") + endOfStr;
+                    newStr += curStr.replace(">","style=\"max-width: "+maxW+"px; max-height: "+maxH+"; \">") + endOfStr;
                     continue;
                 }
 
@@ -401,18 +396,30 @@ Utility.WriteLog("toWebView:\n"+ str);
                     h = maxH;
                 }
 
+                //if the image has both width and height values, bound by width if height is greater
+                //or by height if width is greater; otherwise bound by given value
+                if ((w > 0) && (h > 0)) {
+                    if (w >= h)
+//                        curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREwidth=\"%s\"PUTSPACEHEREheight=\"%s", newSrc, w, h));
+                        curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREheight=\"%s", newSrc, h));
+                    else
+                        curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREwidth=\"%s", newSrc, w));
+                }
+                else if (w < 0) {
+                    curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREheight=\"%s", newSrc, h));
+                }
+                else {
+                    curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREwidth=\"%s", newSrc, w));
+                }
 
-                if ((w > 0) && (h > 0))
-                    curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREwidth=\"%s\"PUTSPACEHEREheight=\"%s",newSrc,w,h));
-                else if (w < 0)
-                    curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREheight=\"%s",newSrc,h));
-                else
-                    curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREwidth=\"%s",newSrc,w));
+
                 curStr = curStr.replace("PUTSPACEHERE"," ");
-                curStr = curStr.replace(">"," style=\"width: 100%; max-width: "+maxW+"; height: auto; max-height: "+maxH+"; \">");
 //                curStr = curStr.replace(">","style=\"width: auto; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"px; \">");
+                curStr = curStr.replace(">","style=\"width: auto; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"px; \">");
                 newStr += curStr + endOfStr;
 //                newStr += curStr.replace(newSrc, String.format("%s\" width=%s height=%s",newSrc,w,h)) + endOfStr;
+
+                Utility.WriteLog("image: "+curStr);
 
 
             } catch (Exception e) {
@@ -729,30 +736,24 @@ Utility.WriteLog("toStr:\n"+str);
         int i = 0;
         String newStr = target;
 
-        Utility.WriteLog("1ss. "+newStr);
         if ( newStr.contains("/") && (i < newStr.length()) )
             do {
-                Utility.WriteLog("2ssA. "+i+" -> "+newStr);
                 i = newStr.substring(i).indexOf("/")+1;
-                Utility.WriteLog("2ssB. "+i+" -> "+newStr);
                 newStr = newStr.substring(i);
-                Utility.WriteLog("2ssC. "+i+" -> "+newStr);
             } while ( newStr.contains("/") && (i < newStr.length()) );
 
-        Utility.WriteLog("3ss.");
-
+        //Make the string alphanumeric except for "_" and "."
         newStr = newStr.replaceAll("[^a-zA-Z0-9_.]","");
-        Utility.WriteLog("4ss.");
+        //Remove the ".qsp" extension at the end
+        newStr = newStr.replace(".qsp","");
 
         if (newStr == "") {
             newStr = "GameX" + target.length();
             Utility.WriteLog("\""+ target + "\" could not be parsed. Using \""+newStr+"\" for save file prefix.");
         }
-        Utility.WriteLog("saveFile = "+newStr);
 
         return newStr;
     }
-
 
 
 }

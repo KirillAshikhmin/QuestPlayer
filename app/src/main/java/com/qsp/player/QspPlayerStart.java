@@ -7,25 +7,31 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.gesture.Gesture;
 import android.gesture.GestureOverlayView;
 import android.gesture.GestureStroke;
 import android.gesture.GestureOverlayView.OnGesturePerformedListener;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.preference.PreferenceManager;
+import android.support.v4.content.PermissionChecker;
 import android.text.format.DateFormat;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.Gravity;
@@ -72,6 +78,7 @@ import java.util.Vector;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static android.content.ContentValues.TAG;
 import static android.webkit.WebView.HitTestResult.IMAGE_TYPE;
 
 
@@ -117,21 +124,67 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private int maxW = 0;
     private int maxH = 0;
     private float playerHeightLimit = 0;
+
+    private static String defaultQSPtextColor = "#ffffff";
+    private static String defaultQSPbackColor = "#000000";
+    private static String defaultQSPlinkColor = "#0000ee";
+    private static String defaultQSPactsColor = "#ffffd7";
+    private static String defaultQSPfontSize = "16";
+    private static String defaultQSPfontStyle = "DEFAULT";
+
+    private static String QSPtextColor = defaultQSPtextColor;
+    private static String QSPbackColor = defaultQSPbackColor;
+    private static String QSPlinkColor = defaultQSPlinkColor;
+    private static String QSPactsColor = defaultQSPactsColor;
+    private static String QSPfontSize = defaultQSPfontSize;
+    private static String QSPfontStyle = defaultQSPfontStyle;
+
+    public static String freshPageHeadTemplate = "<html><head>"
+            + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+            + "<style type=\"text/css\">"
+            + "body{margin: 0; padding: 0; color: QSPTEXTCOLOR; background-color: QSPBACKCOLOR;"
+            + "font-size: QSPFONTSIZE; font-family: QSPFONTSTYLE; unusedtag=\"\"}"
+            + "href{color: QSPLINKCOLOR}"
+            + "</style></head>";
+    public static String freshPageBodyTemplate = "<body>REPLACETEXT</body></html>";
+    public static String curHtmlHead = freshPageHeadTemplate;
+
     public static String freshPageURL = "<html><head>"
             + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-            + "<style type=\"text/css\">body{margin: 0; padding: 0; color: white; background-color: black;}"
+            + "<style type=\"text/css\">"
+            + "body{margin: 0; padding: 0; color: " + QSPtextColor + "; background-color: " + QSPbackColor + "; "
+            + "font-size: " + QSPfontSize + "; font-family: " + QSPfontStyle + "; unusedtag=\"\"}"
             + "</style></head>"
-            + "<body>"
-            + "REPLACETEXT"
-            + "</body></html>";
+            + freshPageBodyTemplate;
 
     //used to detect and parse "exec:" commands
     private QSPWebViewClient main_descClient;
     private QSPWebViewClient vars_descClient;
 
-    private void setLocale(String lang) {
+    private void setQSPLocale (String lang) {
+        Locale myLocale;
+        Utility.WriteLog("Base Language = "+lang);
 
-        Locale myLocale = new Locale(lang);
+        //if TAIWAN
+        if (lang.equals("zh-rTW")) {
+            myLocale = Locale.TAIWAN;
+            Utility.WriteLog("Language = TAIWAN, "+lang);
+        }
+        //if CHINA
+        else if (lang.equals("zh-rCN")) {
+            myLocale = Locale.CHINA;
+            Utility.WriteLog("Language = CHINA, "+lang);
+        }
+        //if lang doesn't contain a region code
+        else if (!lang.contains("-r"))
+            myLocale = new Locale(lang);
+            //if lang is not TAIWAN, CHINA, or short, use country+region
+        else {
+            String myRegion = lang.substring(lang.indexOf("-r")+2);
+            String myLang = lang.substring(0,2);
+            Utility.WriteLog("Language = "+myLang+", Region = "+myRegion);
+            myLocale = new Locale(lang,myRegion);
+        }
         Resources newRes = getResources();
         DisplayMetrics dm = newRes.getDisplayMetrics();
         Configuration conf = newRes.getConfiguration();
@@ -238,10 +291,10 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             }
             QSPItem o = items[position];
             if (o != null) {
-                int textColor = settings.getInt("textColor", 0xffffffff);
+                int textColor = Color.parseColor(QSPtextColor);
                 if (id == R.layout.act_item) {
                     if (highlightActs)
-                        textColor = settings.getInt("actsColor", 0xffffd700);
+                        textColor = Color.parseColor(QSPactsColor);
                     TextView nv = (TextView) v.findViewById(R.id.item_number);
                     nv.setVisibility(hotKeys ? View.VISIBLE : View.GONE);
                     if (hotKeys) {
@@ -334,6 +387,15 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         main_desc.setWebViewClient(main_descClient);
         vars_desc.setWebViewClient(vars_descClient);
 
+        freshPageURL = freshPageHeadTemplate + freshPageBodyTemplate;
+
+        defaultQSPtextColor = res.getString(R.string.deftextColor);
+        defaultQSPbackColor = res.getString(R.string.defbackColor);
+        defaultQSPlinkColor = res.getString(R.string.deflinkColor);
+        defaultQSPactsColor = res.getString(R.string.defactsColor);
+        defaultQSPfontSize = res.getString(R.string.deffontsize);
+        //defaultQSPfontStyle = res.getString(R.string.deftypeface);
+
         //used to detect LongClicks on images in main_desc or vars_desc
         main_desc.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
@@ -419,13 +481,32 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         if (!curLang.equals(userSetLang)) {
             Utility.WriteLog(userSetLang+" <> "+curLang+", setting language");
             curLang = userSetLang;
-            setLocale(userSetLang);
+            setQSPLocale(userSetLang);
             Utility.WriteLog(curLang+" <- "+userSetLang);
         } else
             Utility.WriteLog(userSetLang+" == "+curLang+", no change");
 
-
+        //Reset to default display values if requested
+        if (settings.getBoolean("resetAll",false)) {
+Utility.WriteLog("resetAll? "+settings.getBoolean("resetAll",false));
+            QSPtextColor = defaultQSPtextColor;
+            QSPbackColor = defaultQSPbackColor;
+            QSPlinkColor = defaultQSPlinkColor;
+            QSPfontSize = defaultQSPfontSize;
+            QSPfontStyle = defaultQSPfontStyle;
+            SharedPreferences.Editor ed = settings.edit();
+            ed.putBoolean("resetAll",false);
+            ed.putInt("textColor",Color.parseColor(defaultQSPtextColor));
+            ed.putInt("backColor",Color.parseColor(defaultQSPbackColor));
+            ed.putInt("actsColor",Color.parseColor(defaultQSPactsColor));
+            ed.putInt("linkcolor",Color.parseColor(defaultQSPlinkColor));
+            ed.putString("fontsize",defaultQSPfontSize);
+            ed.putString("typeface",res.getString(R.string.deftypeface));
+            ed.apply();
+        }
+        //Here is where the display settings are applied
         ApplyViewSettings();
+
 
         if (sdcard_mounted && gameIsRunning && !waitForImageBox) {
             //Запускаем таймер
@@ -547,23 +628,93 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 tf = Typeface.MONOSPACE;
                 break;
         }
-//        tv.setTypeface(tf);
-//        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, Float.parseFloat(settings.getString("fontsize", "16")));
-//        tv.setTextColor(textColor);
-//        tv.setLinkTextColor(settings.getInt("linkColor", 0xff0000ff));
+        tv.setTypeface(tf);
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, Float.parseFloat(settings.getString("fontsize", "16")));
+
+        QSPfontSize = ""+tv.getTextSize();
+
+        tv.setBackgroundColor(Color.parseColor(QSPbackColor));
+        tv.setTextColor(textColor);
+        tv.setLinkTextColor(Color.parseColor(QSPlinkColor));
+
     }
 
     private void ApplyViewSettings() {
-        int textColor = settings.getInt("textColor", 0xffffffff);
-        int backColor = settings.getInt("backColor", 0xff000000);
+        int backColor = settings.getInt("backColor", Color.parseColor(defaultQSPbackColor));
         View v = findViewById(R.id.main);
         v.setBackgroundColor(backColor);
         ListView lv = (ListView) findViewById(R.id.inv);
         lv.setCacheColorHint(backColor);
-        //ApplyFontSettingsToTextView(main_desc, textColor);
-        //ApplyFontSettingsToTextView(vars_desc, textColor);
-//        main_desc.setBackgroundColor(getResources().getColor(R.color.web_background));
-//        vars_desc.setBackgroundColor(getResources().getColor(R.color.web_background));
+
+        String tempFont = "\"\"";
+        switch (Integer.parseInt(settings.getString("typeface", "0"))) {
+            case 0:
+                tempFont = defaultQSPfontStyle;
+                break;
+            case 1:
+                tempFont = "sans-serif";
+                break;
+            case 2:
+                tempFont = "serif";
+                break;
+            case 3:
+                tempFont = "courier";
+                break;
+        }
+Utility.WriteLog("defaultQSPtextColor = " + defaultQSPtextColor +
+        "\ndefaultQSPbackColor = " + defaultQSPbackColor +
+        "\ndefaultQSPlinkColor = " + defaultQSPlinkColor +
+        "\ndefaultQSPactsColor = " + defaultQSPactsColor);
+        String tempText = String.format("#%06X",(0xFFFFFF & settings.getInt("textColor",Color.parseColor(defaultQSPtextColor))));
+        String tempBack = String.format("#%06X",(0xFFFFFF & backColor));
+        String tempLink = String.format("#%06X",(0xFFFFFF & settings.getInt("linkColor",Color.parseColor(defaultQSPlinkColor))));
+        String tempActs = String.format("#%06X",(0xFFFFFF & settings.getInt("actsColor",Color.parseColor(defaultQSPactsColor))));
+        String tempSize = settings.getString("fontsize",defaultQSPfontSize);
+
+        Utility.WriteLog("text "+tempText);
+        Utility.WriteLog("back "+tempBack);
+        Utility.WriteLog("link "+tempLink);
+        Utility.WriteLog("fontsize "+tempSize);
+        Utility.WriteLog("fonttype "+tempFont);
+
+        Utility.WriteLog("old: "+freshPageHeadTemplate);
+        curHtmlHead = freshPageHeadTemplate.replace("QSPFONTSTYLE",tempFont);
+        curHtmlHead = curHtmlHead.replace("QSPFONTSIZE",tempSize);
+        curHtmlHead = curHtmlHead.replace("QSPTEXTCOLOR",tempText);
+        curHtmlHead = curHtmlHead.replace("QSPLINKCOLOR",tempLink);
+        curHtmlHead = curHtmlHead.replace("QSPBACKCOLOR",tempBack);
+        Utility.WriteLog("new: "+curHtmlHead);
+
+
+        QSPbackColor = tempBack;
+        QSPtextColor = tempText;
+        QSPlinkColor = tempLink;
+        QSPactsColor = tempActs;
+        QSPfontStyle = tempFont;
+        QSPfontSize = tempSize;
+        freshPageURL = curHtmlHead + freshPageBodyTemplate;
+
+        //Inject javascript to change the current page's settings to the new style
+        String command = "javascript:(function() {"+
+                "document.getElementsByTagName(\"body\")[0].style.backgroundColor = \"" + QSPbackColor + "\"; "+
+                "document.getElementsByTagName(\"body\")[0].style.fontFamily = \"" + QSPfontStyle + "\"; "+
+                "document.getElementsByTagName(\"body\")[0].style.fontSize = \"" + QSPfontSize + "\"; "+
+                "document.getElementsByTagName(\"body\")[0].style.color = \"" + QSPtextColor + "\"; "+
+                "document.getElementsByTagName(\"href\")[0].style.color= \"" + QSPlinkColor + "\"; "+
+                "})()";
+        Utility.WriteLog("command: "+command);
+
+        //First change main_desc
+        main_desc.getSettings().setJavaScriptEnabled(true);
+        main_desc.loadUrl(command);
+        main_desc.getSettings().setJavaScriptEnabled(false);
+
+        //Then change vars_desc
+        vars_desc.getSettings().setJavaScriptEnabled(true);
+        vars_desc.loadUrl(command);
+        vars_desc.getSettings().setJavaScriptEnabled(false);
+
+
         if (mActListAdapter != null)
             mActListAdapter.notifyDataSetChanged();
         if (mItemListAdapter != null)
@@ -623,7 +774,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         int position=0;
         for (int i = 0; i < SLOTS_MAX; i++) {
             String title = String.valueOf(i + 1).concat(": ");
-            String Slotname = curSaveTitle + String.valueOf(i + 1).concat(".sav");
+            String Slotname = "save" + String.valueOf(i + 1).concat(".sav");
 
             File checkSlot = new File(saveGameDir.concat(Slotname));
             if (checkSlot.exists()) {
@@ -645,10 +796,13 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         if (files.length>0) {
             for (File file : files) {
                 String fname = file.getName();
-                fname = curSaveTitle + fname.substring(fname.length()-5,fname.length()-4);
+Utility.WriteLog("fname1 = " + fname);
+                fname = "save" + fname.substring(fname.length()-5,fname.length()-4);
+Utility.WriteLog("fname2 = " + fname);
                 boolean isSlot = false;
                 for (int i = 0; i <= SLOTS_MAX+1; i++) {
-                    if (fname.equals(curSaveTitle+String.valueOf(i))) {
+Utility.WriteLog("test = \""+ fname+ "\" vs. \"save"+String.valueOf(i+1)+"\"");
+                    if (fname.equals("save"+String.valueOf(i+1))) {
                         isSlot=true;
                         break;
                     }
@@ -760,13 +914,14 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
     private void LoadSlot(int index) {
         //Контекст UI
-        String path = curSaveTitle + String.valueOf(index).concat(".sav");
+        String path = "save" + String.valueOf(index).concat(".sav");
         LoadSlot(path);
     }
 
     private void LoadSlot(String filename) {
         //Контекст UI
         String path = saveGameDir.concat(filename);
+Utility.WriteLog("Opening: "+path);
         File f = new File(path);
         if (!f.exists()) {
             Utility.WriteLog(getString(R.string.LSF_fileNotFound));
@@ -842,20 +997,24 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
     private void c(int index) {
         //Контекст UI
-        final String path = curSaveTitle + String.valueOf(index).concat(".sav");
+        final String path = "save" + String.valueOf(index).concat(".sav");
         SaveSlot(path);
     }
 
 
     private void SaveSlot(int index) {
         //Контекст UI
-        String path = curSaveTitle + String.valueOf(index).concat(".sav");
+        String path = "save" + String.valueOf(index).concat(".sav");
         SaveSlot(path);
     }
 
     private void SaveSlot(String filename) {
         //Контекст UI
-        final String path = saveGameDir.concat(filename);
+//        final String path = saveGameDir.concat(filename);
+        final String path = saveGameDir+filename;
+
+
+        Utility.WriteLog("Save file: "+path);
 
         libThreadHandler.post(new Runnable() {
             public void run() {
@@ -877,20 +1036,26 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                     public void run() {
 
                         File f = new File(path);
+Utility.WriteLog("Saving to: "+path);
 
                         FileOutputStream fileOutput;
                         try {
                             fileOutput = new FileOutputStream(f);
+                            Utility.WriteLog("Open file: "+path);
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
                             return;
                         }
                         try {
                             fileOutput.write(dataToSave, 0, dataToSave.length);
+                            Utility.WriteLog("Writing to file: "+path);
                             fileOutput.close();
+                            Utility.WriteLog("Closed file: "+path);
+                            MediaScannerConnection.scanFile(uiContext, new String[] {path.toString()},null,null);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
+                        Utility.WriteLog("Saved to: "+path);
 
                     }
                 });
@@ -1131,6 +1296,13 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
     private void runGame(String fileName) {
 Utility.WriteLog("runGame\\");
+        if (PermissionChecker.checkSelfPermission(uiContext,"android.permission.WRITE_EXTERNAL_STORAGE") == PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "Write granted");
+            Utility.WriteLog("Write granted");
+        } else {
+            Log.e(TAG, "Write refused");
+            Utility.WriteLog("Write refused");
+        }
         //Контекст UI
         File f = new File(fileName);
         if (!f.exists()) {
@@ -1148,22 +1320,34 @@ Utility.WriteLog("runGame\\");
             return;
         }
 
-        Utility.WriteLog("1.");
         final boolean inited = qspInited;
         qspInited = true;
         final String gameFileName = fileName;
         curGameFile = gameFileName;
         curGameDir = gameFileName.substring(0, gameFileName.lastIndexOf(File.separator, gameFileName.length() - 1) + 1);
-        Utility.WriteLog("2.");
         curSaveTitle = Utility.safetyString(gameFileName);
-        Utility.WriteLog("3.");
 
-		saveGameDir = uiContext.getFilesDir().getAbsolutePath();
+//        saveGameDir = uiContext.getFilesDir().getAbsolutePath();
+        File tempSaveDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath()+"/QSP_saves/"+curSaveTitle);
+Utility.WriteLog("tempSaveDir = "+tempSaveDir.getAbsolutePath());
+        //if the the save directory doesn't exist, create it
+        if (!tempSaveDir.exists()) {
+            tempSaveDir.mkdirs();
+Utility.WriteLog("Doesn't exist, make a directory");
+        }
+        //if the save directory exists but is not a directory, delete it, then create it
+        else if (!tempSaveDir.isDirectory()) {
+Utility.WriteLog("Exists, delete and make a directory");
+            tempSaveDir.delete();
+            tempSaveDir.mkdirs();
+        } else
+Utility.WriteLog("Exists as a directory");
+
+        saveGameDir = tempSaveDir.getAbsolutePath() + "/";
+
         int padding = main_desc.getPaddingLeft() + main_desc.getPaddingRight();
         DisplayMetrics QSP_displayMetrics = getResources().getDisplayMetrics();
         playerHeightLimit = new Float(0.5);
-
-        Utility.WriteLog("4.");
 
         Point size = new Point();
         Display myDisplay = getWindowManager().getDefaultDisplay();
@@ -1513,9 +1697,9 @@ Utility.WriteLog("sound test");
                     else {
                         try {
                             newPage = Utility.replaceHrefPlusSymbols(newPage);
-                            Utility.WriteLog("Before change:\n" + newPage);
+//                            Utility.WriteLog("Before change:\n" + newPage);
                             newPage = Utility.encodeExec(newPage);
-                            Utility.WriteLog("After encodeExec():\n" + newPage);
+//                            Utility.WriteLog("After encodeExec():\n" + newPage);
 
                             //Decode the URL, but be sure to remove any % signs before doing so
                             //as these can cause crashes. Change back after URLDecoder.
@@ -1526,7 +1710,7 @@ Utility.WriteLog("sound test");
                             //Return the visible (+) symbols to their normal form
                             newPage = newPage.replace("QSPPLUSSYMBOLCODE","+");
 
-                            Utility.WriteLog("After URLDecoder():\n" + newPage);
+//                            Utility.WriteLog("After URLDecoder():\n" + newPage);
                         } catch (UnsupportedEncodingException e) {
                             Utility.ShowError(uiContext, getString(R.string.urlNotComp).replace("-URLTEXT-", txtMainDesc));
                         }
