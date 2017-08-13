@@ -8,8 +8,12 @@ This will basically be a series of bug fixes to BOOMik's Quest Player for Androi
 TO DO:
 1. Give player option to change max height of images relative to screen size
 2. Auto-play videos on page
-3. Fix table formatting
-4. Finish translations of strings.xml and prefs.xml files
+3. Finish translations of strings.xml and prefs.xml files
+
+Version 1.5.2 changes:
+1. Fixed table formatting
+2. Implemented Display Settings for text/background colors, fonts, and text size; added "default" option
+3. Simplified and Traditional Chinese version implemented - credit to translator illume!
 
 Version 1.5.0 changes:
 1. Multi-language support added (partial Russian translation, Chinese translation soon)
