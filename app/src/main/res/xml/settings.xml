@@ -3,24 +3,31 @@
         android:key="main_screen">
     <PreferenceScreen
             android:key="interface_screen" android:title="@string/interface_screen" android:summary="@string/interface_scr_sum">
-    	<CheckBoxPreference android:title="@string/fullscreenTitle" android:key="fullscreen" android:summaryOff="@string/fullscreen_off" android:summaryOn="@string/fullscreenSum"/>
+<!--
+		<CheckBoxPreference android:title="@string/fullscreenTitle" android:key="fullscreen" android:summaryOff="@string/fullscreen_off" android:summaryOn="@string/fullscreenSum"/>
     	<CheckBoxPreference android:title="@string/opt_big_image" android:key="big_image" android:summary="@string/optdesc_big_image" />
     	<CheckBoxPreference android:title="@string/opt_image_density" android:key="image_density" android:summary="@string/optdesc_image_density" android:defaultValue="true" />
+-->
 		<!-- <ListPreference android:defaultValue="0" android:key="theme" android:title="@string/appTheme" android:entries="@array/themeName" android:entryValues="@array/fontValue"></ListPreference> -->
-		<CheckBoxPreference android:title="@string/opt_show_acts_hot_keys" android:key="acts_hot_keys"/>
+
+
+		<ListPreference android:key="typeface" android:title="@string/typeface" android:entries="@array/fontName" android:entryValues="@array/fontValue" android:defaultValue="@string/deftypeface"/>
+		<ListPreference android:key="fontsize" android:title="@string/fontSize" android:entries="@array/fontSize" android:entryValues="@array/fontSize" android:defaultValue="@string/deffontsize"/>
+        <com.att.preference.colorpicker.ColorPickerPreference android:defaultValue="#000000" android:title="@string/backColor" android:key="backColor"/>
+		<com.att.preference.colorpicker.ColorPickerPreference android:title="@string/textColor" android:key="textColor" android:defaultValue="#ffffff"/>
+		<com.att.preference.colorpicker.ColorPickerPreference android:title="@string/linkColor" android:key="linkColor" android:defaultValue="#0000ee"/>
+		<com.att.preference.colorpicker.ColorPickerPreference android:title="@string/actsColor" android:key="actsColor" android:defaultValue="#ffffd7" />
+        <CheckBoxPreference android:key="resetAll" android:title="@string/resetAll" android:summary="@string/resetAllSum" android:defaultValue="false"/>
 		<CheckBoxPreference android:title="@string/opt_highlight_acts" android:key="highlight_acts" android:summary="@string/optdesc_highlight_acts" android:defaultValue="true"/>
+		<!--<CheckBoxPreference android:title="@string/opt_show_acts_hot_keys" android:key="acts_hot_keys"/>-->
 		<CheckBoxPreference android:title="@string/opt_back_action" android:key="back_action" android:summary="@string/optdesc_back_action" android:defaultValue="false"/>
-		<ListPreference android:key="typeface" android:title="@string/typeface" android:entries="@array/fontName" android:entryValues="@array/fontValue" android:defaultValue="0"/>
-		<ListPreference android:key="fontsize" android:title="@string/fontSize" android:entries="@array/fontSize" android:entryValues="@array/fontSize" android:defaultValue="16"/>
-		<com.att.preference.colorpicker.ColorPickerPreference android:title="@string/textColor" android:key="textColor" android:defaultValue="#ffffffff"/> 
-		<com.att.preference.colorpicker.ColorPickerPreference android:title="@string/linkColor" android:key="linkColor" android:defaultValue="#ff0000ff"/> 
-		<com.att.preference.colorpicker.ColorPickerPreference android:title="@string/actsColor" android:defaultValue="#ffffd700" android:key="actsColor" />
-		<com.att.preference.colorpicker.ColorPickerPreference android:defaultValue="#ff000000" android:title="@string/backColor" android:key="backColor"/> 
 	</PreferenceScreen>
 	<CheckBoxPreference android:key="sound" android:title="@string/soundTitle" android:summary="@string/soundSum" android:defaultValue="true"/>
     <CheckBoxPreference android:key="gestures" android:title="@string/using_gestures" android:enabled="true" android:summaryOff="@string/gestures_off" android:summaryOn="@string/gestures_sum"/>
     <!--    <EditTextPreference android:key="gamesdir" android:title="Путь к файлам игр" android:enabled="true" android:summary="каталог, где хранятся файлы игр" />
 	-->
-	<EditTextPreference android:key="gamesdir" android:title="@string/gamesdirTitle" android:enabled="true" android:summary="Directory where game files are stored" />
-	<ListPreference android:key="lang" android:title="@string/langTitle" android:entries="@array/langName" android:entryValues="@array/langValue" android:defaultValue="0"/>
-</PreferenceScreen> 
+	<EditTextPreference android:key="gamesdir" android:title="@string/gamesdirTitle" android:enabled="true" android:summary="@string/gamesdirSum" />
+	<ListPreference android:key="lang" android:title="@string/langTitle" android:summary="@string/langSummary" android:entries="@array/langName" android:entryValues="@array/langValue" android:defaultValue="@string/defaultLang"/>
+
+
+</PreferenceScreen>
