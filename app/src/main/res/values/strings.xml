@@ -7,7 +7,7 @@
     <string name="fontSize">Font Size</string>
     <string name="typeface">Font Style</string>
     <string name="fullscreenSum">Hide Status Bar</string>
-    <string name="fullscreen_off">Show Stsatus Bar</string>
+    <string name="fullscreen_off">Show Status Bar</string>
     <string name="fullscreenTitle">Full Screen</string>
     <string name="gestures_off">Switch tab by Icons</string>
     <string name="gestures_sum">Switch tab by Swap</string>
@@ -22,7 +22,7 @@
     <string name="linkColor">Link Color</string>
     <string name="opt_show_acts_hot_keys">Show Hotkey for Actions</string>
     <string name="opt_highlight_acts">Enforced Actions</string>
-    <string name="optdesc_highlight_acts">Show Actions with Seleceted Color</string>
+    <string name="optdesc_highlight_acts">Show Actions with Selected Color</string>
     <string name="actsColor">Action Color</string>
 	<string name="opt_back_action">Back Button as 1st action</string>
 	<string name="opt_big_image">Image Fit to Width</string>
@@ -32,7 +32,8 @@
 	<string name="optdesc_image_density">Stretch the image depending on the screen density</string>
     <string name="gamesdirTitle">Path to game files</string>
     <string name="gamesdirSum">Directory where game files are stored</string>
-    <string name="langTitle">Language (please restart app after changing)</string>
+    <string name="langTitle">Language</string>
+    <string name="langSummary">Please restart app after changing</string>
     <string name="errorTitle">Error</string>
 
 	<!-- Меню Menu -->
@@ -120,7 +121,9 @@
     <string name="urlNotComp">URL -URLTEXT- is not UTF-8 compatible.</string>
 
     <string name="loadingURL">Loading...</string>
-    <string name="langSummary">Please restart after changing</string>
+    <string name="resetAll">Reset to default text colors and style?</string>
+    <string name="resetAllSum">Exit menu to complete reset</string>
+
 
 
     <!-- ***************************************** -->
@@ -140,8 +143,15 @@
     <string name="isSetS">is set</string>
     <string name="exitedS">exited</string>
 
+    <string name="defbackColor">#000000</string>
+    <string name="deftextColor">#ffffff</string>
+    <string name="deflinkColor">#0000ee</string>
+    <string name="defactsColor">#ffffd7</string>
+    <string name="deftypeface">0</string>
+    <string name="deffontsize">16</string>
+
     <!-- ***************************************** -->
-    <!-- ******** END UNTRANSLATE REGION ********* -->
+    <!-- ******** END UNTRANSLATED REGION ******** -->
     <!-- ***************************************** -->
 
 </resources>
