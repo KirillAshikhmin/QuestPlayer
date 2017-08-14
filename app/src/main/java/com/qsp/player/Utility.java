@@ -21,6 +21,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.support.annotation.RequiresPermission;
@@ -112,13 +113,13 @@ public class Utility {
     }
 
 //Replacing this code with QspStrToWebView
-    public static Spanned QspStrToHtml(String str, ImageGetter imgGetter, String srcDir, int maxW, int maxH) {
+    public static Spanned QspStrToHtml(String str, ImageGetter imgGetter, String srcDir, int maxW, int maxH, boolean fitToWidth) {
         if (str != null && str.length() > 0) {
             str = str.replaceAll("\r", "<br>");
             str = str.replaceAll("(?i)</td>", " ");
             str = str.replaceAll("(?i)</tr>", "<br>");
 
-            str = fixImagesSize(str,srcDir,true,maxW,maxH);
+            str = fixImagesSize(str,srcDir,true,maxW,maxH,fitToWidth);
 
             return Html.fromHtml(str, imgGetter, null);
 
@@ -126,14 +127,14 @@ public class Utility {
         return Html.fromHtml("");
     }
 
-    public static String QspStrToWebView(String str, String srcDir, int maxW, int maxH, boolean audioIsOn) {
+    public static String QspStrToWebView(String str, String srcDir, int maxW, int maxH, boolean audioIsOn,boolean fitToWidth) {
         if (str != null && str.length() > 0) {
 //            Utility.WriteLog(str);
             str = str.replaceAll("\r", "<br>");
             str = str.replaceAll("(?i)</td>", " ");
             str = str.replaceAll("(?i)</tr>", "<br>");
 
-            str = fixImagesSize(str,srcDir,false,maxW,maxH);
+            str = fixImagesSize(str,srcDir,false,maxW,maxH,fitToWidth);
 
             str = fixVideosLinks(str,srcDir,maxW,maxH,audioIsOn);
 
@@ -291,7 +292,7 @@ Utility.WriteLog("toWebView:\n"+ str);
         return newStr;
     }
 
-    private static String fixImagesSize(String str, String srcDir, boolean isForTextView, int maxW, int maxH) {
+    private static String fixImagesSize(String str, String srcDir, boolean isForTextView, int maxW, int maxH, boolean fitToWidth) {
         boolean hasImg = str.contains("<img");
 
 //        Utility.WriteLog("fixImagesSize: "+str);
@@ -314,6 +315,7 @@ Utility.WriteLog("toWebView:\n"+ str);
 
             newStr = newStr.substring(0,newStr.indexOf(curStr));
             Matcher matcher = pattern.matcher(curStr);
+
 
             if (matcher.groupCount()==0) continue;
 
@@ -367,66 +369,54 @@ Utility.WriteLog("toWebView:\n"+ str);
                     }
                 }
 
-                if (isNullOrEmpty(widthS) && isNullOrEmpty(heightS)) {
-//                    newStr += curStr.replace(">","style=\"width: 100%; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"; \">") + endOfStr;
-                    newStr += curStr.replace(">","style=\"max-width: "+maxW+"px; max-height: "+maxH+"; \">") + endOfStr;
-                    continue;
-                }
-
-                // ** Remove leading quote (") character if present **
-                if (!isNullOrEmpty(widthS)) {
-                    if (widthS.startsWith("\"")) { widthS = widthS.substring(1); }
-                    curStr = curStr.replace(widthBase,"");
-                }
-                if (!isNullOrEmpty(heightS)) {
-                    if (heightS.startsWith("\"")) { heightS = heightS.substring(1); }
-                    curStr = curStr.replace(heightBase,"");
-                }
-
-                int w = isNullOrEmpty(widthS) ? 0 : Integer.parseInt(widthS);
-                int h = isNullOrEmpty(heightS) ? 0 : Integer.parseInt(heightS);
-
-                //if width/height are set, reduce them to maxW/maxH
-                if (w > maxW) {
-                    if (!isNullOrEmpty(heightS)) h = Math.round(h*maxW/w);
-                    w = maxW;
-                }
-                if (h > maxH) {
-                    if (!isNullOrEmpty(widthS)) w = Math.round(w*maxH/h);
-                    h = maxH;
-                }
-
-                //if the image has both width and height values, bound by width if height is greater
-                //or by height if width is greater; otherwise bound by given value
-                if ((w > 0) && (h > 0)) {
-                    if (w >= h)
-//                        curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREwidth=\"%s\"PUTSPACEHEREheight=\"%s", newSrc, w, h));
-                        curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREheight=\"%s", newSrc, h));
-                    else
-                        curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREwidth=\"%s", newSrc, w));
-                }
-                else if (w < 0) {
-                    curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREheight=\"%s", newSrc, h));
+                Utility.WriteLog(newSrc);
+                if (!newSrc.contains("///")) continue;
+                Utility.WriteLog(newSrc.substring(newSrc.indexOf("///")+2));
+                BitmapFactory.Options imgDim = getImageDim(newSrc.substring(newSrc.indexOf("///")+2));
+                if (imgDim == null) {
+                    Utility.WriteLog("imgDim is null");
+                    newStr += curStr + endOfStr;
                 }
                 else {
-                    curStr = curStr.replace(newSrc, String.format("%s\"PUTSPACEHEREwidth=\"%s", newSrc, w));
+                    Utility.WriteLog("imgDim.outWidth = " + imgDim.outWidth + ", imgDim.outHeight = " + imgDim.outHeight);
+
+
+//                if (isNullOrEmpty(widthS) && isNullOrEmpty(heightS)) {
+//                    newStr += curStr.replace(">","style=\"width: 100%; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"; \">") + endOfStr;
+                    int h = imgDim.outHeight;
+                    int w = imgDim.outWidth;
+                    if ((fitToWidth && (w < maxW)) || (w > maxW)) {
+                        h = Math.round(h * maxW / w);
+                        w = maxW;
+                    }
+                    if (h > maxH) {
+                        w = Math.round(w * maxH / h);
+                        h = maxH;
+                    }
+
+                    newStr += curStr.replace(">", "width = \"" + w + "\" height = \"" + h + "\">") + endOfStr;
+                    continue;
                 }
-
-
-                curStr = curStr.replace("PUTSPACEHERE"," ");
-//                curStr = curStr.replace(">","style=\"width: auto; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"px; \">");
-                curStr = curStr.replace(">","style=\"width: auto; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"px; \">");
-                newStr += curStr + endOfStr;
-//                newStr += curStr.replace(newSrc, String.format("%s\" width=%s height=%s",newSrc,w,h)) + endOfStr;
-
-                Utility.WriteLog("image: "+curStr);
-
 
             } catch (Exception e) {
                 Log.e("fixImagesSize","unable parse "+curStr,e);
             }
         } while (hasImg);
         return newStr;
+    }
+
+    private static BitmapFactory.Options getImageDim (String imgSrc) {
+        File imgFile = new File(imgSrc);
+        //if the imgFile doesn't exist, return null
+        if(!imgFile.exists()) {
+            Utility.WriteLog("Image File doesn't exist");
+            return null;
+        }
+        BitmapFactory.Options opt = new BitmapFactory.Options();
+        opt.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(imgSrc, opt);
+
+        return opt;
     }
 
     private static String fixVideosLinks (String str, String srcDir, int maxW, int maxH,boolean audioIsOn) {
