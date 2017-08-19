@@ -1,122 +1,140 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!-- 简体中文, Simplified Chinese -->
+<!-- ** English/Default version ** -->
 <resources>
     <!-- Настройки Settings -->
-    <string name="appTheme">Theme</string>
-    <string name="fontSize">Font Size</string>
-    <string name="typeface">Font Style</string>
-    <string name="fullscreenSum">Hide Status Bar</string>
-    <string name="fullscreen_off">Show Stsatus Bar</string>
-    <string name="fullscreenTitle">Full Screen</string>
-    <string name="gestures_off">Switch tab by Icons</string>
-    <string name="gestures_sum">Switch tab by Swap</string>
-    <string name="using_gestures">Gestures</string>
-    <string name="interface_scr_sum">Interface Setting</string>
-    <string name="interface_screen">Display Setting</string>
-    <string name="soundSum">Sound and Music</string>
-    <string name="soundTitle">Sound</string>
-    <string name="dialog_color_picker">Choose Color</string>
-    <string name="textColor">Text Color</string>
-    <string name="backColor">Background Color</string>
-    <string name="linkColor">Link Color</string>
-    <string name="opt_show_acts_hot_keys">Show Hotkey for Actions</string>
-    <string name="opt_highlight_acts">Enforced Actions</string>
-    <string name="optdesc_highlight_acts">Show Actions with Seleceted Color</string>
-    <string name="actsColor">Action Color</string>
-    <string name="opt_back_action">Back Button as 1st action</string>
-    <string name="opt_big_image">Image Fit to Width</string>
-    <string name="opt_image_density">Image Fit to Screen</string>
-    <string name="optdesc_back_action">press the Back button the executes the first available actions</string>
-    <string name="optdesc_big_image">Stretch image to the full width of the screen</string>
-    <string name="optdesc_image_density">Stretch the image depending on the screen density</string>
-    <string name="gamesdirTitle">Path to game files</string>
-    <string name="gamesdirSum">Directory where game files are stored</string>
-    <string name="langTitle">Language (please restart app after changing)</string>
-    <string name="errorTitle">Error</string>
+    <string name="defaultLang">en</string>
+    <string name="appTheme">主题</string>
+    <string name="fontSize">字体大小</string>
+    <string name="typeface">字体风格</string>
+    <string name="fullscreenSum">隐藏系统工具列</string>
+    <string name="fullscreen_off">显示系统工具列</string>
+    <string name="fullscreenTitle">全萤幕</string>
+    <string name="gestures_off">只由点击图示切换页面</string>
+    <string name="gestures_sum">允许左右滑动切换页面</string>
+    <string name="using_gestures">手势</string>
+    <string name="interface_scr_sum">设定播放器的外观</string>
+    <string name="interface_screen">显示设定</string>
+    <string name="soundSum">音效和音乐</string>
+    <string name="soundTitle">音效</string>
+    <string name="dialog_color_picker">选择颜色</string>
+    <string name="textColor">预设文字的颜色</string>
+    <string name="backColor">背景的颜色</string>
+    <string name="linkColor">连结的颜色</string>
+    <string name="opt_show_acts_hot_keys">显示选项的热键编号</string>
+    <string name="opt_highlight_acts">强化标示选项</string>
+    <string name="optdesc_highlight_acts">以设定的颜色显示选项</string>
+    <string name="actsColor">选项的颜色</string>
+    <string name="opt_back_action">以返回键执行第一个选项</string>
+    <string name="opt_big_image">图片: 符合宽度</string>
+    <string name="opt_image_density">图片: 符合萤幕</string>
+    <string name="optdesc_back_action">按下返回键时, 会执行第一个选项</string>
+    <string name="optdesc_big_image">依萤幕宽度缩放图片</string>
+    <string name="optdesc_image_density">依萤幕长宽缩放图片</string>
+    <string name="gamesdirTitle">游戏档案位置</string>
+    <string name="gamesdirSum">游戏档案所存放的资料夹位置</string>
+    <string name="langTitle">语言</string>
+    <string name="errorTitle">错误</string>
 
     <!-- Меню Menu -->
-    <string name="menu_gamestock">Game Stock</string>
-    <string name="menu_options">Settings</string>
-    <string name="menu_about">About(GooglePlay)</string>
-    <string name="menu_newgame">Restart Game</string>
-    <string name="menu_resumegame">Resume Game</string>
-    <string name="menu_load">Load</string>
-    <string name="menu_save">Save</string>
-    <string name="menu_deletegames">Delete Game</string>
-    <string name="menu_openfile">Open Game File</string>
-    <string name="menu_closeapp">Close QuestPlayer</string>
+    <string name="menu_gamestock">游戏架</string>
+    <string name="menu_options">设定</string>
+    <string name="menu_about">关于(GooglePlay)</string>
+    <string name="menu_newgame">重新启动</string>
+    <string name="menu_resumegame">回到游戏</string>
+    <string name="menu_load">读档</string>
+    <string name="menu_save">存档</string>
+    <string name="menu_deletegames">删除游戏</string>
+    <string name="menu_openfile">打开游戏档案</string>
+    <string name="menu_closeapp">关闭QuestPlayer</string>
 
     <!-- Вкладки Tabs -->
-    <string name="tab_all">Online</string>
-    <string name="tab_downloaded">Local</string>
-    <string name="tab_starred">Marked</string>
+    <string name="tab_all">线上</string>
+    <string name="tab_downloaded">本机</string>
+    <string name="tab_starred">标记</string>
 
     <!-- Прочее Other -->
     <string name="app_name">Quest Player</string>
+    <string name="market_details_url">market://details?id=com.qsp.player</string>
+    <string name="translator">illume</string>
 
     <!-- Прочее Other Part 2: QspGameStock -->
-    <string name="gamelistLoadError">The game list could not be loaded. Check your internet connection.</string>
-    <string name="playGameCmd">Play</string>
-    <string name="dlGameCmd">Download</string>
-    <string name="gameLoadNetError">The game could not be loaded. Check your internet connection.</string>
-    <string name="cacheCreateError">Cannot create cache folder.</string>
-    <string name="dlWaiting">Downloading...</string>
-    <string name="dlGameError">Error while trying to download file</string>
-    <string name="genGameLoadError">Error loading game</string>
-    <string name="gameDlSuccess">Game downloaded</string>
-    <string name="unpackMsg">Unpacking...</string>
-    <string name="decompMsg">Decompress</string>
-    <string name="unzipMsgShort">unzip</string>
-    <string name="gameInfoFileCreateError">Creating game info file failed.</string>
-    <string name="gameInfoFileWriteError">Writing to game info file failed.</string>
-    <string name="noCardAccess">No access to the flash card.</string>
-    <string name="gameInfoFileReadError">Reading game info file failed.</string>
-    <string name="parseGameInfoUnkError">Exception occurred while trying to parse game info, unknown error.</string>
-    <string name="gamelistLoadWait">Loading a list of games</string>
-    <string name="gamelistLoadExcept">Exception occurred while trying to load game list.</string>
-    <string name="gameFileSelect">Select a game file</string>
-    <string name="gameFileDeleteTitle">Delete game</string>
-    <string name="gameFileDeleteSuccess">The game has been deleted.</string>
+    <string name="gamelistLoadError">无法载入游戏列表,  请检查网路设置</string>
+    <string name="playGameCmd">玩</string>
+    <string name="dlGameCmd">下载</string>
+    <string name="gameLoadNetError">游戏无法下载, 请检查网路设置</string>
+    <string name="cacheCreateError">无法建立快取资料夹</string>
+    <string name="dlWaiting">下载中...</string>
+    <string name="dlGameError">下载中发生错误</string>
+    <string name="cantDlGameError">无法下载游戏 -GAMENAME-.</string>
+    <string name="genGameLoadError">游戏读取错误</string>
+    <string name="cantUnzipGameError">无法解压缩游戏档案 -GAMENAME-.</string>
+    <string name="gameDlSuccess">游戏下载完成</string>
+    <string name="gameUploadSuccess">游戏 -GAMENAME- 上传完成.</string>
+    <string name="unpackMsg">拆包中...</string>
+    <string name="decompMsg">解压中...</string>
+    <string name="unzipMsg">解压缩 -FILENAME-</string>
+    <string name="unzipMsgShort">解压缩</string>
+    <string name="gameInfoFileCreateError">游戏资讯建立失败</string>
+    <string name="gameInfoFileWriteError">无法写入游戏资讯</string>
+    <string name="noCardAccess">无法存取储存空间.</string>
+    <string name="gameInfoFileReadError">游戏资讯读取失败</string>
+    <string name="parseGameInfoXMLError">载入游戏资讯中发生错误, XML 第 -LINENUM- 行中的第 -COLNUM- 栏</string>
+    <string name="parseGameInfoUnkError">载入游戏资讯中发生错误. 未知错误</string>
+    <string name="gamelistLoadWait">游戏列表载入中</string>
+    <string name="gamelistLoadExcept">游戏列表载入时发生错误</string>
+    <string name="pathNotFound">资料夹不存在: -PATHNAME-</string>
+    <string name="gameFileSelect">选择游戏档案</string>
+    <string name="gameFileDeleteTitle">删除游戏</string>
+    <string name="gameFileDeleteQuery">确定要删除 -GAMENAME-?</string>
+    <string name="gameFileDeleteSuccess">删除完成</string>
+    <string name="gameAuthorText">作者: -AUTHOR-</string>
 
     <!-- Прочее Other Part 3: QspImageBox -->
-    <string name="scaleImgHelp1">Now you can scale the image. To close the window, click again on this button.</string>
-    <string name="scaleImgHelp2">Click the magnifying glass in the upper-right corner to examine the image closer.</string>
+    <string name="scaleImgHelp1">图片检视中, 可以双指缩放图片. 点击右上角的 X 离开</string>
+    <string name="scaleImgHelp2">点击右上角的放大镜图示, 可以检视图片</string>
 
     <!-- Прочее Other Part 4: QspPlayerStart -->
-    <string name="inputBoxUIMsg">InputBox(UI): OK clicked, unparking library thread.</string>
-    <string name="SDCardNotConnected">"SD card is not connected: Quest Player cannot start. Connect the SD card and restart Quest Player.</string>
-    <string name="pauseGameMsg">onPause: pausing game</string>
-    <string name="appCloseByUser">App closed by user! Going to background.</string>
-    <string name="selectSlotTitle">Select a slot</string>
-    <string name="marketNotFound">Market Intent not found.</string>
-    <string name="LSF_fileNotFound">LoadSlot: failed, file not found.</string>
-    <string name="openFileFail">Could not open file.</string>
-    <string name="accessFileFail">Could not access file.</string>
-    <string name="fileHandleReleaseFail">Could not release the file handler.</string>
-    <string name="LSF_libRun">LoadSlot: failed, library is already running.</string>
-    <string name="LSF_dataBuff">LoadSlot: failed, cannot load data from byte buffer.</string>
-    <string name="SSF_libRun">SaveSlot: failed, library is already running.</string>
-    <string name="SSF_noCreate">SaveSlot: failed, cannot create save data.</string>
+    <string name="inputBoxUIMsg">InputBox(UI): 已点击确认, 开始载入函式库.</string>
+    <string name="SDCardNotConnected">"未挂载 SD 卡: Quetst Player 无法启动. 请设置好 SD 卡后重新启动程式</string>
+    <string name="pauseGameMsg">onPause: 游戏暂停</string>
+    <string name="appCloseByUser">程式被使用者关闭! 切换到背景程序.</string>
+    <string name="selectSlotTitle">选择存档</string>
+    <string name="marketNotFound">找不到项目</string>
+    <string name="LSF_fileNotFound">LoadSlot: 失败, 找不到档案.</string>
+    <string name="openFileFail">无法开启档案</string>
+    <string name="accessFileFail">无法存取档案</string>
+    <string name="fileHandleReleaseFail">无法释放档案</string>
+    <string name="LSF_libRun">LoadSlot: 失败, 函式库正在执行中</string>
+    <string name="LSF_dataBuff">LoadSlot: 失败, 无法读取缓存区.</string>
+    <string name="SSF_libRun">SaveSlot: 失败, 函式库正在执行中</string>
+    <string name="SSF_noCreate">SaveSlot: 失败, 无法建立档案</string>
 
-    <string name="invTitle">Inventory</string>
-    <string name="mainDescTitle">Main</string>
-    <string name="varDescTitle">Details</string>
+    <!-- These all refer to a single subroutine in the format "SUBROUTINE: TEXT"-->
+    <string name="enterS">进入</string>
+    <string name="successS">成功</string>
+    <string name="failedS">失败</string>
+    <string name="isNullS">不存在</string>
+    <string name="isDeadS">已死</string>
+    <string name="isSetS">设定</string>
+    <string name="exitedS">结束</string>
 
-    <string name="stopGame">stopping game</string>
-    <string name="fileNotFound">File not found.</string>
-    <string name="libRunError">library thread is already running</string>
-    <string name="readFileError">Could not read file.</string>
-    <string name="noBrowser">Could not find browser.</string>
+    <string name="invTitle">道具/选单</string>
+    <string name="mainDescTitle">叙述</string>
+    <string name="varDescTitle">角色资讯</string>
 
-    <string name="gameAuthorText">Author: -AUTHOR-</string>
-    <string name="cantDlGameError">Could not download game -GAMENAME-.</string>
-    <string name="cantUnzipGameError">Unable to unzip the game -GAMENAME-.</string>
-    <string name="gameUploadSuccess">Game -GAMENAME- successfully uploaded.</string>
-    <string name="unzipMsg">Unzipping -FILENAME-</string>
-    <string name="parseGameInfoXMLError">Exception occurred while trying to parse game info, XML corrupted at line -LINENUM- column -COLNUM-.</string>
-    <string name="pathNotFound">Could not find path: -PATHNAME-</string>
-    <string name="gameFileDeleteQuery">Delete game -GAMENAME-?</string>
-    <string name="urlNotComp">URL -URLTEXT- is not UTF-8 compatible.</string>
+    <string name="stopGame">停止游戏</string>
+    <string name="fileNotFound">找不到档案</string>
+    <string name="libRunError">函式库正在执行中</string>
+    <string name="readFileError">无法读取档案</string>
+    <string name="urlNotComp">URL -URLTEXT- 不相容于 UTF-8 编码</string>
+    <string name="noBrowser">找不到网页浏览器</string>
+
+    <string name="loadingURL"><center>读取中...</center></string>
+    <string name="resetAll">重设文字颜色和样式设定?</string>
+    <string name="resetAllSum">重设完成, 请退出设定选单</string>
+
+    <string name="closeGameCmd">关闭</string>
+    <string name="langSummary">更改后需重启程式</string>
 
 </resources>
