@@ -33,6 +33,7 @@
     <string name="gamesdirTitle">Path to game files</string>
     <string name="gamesdirSum">Directory where game files are stored</string>
     <string name="langTitle">Language</string>
+    <string name="langSummary">Please restart app after changing</string>
     <string name="errorTitle">Ошибка</string>
 
     <!-- Меню -->
@@ -119,6 +120,10 @@
     <string name="gameAuthorText">Author: -AUTHOR-</string>
     <string name="urlNotComp">URL -URLTEXT- is not UTF-8 compatible.</string>
     <string name="parseGameInfoXMLError">Exception occurred while trying to parse game info, XML corrupted at line -LINENUM- column -COLNUM-.</string>
+
+    <string name="loadingURL">Loading...</string>
+    <string name="resetAll">Reset to default text colors and style?</string>
+    <string name="resetAllSum">Exit menu to complete reset</string>
 
 </resources>
 
