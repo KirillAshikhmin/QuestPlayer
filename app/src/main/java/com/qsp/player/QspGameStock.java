@@ -26,6 +26,7 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -60,6 +61,7 @@ import android.widget.TabHost;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.TabHost.OnTabChangeListener;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class QspGameStock extends TabActivity {
 
@@ -112,6 +114,7 @@ public class QspGameStock extends TabActivity {
 	private GameItem selectedGame;
 	
 	private boolean gameIsRunning;
+    private boolean startingGSUp = true;
 
     public static final int MAX_SPINNER = 1024;
     public static final int DOWNLOADED_TABNUM = 0;
@@ -151,6 +154,18 @@ public class QspGameStock extends TabActivity {
     	gamesMap = new HashMap<String, GameItem>();
     }
 
+	@Override
+	public void onConfigurationChanged (Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+
+		//orientationRecreate = true;
+		// Checks the orientation of the screen
+		if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+			Toast.makeText(this, "landscape", Toast.LENGTH_SHORT).show();
+		} else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
+			Toast.makeText(this, "portrait", Toast.LENGTH_SHORT).show();
+		}
+	}
 
 	private void setGSLocale(String lang) {
 		Locale myLocale;
@@ -181,6 +196,7 @@ public class QspGameStock extends TabActivity {
 		Configuration conf = newRes.getConfiguration();
 		conf.locale = myLocale;
 		newRes.updateConfiguration(conf, dm);
+		setTitle(getString(R.string.menu_gamestock));
 	}
 
     @Override
@@ -192,6 +208,7 @@ public class QspGameStock extends TabActivity {
 
         Intent gameStockIntent = getIntent();
         gameIsRunning = gameStockIntent.getBooleanExtra("game_is_running", false);
+        startingGSUp = true;
         
         isActive = false;
         showProgressDialog = false;
@@ -237,11 +254,13 @@ public class QspGameStock extends TabActivity {
 		Utility.WriteLog("[G]onResume\\");
 
 		//Set the language if it has changed
+        boolean langChanged = false;
 		userSetLang = settings.getString("lang","en");
 		Utility.WriteLog("userSetLang = "+userSetLang+", curLang = "+curLang);
 		if (!curLang.equals(userSetLang)) {
 			Utility.WriteLog("GameStock:"+userSetLang+" <> "+curLang+", setting language");
 			curLang = userSetLang;
+            langChanged = true;
 			setGSLocale(userSetLang);
             settings = PreferenceManager.getDefaultSharedPreferences(this);
 			Utility.WriteLog(curLang+" <- "+userSetLang);
@@ -251,7 +270,20 @@ public class QspGameStock extends TabActivity {
     	super.onResume();
     	isActive = true;
 
-		Utility.WriteLog("[G]onResume/");
+        //Refresh QspGameStock if the user changed the language
+        Utility.WriteLog("startingUpQSP: "+startingGSUp+", langChanged: "+langChanged);
+        if ((!startingGSUp) && (langChanged)) {
+            Utility.WriteLog("FreeResources*");
+            Utility.WriteLog("FreeResources*");
+            Utility.WriteLog("RECREATE*");
+            setTitle(getString(R.string.menu_gamestock));
+//            recreate();
+            Utility.WriteLog("RECREATE/");
+        }
+        else startingGSUp = false;
+
+
+        Utility.WriteLog("[G]onResume/");
     }
     
     @Override
@@ -538,7 +570,7 @@ public class QspGameStock extends TabActivity {
 	    			DownloadGame(selectedGame.file_url, selectedGame.file_size, selectedGame.game_id);						
 			}
 		})
-			.setNegativeButton("Close", new DialogInterface.OnClickListener() {
+			.setNegativeButton(getString(R.string.closeGameCmd), new DialogInterface.OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				dialog.cancel();						

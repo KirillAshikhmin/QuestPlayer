@@ -118,8 +118,17 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private String userSetLang;
     private String curLang = Locale.getDefault().getLanguage();
 
+    private boolean startingUpQSP = true;
+    private boolean orientationRecreate = false;
+
     private WebView vars_desc;
     private WebView main_desc; // ** changed from TextView
+
+    private static boolean isMainDescHTML = false;
+    private static String curMainDescHTML = "";
+
+    private static boolean isVarsDescHTML = false;
+    private static String curVarsDescHTML = "";
 
     private int maxW = 0;
     private int maxH = 0;
@@ -140,9 +149,11 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private static String QSPfontStyle = defaultQSPfontStyle;
 
     public static String freshPageHeadTemplate = "<html><head>"
-            + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+            + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, "
+            + "minimum-scale=1, maximum-scale=1\">"
             + "<style type=\"text/css\">"
             + "body{margin: 0; padding: 0; color: QSPTEXTCOLOR; background-color: QSPBACKCOLOR;"
+            + "max-width: QSPMAXWIDTH; "
             + "font-size: QSPFONTSIZE; font-family: QSPFONTSTYLE; unusedtag=\"\"} "
             + "a{color: QSPLINKCOLOR}"
             + "a:link{color: QSPLINKCOLOR}"
@@ -154,6 +165,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
             + "<style type=\"text/css\">"
             + "body{margin: 0; padding: 0; color: " + QSPtextColor + "; background-color: " + QSPbackColor + "; "
+            + "max-width: 100%; "
             + "font-size: " + QSPfontSize + "; font-family: " + QSPfontStyle + "; unusedtag=\"\"}"
             + "a{color: "+ QSPlinkColor +"}"
             + "a:link{color: "+ QSPlinkColor +"}"
@@ -169,6 +181,19 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     //used to detect and parse "exec:" commands
     private QSPWebViewClient main_descClient;
     private QSPWebViewClient vars_descClient;
+
+    public static String getMainDescHTML () {
+        return curMainDescHTML;
+    }
+    public void setMainDescHTML (String newHTMLString) {
+        curMainDescHTML = newHTMLString;
+    }
+    public static String getVarDescHTML () {
+        return curVarsDescHTML;
+    }
+    public void setVarDescHTML (String newHTMLString) {
+        curVarsDescHTML = newHTMLString;
+    }
 
     private void setQSPLocale (String lang) {
         Locale myLocale;
@@ -199,6 +224,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         Configuration conf = newRes.getConfiguration();
         conf.locale = myLocale;
         newRes.updateConfiguration(conf, dm);
+
     }
 
     public class QSPWebViewClient extends WebViewClient {
@@ -356,6 +382,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         gameIsRunning = false;
         qspInited = false;
         waitForImageBox = false;
+        startingUpQSP = true;
 
         //Создаем список для звуков и музыки
         mediaPlayersList = new Vector<MusicContent>();
@@ -378,93 +405,98 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         Utility.WriteLog("onCreate\\");
         //Контекст UI
         super.onCreate(savedInstanceState);
+
         settings = PreferenceManager.getDefaultSharedPreferences(this);
 
-        setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
-        //будем использовать свой вид заголовка, поэтому на девайсах < 3.0 отключаем заголовок
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB)
-            requestWindowFeature(Window.FEATURE_NO_TITLE);
-        setContentView(R.layout.main);
-        res = getResources();
-        userSetLang = settings.getString("lang","en");
+            setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
-        main_desc = (WebView) findViewById(R.id.main_desc);
-        vars_desc = (WebView) findViewById(R.id.vars_desc);
+            //будем использовать свой вид заголовка, поэтому на девайсах < 3.0 отключаем заголовок
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB)
+                requestWindowFeature(Window.FEATURE_NO_TITLE);
+            setContentView(R.layout.main);
+            res = getResources();
+            userSetLang = settings.getString("lang", "en");
 
-        main_descClient = new QSPWebViewClient();
-        vars_descClient = new QSPWebViewClient();
-        main_desc.setWebViewClient(main_descClient);
-        vars_desc.setWebViewClient(vars_descClient);
-        main_desc.getSettings().setMediaPlaybackRequiresUserGesture(false);
+            main_desc = (WebView) findViewById(R.id.main_desc);
+            vars_desc = (WebView) findViewById(R.id.vars_desc);
 
-        float imgPerScreen = Float.parseFloat(settings.getString("imgHeight", "1"));
-        playerHeightLimit = 1/imgPerScreen;
+            main_descClient = new QSPWebViewClient();
+            vars_descClient = new QSPWebViewClient();
+            main_desc.setWebViewClient(main_descClient);
+            vars_desc.setWebViewClient(vars_descClient);
+            main_desc.getSettings().setMediaPlaybackRequiresUserGesture(false);
 
-        freshPageURL = freshPageHeadTemplate + freshPageBodyTemplate;
+            float imgPerScreen = Float.parseFloat(settings.getString("imgHeight", "1"));
+            playerHeightLimit = 1 / imgPerScreen;
 
-        defaultQSPtextColor = res.getString(R.string.deftextColor);
-        defaultQSPbackColor = res.getString(R.string.defbackColor);
-        defaultQSPlinkColor = res.getString(R.string.deflinkColor);
-        defaultQSPactsColor = res.getString(R.string.defactsColor);
-        defaultQSPfontSize = res.getString(R.string.deffontsize);
-        //defaultQSPfontStyle = res.getString(R.string.deftypeface);
+            freshPageURL = freshPageHeadTemplate + freshPageBodyTemplate;
 
-        //used to detect LongClicks on images in main_desc or vars_desc
-        main_desc.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
+            defaultQSPtextColor = res.getString(R.string.deftextColor);
+            defaultQSPbackColor = res.getString(R.string.defbackColor);
+            defaultQSPlinkColor = res.getString(R.string.deflinkColor);
+            defaultQSPactsColor = res.getString(R.string.defactsColor);
+            defaultQSPfontSize = res.getString(R.string.deffontsize);
+            //defaultQSPfontStyle = res.getString(R.string.deftypeface);
 
-                final WebView.HitTestResult result = main_desc.getHitTestResult();
+            //used to detect LongClicks on images in main_desc or vars_desc
+            main_desc.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
 
-                if (result.getType() == IMAGE_TYPE) {
-                    String imageSrc = result.getExtra().replace("file:///","/");
+                    final WebView.HitTestResult result = main_desc.getHitTestResult();
+
+                    if (result.getType() == IMAGE_TYPE) {
+                        String imageSrc = result.getExtra().replace("file:///", "/");
 //                    Utility.WriteLog(result.getExtra() + " -> " + imageSrc);
-                    ShowPicture(imageSrc);
+                        ShowPicture(imageSrc);
+                        return true;
+                    }
+
                     return true;
                 }
+            });
 
-                return true;
+
+            //Создаем объект для обработки ссылок
+            qspLinkMovementMethod = QspLinkMovementMethod.getQspInstance();
+            qspLinkMovementMethod.setCatcher(this);
+
+            //Создаем диалог ввода текста
+            LayoutInflater factory = LayoutInflater.from(uiContext);
+            View textEntryView = factory.inflate(R.layout.inputbox, null);
+            inputboxDialog = new AlertDialog.Builder(uiContext)
+                    .setView(textEntryView)
+                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int whichButton) {
+                            EditText edit = (EditText) inputboxDialog.findViewById(R.id.inputbox_edit);
+                            inputboxResult = edit.getText().toString();
+                            edit.setText("");
+                            dialogHasResult = true;
+                            Utility.WriteLog(getString(R.string.inputBoxUIMsg));
+                            setThreadUnpark();
+                        }
+                    })
+                    .setCancelable(false)
+                    .create();
+
+            if (Utility.GetGamesPath(this) == null) {
+                sdcard_mounted = false;
+                Utility.ShowError(uiContext, getString(R.string.SDCardNotConnected));
+            } else {
+                sdcard_mounted = true;
+                if (!gameIsRunning) {
+                    //текущий вид - основное описание
+                    invBack = 0; //нет фона
+                    varBack = 0; //нет фона
+                    setCurrentWin(currentWin = WIN_MAIN);
+                    ShowGameStock();
+                }
             }
-        } );
+        if (savedInstanceState != null) {
 
-
-        //Создаем объект для обработки ссылок
-        qspLinkMovementMethod = QspLinkMovementMethod.getQspInstance();
-        qspLinkMovementMethod.setCatcher(this);
-
-        //Создаем диалог ввода текста
-        LayoutInflater factory = LayoutInflater.from(uiContext);
-        View textEntryView = factory.inflate(R.layout.inputbox, null);
-        inputboxDialog = new AlertDialog.Builder(uiContext)
-                .setView(textEntryView)
-                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        EditText edit = (EditText) inputboxDialog.findViewById(R.id.inputbox_edit);
-                        inputboxResult = edit.getText().toString();
-                        edit.setText("");
-                        dialogHasResult = true;
-                        Utility.WriteLog(getString(R.string.inputBoxUIMsg));
-                        setThreadUnpark();
-                    }
-                })
-                .setCancelable(false)
-                .create();
-
-        if (Utility.GetGamesPath(this) == null) {
-            sdcard_mounted = false;
-            Utility.ShowError(uiContext, getString(R.string.SDCardNotConnected));
-        } else {
-            sdcard_mounted = true;
-            if (!gameIsRunning) {
-                //текущий вид - основное описание
-                invBack = 0; //нет фона
-                varBack = 0; //нет фона
-                setCurrentWin(currentWin = WIN_MAIN);
-                ShowGameStock();
-            }
         }
-        Utility.WriteLog("onCreate/");
+            Utility.WriteLog("onCreate/");
     }
 
 
@@ -483,22 +515,21 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         if (settings.getBoolean("gestures", false))
             gestures.addOnGesturePerformedListener(this);
 
+        boolean bigImageChanged = false;
+        boolean newBigImage = settings.getBoolean("big_image", false);
+Utility.WriteLog("bigImage: " + bigImage + ", newBigImage: "+newBigImage+", bigImageChanged: "+bigImageChanged);
+        if (bigImage != newBigImage) bigImageChanged = true;
+        bigImage = newBigImage;
+
+        boolean imgPerScreenChanged = false;
+        float tempImgPerScreen = Float.parseFloat(settings.getString("imgHeight", "1"));
+        if (playerHeightLimit != 1/tempImgPerScreen) imgPerScreenChanged = true;
+Utility.WriteLog("playerHeightLimit: " + playerHeightLimit + ", tempImgPerScreen: "+tempImgPerScreen+", imgPerScreenChanged: "+imgPerScreenChanged);
+
         backAction = settings.getBoolean("back_action", false);
         hotKeys = settings.getBoolean("acts_hot_keys", false);
-        bigImage = settings.getBoolean("big_image", false);
         imageDensity = settings.getBoolean("image_density", true);
         highlightActs = settings.getBoolean("highlight_acts", true);
-
-        //Set the language if it has changed
-        userSetLang = settings.getString("lang","en");
-//        Utility.WriteLog("userSetLang = "+userSetLang+", curLang = "+curLang);
-        if (!curLang.equals(userSetLang)) {
-//            Utility.WriteLog(userSetLang+" <> "+curLang+", setting language");
-            curLang = userSetLang;
-            setQSPLocale(userSetLang);
-//            Utility.WriteLog(curLang+" <- "+userSetLang);
-        } else
-//            Utility.WriteLog(userSetLang+" == "+curLang+", no change");
 
         //Reset to default display values if requested
         if (settings.getBoolean("resetAll",false)) {
@@ -519,11 +550,25 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             ed.putString("typeface",res.getString(R.string.deftypeface));
             ed.apply();
         }
+
+        //Set the language if it has changed
+        boolean langChanged = false;
+        userSetLang = settings.getString("lang","en");
+//        Utility.WriteLog("userSetLang = "+userSetLang+", curLang = "+curLang);
+        if (!curLang.equals(userSetLang)) {
+//            Utility.WriteLog(userSetLang+" <> "+curLang+", setting language");
+            curLang = userSetLang;
+            setQSPLocale(userSetLang);
+            langChanged = true;
+//            Utility.WriteLog(curLang+" <- "+userSetLang);
+        }
+//            Utility.WriteLog(userSetLang+" == "+curLang+", no change");
+
         //Here is where the display settings are applied
         SetImageLimits();
         ApplyViewSettings();
-
-
+        if (bigImageChanged || imgPerScreenChanged)
+            refreshMainDesc();
 
         if (sdcard_mounted && gameIsRunning && !waitForImageBox) {
             //Запускаем таймер
@@ -533,6 +578,18 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             PauseMusic(false);
         }
         waitForImageBox = false;
+
+        //Refresh QspPlayerStart if the user changed the language
+Utility.WriteLog("startingUpQSP: "+startingUpQSP+", langChanged: "+langChanged);
+        if ((!startingUpQSP) && (langChanged)) {
+Utility.WriteLog("FreeResources*");
+            FreeResources();
+Utility.WriteLog("FreeResources*");
+Utility.WriteLog("RECREATE*");
+            recreate();
+Utility.WriteLog("RECREATE/");
+        }
+        else startingUpQSP = false;
 
         Utility.WriteLog("onResume/");
     }
@@ -663,56 +720,13 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         ListView lv = (ListView) findViewById(R.id.inv);
         lv.setCacheColorHint(backColor);
 
-        String tempFont = "\"\"";
-        switch (Integer.parseInt(settings.getString("typeface", "0"))) {
-            case 0:
-                tempFont = defaultQSPfontStyle;
-                break;
-            case 1:
-                tempFont = "sans-serif";
-                break;
-            case 2:
-                tempFont = "serif";
-                break;
-            case 3:
-                tempFont = "courier";
-                break;
-        }
 
 //        Utility.WriteLog("defaultQSPtextColor = " + defaultQSPtextColor +
 //        "\ndefaultQSPbackColor = " + defaultQSPbackColor +
 //        "\ndefaultQSPlinkColor = " + defaultQSPlinkColor +
 //        "\ndefaultQSPactsColor = " + defaultQSPactsColor);
 
-
-        String tempText = String.format("#%06X",(0xFFFFFF & settings.getInt("textColor",Color.parseColor(defaultQSPtextColor))));
-        String tempBack = String.format("#%06X",(0xFFFFFF & backColor));
-        String tempLink = String.format("#%06X",(0xFFFFFF & settings.getInt("linkColor",Color.parseColor(defaultQSPlinkColor))));
-        String tempActs = String.format("#%06X",(0xFFFFFF & settings.getInt("actsColor",Color.parseColor(defaultQSPactsColor))));
-        String tempSize = settings.getString("fontsize",defaultQSPfontSize);
-/*
-        Utility.WriteLog("text "+tempText);
-        Utility.WriteLog("back "+tempBack);
-        Utility.WriteLog("link "+tempLink);
-        Utility.WriteLog("fontsize "+tempSize);
-        Utility.WriteLog("fonttype "+tempFont);
-        Utility.WriteLog("old: "+freshPageHeadTemplate);
-*/
-        curHtmlHead = freshPageHeadTemplate.replace("QSPFONTSTYLE",tempFont);
-        curHtmlHead = curHtmlHead.replace("QSPFONTSIZE",tempSize);
-        curHtmlHead = curHtmlHead.replace("QSPTEXTCOLOR",tempText);
-        curHtmlHead = curHtmlHead.replace("QSPLINKCOLOR",tempLink);
-        curHtmlHead = curHtmlHead.replace("QSPBACKCOLOR",tempBack);
-//        Utility.WriteLog("new: "+curHtmlHead);
-
-
-        QSPbackColor = tempBack;
-        QSPtextColor = tempText;
-        QSPlinkColor = tempLink;
-        QSPactsColor = tempActs;
-        QSPfontStyle = tempFont;
-        QSPfontSize = tempSize;
-        freshPageURL = curHtmlHead + freshPageBodyTemplate;
+        updateFreshPageURL();
 
         Utility.WriteLog(freshPageURL);
 
@@ -744,6 +758,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
     private float SetImageLimits () {
         int padding = main_desc.getPaddingLeft() + main_desc.getPaddingRight();
+Utility.WriteLog(""+padding);
         DisplayMetrics QSP_displayMetrics = getResources().getDisplayMetrics();
 
         float imgPerScreen = Float.parseFloat(settings.getString("imgHeight", "1"));
@@ -753,10 +768,76 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         Display myDisplay = getWindowManager().getDefaultDisplay();
         myDisplay.getSize(size);
         float density = imageDensity ? QSP_displayMetrics.density : 1;
-        maxW = Math.round(size.x/density - padding/2);
+        maxW = Math.round(size.x/density); // - padding/2);
         maxH = Math.round(size.y/density * playerHeightLimit);
 
         return density;
+    }
+
+    private void refreshMainDesc () {
+        if (isMainDescHTML) {
+            int tempMaxH = maxH;
+            if(playerHeightLimit == 1) tempMaxH = -1;
+
+            main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
+            curMainDescHTML = Utility.QspStrToWebView(curMainDescHTML, curGameDir, maxW, tempMaxH, settings.getBoolean("sound", true), bigImage);
+            setMainDescHTML(curMainDescHTML);
+            main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT",curMainDescHTML), "text/html", "UTF-8", "");
+
+        } else {
+            main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
+            curMainDescHTML = Utility.QspStrToStr(curMainDescHTML);
+            setMainDescHTML(curMainDescHTML);
+            main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT",curMainDescHTML), "text/html", "UTF-8", "");
+        }
+    }
+
+    private void updateFreshPageURL () {
+        String tempFont = "\"\"";
+        switch (Integer.parseInt(settings.getString("typeface", "0"))) {
+            case 0:
+                tempFont = defaultQSPfontStyle;
+                break;
+            case 1:
+                tempFont = "sans-serif";
+                break;
+            case 2:
+                tempFont = "serif";
+                break;
+            case 3:
+                tempFont = "courier";
+                break;
+        }
+        String tempText = String.format("#%06X",(0xFFFFFF & settings.getInt("textColor",Color.parseColor(defaultQSPtextColor))));
+        String tempBack = String.format("#%06X",(0xFFFFFF & settings.getInt("backColor", Color.parseColor(defaultQSPbackColor))));
+        String tempLink = String.format("#%06X",(0xFFFFFF & settings.getInt("linkColor",Color.parseColor(defaultQSPlinkColor))));
+        String tempActs = String.format("#%06X",(0xFFFFFF & settings.getInt("actsColor",Color.parseColor(defaultQSPactsColor))));
+        String tempSize = settings.getString("fontsize",defaultQSPfontSize);
+/*
+        Utility.WriteLog("text "+tempText);
+        Utility.WriteLog("back "+tempBack);
+        Utility.WriteLog("link "+tempLink);
+        Utility.WriteLog("fontsize "+tempSize);
+        Utility.WriteLog("fonttype "+tempFont);
+        Utility.WriteLog("old: "+freshPageHeadTemplate);
+*/
+        curHtmlHead = freshPageHeadTemplate.replace("QSPFONTSTYLE",tempFont);
+        curHtmlHead = curHtmlHead.replace("QSPFONTSIZE",tempSize);
+        curHtmlHead = curHtmlHead.replace("QSPTEXTCOLOR",tempText);
+        curHtmlHead = curHtmlHead.replace("QSPLINKCOLOR",tempLink);
+        curHtmlHead = curHtmlHead.replace("QSPBACKCOLOR",tempBack);
+        curHtmlHead = curHtmlHead.replace("QSPMAXWIDTH", ""+maxW+"px");
+//        Utility.WriteLog("new: "+curHtmlHead);
+
+
+        QSPbackColor = tempBack;
+        QSPtextColor = tempText;
+        QSPlinkColor = tempLink;
+        QSPactsColor = tempActs;
+        QSPfontStyle = tempFont;
+        QSPfontSize = tempSize;
+        freshPageURL = curHtmlHead + freshPageBodyTemplate;
+
     }
 
     private void updateFullscreenStatus(boolean bUseFullscreen) {
@@ -790,6 +871,86 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         AlertDialog alert = builder.create();
         alert.show();
     }
+
+    /*
+    protected void onSaveInstanceState (final Bundle outState)
+    {
+Utility.WriteLog("onSaveInstanceState\\");
+        if (gameIsRunning) {
+            outState.putString("game_name", curGameFile);
+            Utility.WriteLog("1save");
+
+            libThreadHandler.post(new Runnable() {
+                public void run() {
+                    if (libraryThreadIsRunning) {
+                        Utility.WriteLog(getString(R.string.SSF_libRun));
+                        return;
+                    }
+                    Utility.WriteLog("2save");
+                    libraryThreadIsRunning = true;
+                    Utility.WriteLog("3save");
+                    final byte[] dataToSave = QSPSaveGameAsData(false);
+                    Utility.WriteLog("4save");
+                    outState.putByteArray("game_data", dataToSave);
+                    Utility.WriteLog("5save");
+                    libraryThreadIsRunning = false;
+                }
+            });
+
+            Utility.WriteLog("onSaveInstanceState/");
+        }
+        Utility.WriteLog("6save");
+        super.onSaveInstanceState(outState);
+    }
+
+
+    protected void onRestoreInstanceState (final Bundle savedState)
+    {
+Utility.WriteLog("onRestoreInstanceState\\");
+        super.onRestoreInstanceState(savedState);
+Utility.WriteLog("1restore");
+        String savedCurGameFile = savedState.getString("game_name");
+        if (savedCurGameFile != null) {
+            StopGame(true);
+            curGameFile = savedCurGameFile;
+            runGame(curGameFile);
+            libThreadHandler.post(new Runnable() {
+                public void run() {
+                    if (libraryThreadIsRunning) {
+                        Utility.WriteLog(getString(R.string.LSF_libRun));
+                        return;
+                    }
+                    libraryThreadIsRunning = true;
+                    holdPanelAnimationsForFirstUpdate = true;
+                    Utility.WriteLog("2restore");
+
+                    final byte[] savedInstanceSave = savedState.getByteArray("game_data");
+                    Utility.WriteLog("3restore = "+savedInstanceSave.length);
+                    boolean result = QSPOpenSavedGameFromData(savedInstanceSave, savedInstanceSave.length, true);
+                    Utility.WriteLog("4restore");
+                    CheckQspResult(result, "LoadSlot: QSPOpenSavedGameFromData");
+                    Utility.WriteLog("5restore");
+
+                    libraryThreadIsRunning = false;
+
+                    if (!result) {
+                        Utility.WriteLog(getString(R.string.LSF_dataBuff));
+                        return;
+                    }
+
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            //Start the timer
+                            timerHandler.postDelayed(timerUpdateTask, timerInterval);
+                        }
+                    });
+                }
+            });
+        }
+
+Utility.WriteLog("onRestoreInstanceState/");
+    }
+*/
 
     private void LoadSlots(MenuItem rootItem, String name, boolean isLoad) {
         //Контекст UI
@@ -1745,18 +1906,25 @@ Utility.WriteLog("runGame\\");
                             Utility.ShowError(uiContext, getString(R.string.urlNotComp).replace("-URLTEXT-", txtMainDesc));
                         }
 
-                        if (html) {
+                        curMainDescHTML = newPage;
+                        isMainDescHTML = html;
+                        refreshMainDesc();
+/*                        if (html) {
                             main_desc.getSettings().setJavaScriptEnabled(false);
-
+                            isMainDescHTML = true;
                             main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
 
                             newPage = Utility.QspStrToWebView(newPage, curGameDir, maxW, maxH, settings.getBoolean("sound", true), bigImage);
+                            setMainDescHTML(newPage);
                             main_desc.loadDataWithBaseURL("", newPage, "text/html", "UTF-8", "");
 
                         } else {
+                            isMainDescHTML = false;
                             main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
-                            main_desc.loadDataWithBaseURL("", Utility.QspStrToStr(newPage), "text/html", "UTF-8", "");
-                        }
+                            newPage = Utility.QspStrToStr(newPage);
+                            setMainDescHTML(newPage);
+                            main_desc.loadDataWithBaseURL("", newPage, "text/html", "UTF-8", "");
+                        }*/
                     }
                 }
             });
@@ -1819,15 +1987,21 @@ Utility.WriteLog("runGame\\");
                         varUnread = true;
                         updateTitle();
                     }
+                    isVarsDescHTML = html;
                     if (html) {
                         //vars_desc.setText(Utility.QspStrToHtml(txtVarsDesc, imgGetter, curGameDir));
                         //vars_desc.setMovementMethod(QspLinkMovementMethod.getInstance());
-                        vars_desc.loadDataWithBaseURL("",Utility.QspStrToWebView(txtVarsDesc,curGameDir,maxW,maxH,settings.getBoolean("sound",true), bigImage),"text/html","UTF-8","");
+                        vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
+                        curVarsDescHTML = Utility.QspStrToWebView(txtVarsDesc,curGameDir,maxW,maxH,settings.getBoolean("sound",true), bigImage);
+                        vars_desc.loadDataWithBaseURL("",freshPageURL.replace("REPLACETEXT",curVarsDescHTML),"text/html","UTF-8","");
 //                        vars_desc.loadData(Utility.QspStrToWebView(txtVarsDesc,curGameDir),"text/html",null);
-                    } else
+                    } else {
                         //vars_desc.setText(txtVarsDesc);
-                        vars_desc.loadDataWithBaseURL("",Utility.QspStrToStr(txtVarsDesc),"text/html","UTF-8","");
+                        vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
+                        curVarsDescHTML = Utility.QspStrToStr(txtVarsDesc);
+                        vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", curVarsDescHTML), "text/html", "UTF-8", "");
 //                        vars_desc.loadData(Utility.QspStrToStr(txtVarsDesc),"text/html",null);
+                    }
                 }
             });
         }
@@ -2231,6 +2405,30 @@ Utility.WriteLog("runGame\\");
             });
         }
     };
+
+    @Override
+    public void onConfigurationChanged (Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+Utility.WriteLog("Config changed");
+        //orientationRecreate = true;
+        // Checks the orientation of the screen
+//        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+//            Toast.makeText(this, "landscape", Toast.LENGTH_SHORT).show();
+//        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
+//            Toast.makeText(this, "portrait", Toast.LENGTH_SHORT).show();
+//        }
+        if (gameIsRunning) {
+            SetImageLimits();
+Utility.WriteLog("maxH: "+maxH+", maxW: "+maxW);
+            updateFreshPageURL();
+            refreshMainDesc();
+            vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
+            if (isVarsDescHTML)
+                vars_desc.loadDataWithBaseURL("",freshPageURL.replace("REPLACETEXT",curVarsDescHTML),"text/html","UTF-8","");
+            else
+                vars_desc.loadDataWithBaseURL("",freshPageURL.replace("REPLACETEXT",curVarsDescHTML),"text/html","UTF-8","");
+        }
+    }
 
     //Для отображения картинок в HTML
     static QspImageGetter imgGetterDesc = new QspImageGetter();

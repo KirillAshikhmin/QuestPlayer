@@ -131,24 +131,16 @@ public class Utility {
         if (str != null && str.length() > 0) {
 //            Utility.WriteLog(str);
             str = str.replaceAll("\r", "<br>");
-            str = str.replaceAll("(?i)</td>", " ");
-            str = str.replaceAll("(?i)</tr>", "<br>");
+//            str = str.replaceAll("(?i)</td>", " ");
+//            str = str.replaceAll("(?i)</tr>", "<br>");
 
             str = fixImagesSize(str,srcDir,false,maxW,maxH,fitToWidth);
 
             str = fixVideosLinks(str,srcDir,maxW,maxH,audioIsOn);
 
 
-            str = QspPlayerStart.freshPageURL.replace("REPLACETEXT", str);
-/*            str = "<html><head>"
-                    + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-                    + "<style type=\"text/css\">body{margin: 0; padding: 0; color: white; background-color: black;}"
-                    + "</style></head>"
-                    + "<body>"
-                    + str
-                    + "</body></html>";
-*/
-Utility.WriteLog("toWebView:\n"+ str);
+//            str = QspPlayerStart.freshPageURL.replace("REPLACETEXT", str);
+//Utility.WriteLog("toWebView:\n"+ str);
 
             return str;
 
@@ -292,8 +284,11 @@ Utility.WriteLog("toWebView:\n"+ str);
         return newStr;
     }
 
-    private static String fixImagesSize(String str, String srcDir, boolean isForTextView, int maxW, int maxH, boolean fitToWidth) {
+    public static String fixImagesSize(String str, String srcDir, boolean isForTextView, int maxW, int maxH, boolean fitToWidth) {
         boolean hasImg = str.contains("<img");
+        boolean countedImg = false;
+        int inTable = 0;
+        int imgsInLine = 0;
 
 //        Utility.WriteLog("fixImagesSize: "+str);
 
@@ -307,6 +302,78 @@ Utility.WriteLog("toWebView:\n"+ str);
                 hasImg=false;
                 continue;
             }
+
+            //First, if there is a table starting/ending, take care of it
+            // ** START TABLE CHECK **
+            int openTable = endOfStr.indexOf("<table");
+            int closeTable = endOfStr.indexOf("</table");
+
+            //if <table is found before <img or </table, inTable++
+            if ((openTable >= 0)
+                    && (openTable < firstImg)
+                    && ( (openTable < closeTable) || (closeTable < 0) )) {
+                inTable++;
+                Utility.WriteLog("inTable+ = "+inTable);
+
+                String tableStr = endOfStr.substring(openTable);
+                int endTableTag = tableStr.indexOf(">");
+                tableStr = tableStr.substring(0,endTableTag+1);
+                endOfStr = endOfStr.substring(openTable+tableStr.length());
+
+                newStr += tableStr;
+                continue;
+            }
+            //if inside a <table> AND </table is found before <img or <table, inTable--
+            if ((inTable > 0)
+                    && (closeTable >= 0)
+                    && (closeTable < firstImg)
+                    && ((closeTable < openTable) || (openTable < 0))) {
+                inTable--;
+                Utility.WriteLog("inTable- = "+inTable);
+
+                String tableStr = endOfStr.substring(closeTable);
+                int endTableTag = tableStr.indexOf(">");
+                tableStr = tableStr.substring(0,endTableTag+1);
+                endOfStr = endOfStr.substring(closeTable+tableStr.length());
+
+                newStr += tableStr;
+                continue;
+            }
+            // ** END TABLE CHECK **
+
+            //Second, if this is a new line (after a <br> or very start of the string), count all
+            //the <img tags for this line; skip if currently inside a table
+            // ** START OF COUNT IMGS FOR LINE
+            if (inTable == 0) {
+                int breakIndex = endOfStr.indexOf("<br");
+                //all <br> before <img covered, so count <img if <img not counted yet
+                if (!countedImg) {
+                    //count to the next <br, or end of string if no more <br
+                    if ((breakIndex < 0))
+                        breakIndex = endOfStr.length();
+                    String imgStr = endOfStr.substring(0,breakIndex);
+
+                    imgsInLine = getImgsInLine(imgStr);
+
+                    countedImg = true;
+//Utility.WriteLog("imgStr = " + imgStr);
+//Utility.WriteLog("imgsInLine = " + imgsInLine);
+                }
+                //if <br> comes before <img AND already counted images
+                if ((breakIndex >= 0) && (breakIndex < firstImg) && (countedImg)) {
+                    countedImg = false;
+
+                    String breakStr = endOfStr.substring(breakIndex);
+                    int endBreak = breakStr.indexOf(">");
+                    breakStr = breakStr.substring(0, endBreak + 1);
+                    endOfStr = endOfStr.substring(breakIndex + breakStr.length());
+
+                    newStr += breakStr;
+                    continue;
+                }
+            }
+            //** END OF COUNT IMGS FOR LINE
+
             hasImg = firstImg >=0;
             String curStr = endOfStr.substring(firstImg);
             int endImg = curStr.indexOf(">");
@@ -339,6 +406,8 @@ Utility.WriteLog("toWebView:\n"+ str);
                     continue;
                 }
 
+                curStr = "<img "+src+"\" >";
+
                 //if this is for a TextView, don't use a URL locator
                 if (isForTextView) {
                     String iconSrc = src;
@@ -360,7 +429,8 @@ Utility.WriteLog("toWebView:\n"+ str);
                     newSrc = newSrc.substring(0, newSrc.indexOf("src=") + 4) + newSrc.substring(newSrc.indexOf("\""));
                 //then change [src="] to a [src="file://] URL
                 if ((newSrc.indexOf("src=\"") == 0) && newSrc.length() > 5) {
-                    if (newSrc.substring(5, 6).matches("^[a-zA-Z0-9]")) {
+                    boolean testURIOK = newSrc.contains("://");
+                    if (newSrc.substring(5, 6).matches("^[a-zA-Z0-9]") && !testURIOK) {
                         newSrc = newSrc.replace("src=\"", "src=\"file://" + srcDir);
                         curStr = curStr.replace(src, newSrc);
                     } else if (newSrc.indexOf("src=\"/") == 0) {
@@ -369,39 +439,60 @@ Utility.WriteLog("toWebView:\n"+ str);
                     }
                 }
 
-                Utility.WriteLog(newSrc);
+//Utility.WriteLog(newSrc);
                 if (!newSrc.contains("///")) continue;
-                Utility.WriteLog(newSrc.substring(newSrc.indexOf("///")+2));
+//Utility.WriteLog(newSrc.substring(newSrc.indexOf("///")+2));
                 BitmapFactory.Options imgDim = getImageDim(newSrc.substring(newSrc.indexOf("///")+2));
                 if (imgDim == null) {
-                    Utility.WriteLog("imgDim is null");
+//Utility.WriteLog("imgDim is null");
                     newStr += curStr + endOfStr;
                 }
                 else {
-                    Utility.WriteLog("imgDim.outWidth = " + imgDim.outWidth + ", imgDim.outHeight = " + imgDim.outHeight);
+//Utility.WriteLog("imgDim.outWidth = " + imgDim.outWidth + ", imgDim.outHeight = " + imgDim.outHeight);
 
 
 //                if (isNullOrEmpty(widthS) && isNullOrEmpty(heightS)) {
 //                    newStr += curStr.replace(">","style=\"width: 100%; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"; \">") + endOfStr;
                     int h = imgDim.outHeight;
                     int w = imgDim.outWidth;
-                    if ((fitToWidth && (w < maxW)) || (w > maxW)) {
-                        h = Math.round(h * maxW / w);
+                    if (maxH > 0) {
+                        if ((fitToWidth && (w < maxW)) || (w > maxW)) {
+                            h = Math.round(h * maxW / w);
+                            w = maxW;
+                        }
+                        if (h > maxH) {
+                            w = Math.round(w * maxH / h);
+                            h = maxH;
+                        }
+                    }
+                    //skip height adjustment if maxH <= 0
+                    else if ((fitToWidth && (w < maxW)) || (w > maxW))
                         w = maxW;
-                    }
-                    if (h > maxH) {
-                        w = Math.round(w * maxH / h);
-                        h = maxH;
-                    }
 
-                    newStr += curStr.replace(">", "width = \"" + w + "\" height = \"" + h + "\">") + endOfStr;
+                        //if in a table, use 100% for the width so to not override the table
+                    if (inTable > 0)
+                        newStr += curStr.replace(">", "width = \"100%\">") + endOfStr;
+                    //if not in a table AND more than one image in the line AND Image Fit to Width,
+                    //multiply all the images by 1/imgsInLine. Otherwise, let WebView handle it
+                    else {
+                        if ((imgsInLine > 1) && (fitToWidth)) {
+                            w = Math.round(w/imgsInLine);
+                            h = Math.round(h/imgsInLine);
+                        }
+                        if (maxH > 0) //add width and height if maxH > 0
+                            newStr += curStr.replace(">", "width = \"" + w + "\" height = \"" + h + "\">") + endOfStr;
+                        else //add width only if maxH <= 0
+                            newStr += curStr.replace(">", "width = \"" + w + "\" >") + endOfStr;
+                    }
                     continue;
                 }
 
             } catch (Exception e) {
-                Log.e("fixImagesSize","unable parse "+curStr,e);
+                Log.e("fixImagesSize","unable to parse "+curStr,e);
             }
+
         } while (hasImg);
+Utility.WriteLog("newStr: "+newStr);
         return newStr;
     }
 
@@ -417,6 +508,37 @@ Utility.WriteLog("toWebView:\n"+ str);
         BitmapFactory.decodeFile(imgSrc, opt);
 
         return opt;
+    }
+
+    private static int getImgsInLine (String imgStr) {
+        int firstImgIndex = 0;
+        int endImgIndex = 0;
+        int totalImages = 0;
+        boolean spacePresent = false;
+
+        while (firstImgIndex != -1) {
+            //mark the start of the <img> tag
+            firstImgIndex = imgStr.indexOf("<img", firstImgIndex);
+
+//            Utility.WriteLog("totalImages: "+totalImages+", firstImgIndex: "+firstImgIndex+", endImageIndex: "+endImgIndex+", difference = "+(firstImgIndex-endImgIndex));
+            //if there are multiple images and there are spaces or characters between the images,
+            //treat the images as if on separate lines
+            if ((firstImgIndex >= 0) && (firstImgIndex-endImgIndex > 1)) spacePresent = true;
+            if ((totalImages > 1) && (spacePresent))
+                return 1;
+
+            //if there are no breaks between images, mark the end of the <img> tag
+            endImgIndex = imgStr.indexOf(">", firstImgIndex);
+
+            //add up each image as it comes
+            if (firstImgIndex != -1) {
+                totalImages++;
+                firstImgIndex += "<img".length();
+            }
+
+        }
+
+        return totalImages;
     }
 
     private static String fixVideosLinks (String str, String srcDir, int maxW, int maxH,boolean audioIsOn) {
