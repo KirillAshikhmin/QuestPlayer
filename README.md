@@ -7,7 +7,14 @@ This will basically be a series of bug fixes to BOOMik's Quest Player for Androi
 
 TO DO:
 1. Finish translations of strings.xml and prefs.xml files
-2. Fix bugs
+2. Update "About" menu option
+3. Get translation to properly update on exiting menu.
+4. Fix bugs
+
+Version 1.5.4 changes:
+1. App will now change to landscape or portrait mode depending on how the device is held
+2. Tabulated image sizing issues corrected
+3. Various bug fixes
 
 Version 1.5.3 changes:
 1. Player can limit the height of images relative to screen size
