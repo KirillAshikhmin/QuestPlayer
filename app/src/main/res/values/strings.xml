@@ -25,15 +25,14 @@
     <string name="optdesc_highlight_acts">Show Actions with Selected Color</string>
     <string name="actsColor">Action Color</string>
 	<string name="opt_back_action">Back Button as 1st action</string>
-	<string name="opt_big_image">Image Fit to Width</string>
+	<string name="opt_big_image">Stretch Image to Screen Width</string>
 	<string name="opt_image_density">Image Fit to Screen</string>
 	<string name="optdesc_back_action">press the Back button the executes the first available actions</string>
-	<string name="optdesc_big_image">Stretch image to the full width of the screen</string>
+	<string name="optdesc_big_image">Stretch image to the full width, but not more than maximum height</string>
 	<string name="optdesc_image_density">Stretch the image depending on the screen density</string>
     <string name="gamesdirTitle">Path to game files</string>
     <string name="gamesdirSum">Directory where game files are stored</string>
     <string name="langTitle">Language</string>
-    <string name="langSummary">Please restart app after changing</string>
     <string name="errorTitle">Error</string>
 
 	<!-- Меню Menu -->
@@ -120,10 +119,14 @@
     <string name="gameFileDeleteQuery">Delete game -GAMENAME-?</string>
     <string name="urlNotComp">URL -URLTEXT- is not UTF-8 compatible.</string>
 
-    <string name="loadingURL">Loading...</string>
+    <string name="loadingURL"><center>Loading...</center></string>
     <string name="resetAll">Reset to default text colors and style?</string>
     <string name="resetAllSum">Exit menu to complete reset</string>
+    <string name="imgHeightTitle">Maximum Image Height</string>
+    <string name="imgHeightSum">Shrink images to specific height</string>
 
+    <string name="closeGameCmd">Close</string>
+    <string name="langSummary">WARNING: Changing languages will terminate any active game</string>
 
 
     <!-- ***************************************** -->
