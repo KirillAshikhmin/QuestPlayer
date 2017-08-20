@@ -290,7 +290,9 @@ public class Utility {
         int inTable = 0;
         int imgsInLine = 0;
 
-//        Utility.WriteLog("fixImagesSize: "+str);
+        int fisCycles = 0;
+
+        Utility.WriteLog("fixImagesSize: "+str);
 
         String endOfStr = str;
         String newStr= str;
@@ -440,7 +442,10 @@ public class Utility {
                 }
 
 //Utility.WriteLog(newSrc);
-                if (!newSrc.contains("///")) continue;
+                if (!newSrc.contains("///")) {
+                    newStr += curStr + endOfStr;
+                    continue;
+                }
 //Utility.WriteLog(newSrc.substring(newSrc.indexOf("///")+2));
                 BitmapFactory.Options imgDim = getImageDim(newSrc.substring(newSrc.indexOf("///")+2));
                 if (imgDim == null) {
@@ -484,6 +489,8 @@ public class Utility {
                         else //add width only if maxH <= 0
                             newStr += curStr.replace(">", "width = \"" + w + "\" >") + endOfStr;
                     }
+                    fisCycles++;
+                    Utility.WriteLog("endOfStr "+fisCycles+": "+endOfStr);
                     continue;
                 }
 
