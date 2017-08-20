@@ -78,11 +78,13 @@ public class Utility {
             return;
         }
 
+        listView.measure(0,0); //added 8/19/17
         int totalHeight = 0;
-        int desiredWidth = MeasureSpec.makeMeasureSpec(listView.getWidth(), MeasureSpec.AT_MOST);
+//        int desiredWidth = MeasureSpec.makeMeasureSpec(listView.getWidth(), MeasureSpec.AT_MOST);
         for (int i = 0; i < listAdapter.getCount(); i++) {
             View listItem = listAdapter.getView(i, null, listView);
-            listItem.measure(desiredWidth, MeasureSpec.UNSPECIFIED);
+//            listItem.measure(desiredWidth, MeasureSpec.UNSPECIFIED);
+            listItem.measure(0,0); //added 8/19/17
             totalHeight += listItem.getMeasuredHeight();
         }
 
@@ -114,9 +116,10 @@ public class Utility {
 
 //Replacing this code with QspStrToWebView
     public static Spanned QspStrToHtml(String str, ImageGetter imgGetter, String srcDir, int maxW, int maxH, boolean fitToWidth) {
+
         if (str != null && str.length() > 0) {
             str = str.replaceAll("\r", "<br>");
-            str = str.replaceAll("(?i)</td>", " ");
+            str = str.replaceAll("(?i)</td>", "");
             str = str.replaceAll("(?i)</tr>", "<br>");
 
             str = fixImagesSize(str,srcDir,true,maxW,maxH,fitToWidth);
@@ -292,7 +295,7 @@ public class Utility {
 
         int fisCycles = 0;
 
-        Utility.WriteLog("fixImagesSize: "+str);
+//        Utility.WriteLog("fixImagesSize: "+str);
 
         String endOfStr = str;
         String newStr= str;
@@ -490,7 +493,7 @@ public class Utility {
                             newStr += curStr.replace(">", "width = \"" + w + "\" >") + endOfStr;
                     }
                     fisCycles++;
-                    Utility.WriteLog("endOfStr "+fisCycles+": "+endOfStr);
+//                    Utility.WriteLog("endOfStr "+fisCycles+": "+endOfStr);
                     continue;
                 }
 
