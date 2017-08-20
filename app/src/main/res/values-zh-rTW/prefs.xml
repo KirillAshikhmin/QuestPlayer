@@ -40,7 +40,7 @@
 <!--    <item>custom-region-code</item> -->
     </string-array>
     <string-array name="imgHeightDesc">
-        <item>全萤幕高度</item>
+        <item>不限制高度</item>
         <item>2/3 螢幕高度</item>
         <item>1/2 螢幕高度</item>
         <item>1/3 螢幕高度</item>

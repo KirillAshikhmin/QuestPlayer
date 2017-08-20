@@ -26,10 +26,10 @@
     <string name="optdesc_highlight_acts">以设定的颜色显示选项</string>
     <string name="actsColor">选项的颜色</string>
     <string name="opt_back_action">以返回键执行第一个选项</string>
-    <string name="opt_big_image">图片: 符合宽度</string>
+    <string name="opt_big_image">图片:自动缩放</string>
     <string name="opt_image_density">图片: 符合萤幕</string>
     <string name="optdesc_back_action">按下返回键时, 会执行第一个选项</string>
-    <string name="optdesc_big_image">依萤幕宽度缩放图片</string>
+    <string name="optdesc_big_image">缩放图片, 让宽度在指定的高度下尽量符合萤幕</string>
     <string name="optdesc_image_density">依萤幕长宽缩放图片</string>
     <string name="gamesdirTitle">游戏档案位置</string>
     <string name="gamesdirSum">游戏档案所存放的资料夹位置</string>
@@ -60,7 +60,7 @@
 
     <!-- Прочее Other Part 2: QspGameStock -->
     <string name="gamelistLoadError">无法载入游戏列表,  请检查网路设置</string>
-    <string name="playGameCmd">玩</string>
+    <string name="playGameCmd">启动</string>
     <string name="dlGameCmd">下载</string>
     <string name="gameLoadNetError">游戏无法下载, 请检查网路设置</string>
     <string name="cacheCreateError">无法建立快取资料夹</string>
@@ -135,6 +135,8 @@
     <string name="resetAllSum">重设完成, 请退出设定选单</string>
 
     <string name="closeGameCmd">关闭</string>
-    <string name="langSummary">更改后需重启程式</string>
+    <string name="langSummary">警告: 更改语言后程式会重新启动, 记得先存档!</string>
+    <string name="imgHeightTitle">图片:最大高度</string>
+    <string name="imgHeightSum">指定图片的最大高度</string>
 
 </resources>

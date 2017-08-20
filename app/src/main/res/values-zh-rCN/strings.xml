@@ -60,7 +60,7 @@
 
     <!-- Прочее Other Part 2: QspGameStock -->
     <string name="gamelistLoadError">无法载入游戏列表,  请检查网路设置</string>
-    <string name="playGameCmd">玩</string>
+    <string name="playGameCmd">启动</string>
     <string name="dlGameCmd">下载</string>
     <string name="gameLoadNetError">游戏无法下载, 请检查网路设置</string>
     <string name="cacheCreateError">无法建立快取资料夹</string>
