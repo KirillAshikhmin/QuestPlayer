@@ -11,6 +11,10 @@ TO DO:
 3. Get translation to properly update on exiting menu.
 4. Fix bugs
 
+Version 1.5.5
+1. Added Settings option to disable "Loading..." web display.
+2. Various bug fixes
+
 Version 1.5.4 changes:
 1. App will now change to landscape or portrait mode depending on how the device is held
 2. Tabulated image sizing issues corrected
