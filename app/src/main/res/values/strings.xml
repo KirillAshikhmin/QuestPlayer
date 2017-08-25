@@ -50,7 +50,7 @@
 	<!-- Вкладки Tabs -->	
     <string name="tab_all">Online</string>
     <string name="tab_downloaded">Local</string>
-    <string name="tab_starred">Marked</string>		
+    <string name="tab_starred">Market</string>
 	
 	<!-- Прочее Other -->	
     <string name="app_name">Quest Player</string>
@@ -127,6 +127,8 @@
 
     <string name="closeGameCmd">Close</string>
     <string name="langSummary">WARNING: Changing languages will terminate any active game</string>
+    <string name="loadingPageTitle">Diplay Loading Page</string>
+    <string name="loadingPageSumm">Choose whether to show \"Loading...\" before each page loads</string>
 
 
     <!-- ***************************************** -->
