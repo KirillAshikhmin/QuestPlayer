@@ -157,6 +157,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             + "font-size: QSPFONTSIZE; font-family: QSPFONTSTYLE; unusedtag=\"\"} "
             + "a{color: QSPLINKCOLOR}"
             + "a:link{color: QSPLINKCOLOR}"
+            + "table:{font-size: QSPFONTSIZE; font-family: QSPFONTSTYLE; }"
             + "</style></head>";
     public static String freshPageBodyTemplate = "<body>REPLACETEXT</body></html>";
     public static String curHtmlHead = freshPageHeadTemplate;
@@ -169,6 +170,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             + "font-size: " + QSPfontSize + "; font-family: " + QSPfontStyle + "; unusedtag=\"\"}"
             + "a{color: "+ QSPlinkColor +"}"
             + "a:link{color: "+ QSPlinkColor +"}"
+            + "table:{font-size: " + QSPfontSize + "; font-family: " + QSPfontStyle + "; }"
             + "</style></head>"
             + freshPageBodyTemplate;
 
@@ -768,7 +770,7 @@ Utility.WriteLog(""+padding);
         Display myDisplay = getWindowManager().getDefaultDisplay();
         myDisplay.getSize(size);
         float density = imageDensity ? QSP_displayMetrics.density : 1;
-        maxW = Math.round(size.x/density); // - padding/2);
+        maxW = Math.round(size.x/density - padding/2);
         maxH = Math.round(size.y/density * playerHeightLimit);
 
         return density;
@@ -778,14 +780,15 @@ Utility.WriteLog(""+padding);
         if (isMainDescHTML) {
             int tempMaxH = maxH;
             if(playerHeightLimit == 1) tempMaxH = -1;
-
-            main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
+            if (settings.getBoolean("showLoadingPage",true))
+                main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
             curMainDescHTML = Utility.QspStrToWebView(curMainDescHTML, curGameDir, maxW, tempMaxH, settings.getBoolean("sound", true), bigImage);
             setMainDescHTML(curMainDescHTML);
             main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT",curMainDescHTML), "text/html", "UTF-8", "");
 
         } else {
-            main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
+            if (settings.getBoolean("showLoadingPage",true))
+                main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
             curMainDescHTML = Utility.QspStrToStr(curMainDescHTML);
             setMainDescHTML(curMainDescHTML);
             main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT",curMainDescHTML), "text/html", "UTF-8", "");
@@ -1905,6 +1908,7 @@ Utility.WriteLog("runGame\\");
                         } catch (UnsupportedEncodingException e) {
                             Utility.ShowError(uiContext, getString(R.string.urlNotComp).replace("-URLTEXT-", txtMainDesc));
                         }
+Utility.WriteLog("newPage: "+newPage);
 
                         curMainDescHTML = newPage;
                         isMainDescHTML = html;
@@ -1945,10 +1949,13 @@ Utility.WriteLog("runGame\\");
             runOnUiThread(new Runnable() {
                 public void run() {
                     ListView lvAct = (ListView) findViewById(R.id.acts);
+
                     mActListAdapter = new QSPListAdapter(uiContext, R.layout.act_item, acts);
                     lvAct.setAdapter(mActListAdapter);
                     //Разворачиваем список действий
                     Utility.setListViewHeightBasedOnChildren(lvAct);
+                    if (mActListAdapter != null)
+                        mActListAdapter.notifyDataSetChanged();
                 }
             });
         }
@@ -1991,13 +1998,15 @@ Utility.WriteLog("runGame\\");
                     if (html) {
                         //vars_desc.setText(Utility.QspStrToHtml(txtVarsDesc, imgGetter, curGameDir));
                         //vars_desc.setMovementMethod(QspLinkMovementMethod.getInstance());
-                        vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
+                        if (settings.getBoolean("showLoadingPage",true))
+                            vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
                         curVarsDescHTML = Utility.QspStrToWebView(txtVarsDesc,curGameDir,maxW,maxH,settings.getBoolean("sound",true), bigImage);
                         vars_desc.loadDataWithBaseURL("",freshPageURL.replace("REPLACETEXT",curVarsDescHTML),"text/html","UTF-8","");
 //                        vars_desc.loadData(Utility.QspStrToWebView(txtVarsDesc,curGameDir),"text/html",null);
                     } else {
                         //vars_desc.setText(txtVarsDesc);
-                        vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
+                        if (settings.getBoolean("showLoadingPage",true))
+                            vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
                         curVarsDescHTML = Utility.QspStrToStr(txtVarsDesc);
                         vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", curVarsDescHTML), "text/html", "UTF-8", "");
 //                        vars_desc.loadData(Utility.QspStrToStr(txtVarsDesc),"text/html",null);
@@ -2422,7 +2431,8 @@ Utility.WriteLog("Config changed");
 Utility.WriteLog("maxH: "+maxH+", maxW: "+maxW);
             updateFreshPageURL();
             refreshMainDesc();
-            vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
+            if (settings.getBoolean("showLoadingPage",true))
+                vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
             if (isVarsDescHTML)
                 vars_desc.loadDataWithBaseURL("",freshPageURL.replace("REPLACETEXT",curVarsDescHTML),"text/html","UTF-8","");
             else

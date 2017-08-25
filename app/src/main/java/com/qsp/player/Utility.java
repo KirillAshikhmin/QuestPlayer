@@ -78,13 +78,11 @@ public class Utility {
             return;
         }
 
-        listView.measure(0,0); //added 8/19/17
         int totalHeight = 0;
-//        int desiredWidth = MeasureSpec.makeMeasureSpec(listView.getWidth(), MeasureSpec.AT_MOST);
+        int desiredWidth = MeasureSpec.makeMeasureSpec(listView.getWidth(), MeasureSpec.AT_MOST);
         for (int i = 0; i < listAdapter.getCount(); i++) {
             View listItem = listAdapter.getView(i, null, listView);
-//            listItem.measure(desiredWidth, MeasureSpec.UNSPECIFIED);
-            listItem.measure(0,0); //added 8/19/17
+            listItem.measure(desiredWidth, MeasureSpec.UNSPECIFIED);
             totalHeight += listItem.getMeasuredHeight();
         }
 
@@ -295,7 +293,7 @@ public class Utility {
 
         int fisCycles = 0;
 
-//        Utility.WriteLog("fixImagesSize: "+str);
+Utility.WriteLog("fixImagesSize: "+str);
 
         String endOfStr = str;
         String newStr= str;
@@ -325,7 +323,10 @@ public class Utility {
                 tableStr = tableStr.substring(0,endTableTag+1);
                 endOfStr = endOfStr.substring(openTable+tableStr.length());
 
-                newStr += tableStr;
+
+                //Change <table...> to <table>
+            newStr += "<table>";
+//                newStr += tableStr;
                 continue;
             }
             //if inside a <table> AND </table is found before <img or <table, inTable--
