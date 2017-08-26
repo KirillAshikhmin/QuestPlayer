@@ -127,9 +127,12 @@
 
     <string name="closeGameCmd">Close</string>
     <string name="langSummary">WARNING: Changing languages will terminate any active game</string>
-    <string name="loadingPageTitle">Diplay Loading Page</string>
+    <string name="loadingPageTitle">Display Loading Page</string>
     <string name="loadingPageSumm">Choose whether to show \"Loading...\" before each page loads</string>
 
+    <string name="storTypeTitle">Use External SD Card for Games</string>
+    <string name="storTypeSumOn">Currently using External SD Card</string>
+    <string name="storTypeSumOff">Currently using Internal Storage</string>
 
     <!-- ***************************************** -->
     <!-- WARNING: DO NOT TRANSLATE BELOW THIS LINE -->
