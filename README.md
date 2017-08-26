@@ -9,7 +9,12 @@ TO DO:
 1. Finish translations of strings.xml and prefs.xml files
 2. Update "About" menu option
 3. Get translation to properly update on exiting menu.
-4. Fix bugs
+4. Make a fully working "Path to Game Files" settings option
+5. Fix bugs
+
+Version 1.5.6 (quickfix)
+1. Added settings option to switch between External SD card and Internal Storage
+2. Various bug fixes (I'm detecting a pattern)
 
 Version 1.5.5
 1. Added Settings option to disable "Loading..." web display.
