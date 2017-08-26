@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -120,6 +123,8 @@ public class Utility {
             str = str.replaceAll("(?i)</td>", "");
             str = str.replaceAll("(?i)</tr>", "<br>");
 
+            str = fixTableAlign(str);
+
             str = fixImagesSize(str,srcDir,true,maxW,maxH,fitToWidth);
 
             return Html.fromHtml(str, imgGetter, null);
@@ -132,8 +137,8 @@ public class Utility {
         if (str != null && str.length() > 0) {
 //            Utility.WriteLog(str);
             str = str.replaceAll("\r", "<br>");
-//            str = str.replaceAll("(?i)</td>", " ");
-//            str = str.replaceAll("(?i)</tr>", "<br>");
+
+            str = fixTableAlign(str);
 
             str = fixImagesSize(str,srcDir,false,maxW,maxH,fitToWidth);
 
@@ -147,6 +152,86 @@ public class Utility {
 
         }
         return "";
+    }
+
+    //Move certain <table>-bound attributes to the appropriate <tr> tag
+    private static String fixTableAlign (String str) {
+
+        String newStr = str;
+        int inTable = 0;
+        Stack<String[]> attribs = new Stack<String[]>();
+        Stack<Integer> startOfTable = new Stack<Integer>();
+
+        boolean result = true;
+        int openTableIdx = 0;
+        int closeTableIdx = 0;
+        int curIdx = 0;
+
+        do {
+            openTableIdx = newStr.indexOf("<table",curIdx);
+            closeTableIdx = newStr.indexOf("</table",curIdx);
+
+            //if no more open/close Table, end this mess
+            if ((openTableIdx < 0) && (closeTableIdx < 0))
+            {
+                result = false;
+                continue;
+            }
+            //If closeTable before openTable
+            else if ( ((openTableIdx < 0) || (closeTableIdx < openTableIdx)) &&
+                        (closeTableIdx >= 0) )
+            {
+                if (inTable > 0)
+                {
+                    //If there is a table attribute on the stack, pop it and perform the table
+                    //attribute encoding
+                    if (!attribs.isEmpty())
+                    {
+                        String[] styles = attribs.pop();
+                        int curStart = startOfTable.pop();
+                    }
+                    inTable--;
+                    curIdx = closeTableIdx+7;
+                }
+
+            }
+            //If openTable before closeTable
+            else if ( (openTableIdx >= 0) &&
+                    ((openTableIdx < closeTableIdx) || (closeTableIdx < 0)) )
+            {
+                int openTableEnd = str.substring(openTableIdx).indexOf(">");
+                //if there's an openTableEnd, add the attributes to the stack
+                if (openTableEnd > 0 ) {
+                    attribs.push(getStyles(str.substring(openTableIdx, openTableEnd+openTableIdx)));
+                    startOfTable.push(openTableEnd);
+                }
+                //otherwise (no end brack for table tag), end the encoding
+                else return newStr;
+                inTable++;
+                curIdx = openTableIdx+6;
+            }
+        } while (result);
+        return newStr;
+    }
+
+    private static String[] getStyles (String tableTag) {
+        //first, change the table to remove the spaces around "="
+Utility.WriteLog("tableTag: "+tableTag);
+        tableTag = tableTag.replaceAll("[ ]*=[ ]*","=");
+Utility.WriteLog("postEquals: "+tableTag);
+
+        Pattern pattern = Pattern.compile("(\\S+)=['\"]?((?:(?!/>|>|\"|'|\\s).)+)");
+        Matcher matcher = pattern.matcher(tableTag);
+
+        int i=0;
+        while (matcher.find()) {
+            String group = matcher.group();
+            Utility.WriteLog("Group "+(i++)+": "+group);
+        }
+
+
+        String[] tempBin = {""};
+        return tempBin;
     }
 
     public static String addSpacesWithChar(String str, String target,boolean addBefore, boolean addAfter) {
@@ -310,23 +395,23 @@ Utility.WriteLog("fixImagesSize: "+str);
             // ** START TABLE CHECK **
             int openTable = endOfStr.indexOf("<table");
             int closeTable = endOfStr.indexOf("</table");
+Utility.WriteLog("open/close "+fisCycles+": "+openTable+", "+closeTable);
 
             //if <table is found before <img or </table, inTable++
             if ((openTable >= 0)
                     && (openTable < firstImg)
                     && ( (openTable < closeTable) || (closeTable < 0) )) {
                 inTable++;
-                Utility.WriteLog("inTable+ = "+inTable);
+                Utility.WriteLog("inTable+ = "+inTable+", "+openTable);
 
                 String tableStr = endOfStr.substring(openTable);
                 int endTableTag = tableStr.indexOf(">");
-                tableStr = tableStr.substring(0,endTableTag+1);
+                if (endTableTag > 0)
+                    tableStr = tableStr.substring(0,endTableTag+1);
+
                 endOfStr = endOfStr.substring(openTable+tableStr.length());
 
-
-                //Change <table...> to <table>
-            newStr += "<table>";
-//                newStr += tableStr;
+                newStr += tableStr;
                 continue;
             }
             //if inside a <table> AND </table is found before <img or <table, inTable--
@@ -335,7 +420,7 @@ Utility.WriteLog("fixImagesSize: "+str);
                     && (closeTable < firstImg)
                     && ((closeTable < openTable) || (openTable < 0))) {
                 inTable--;
-                Utility.WriteLog("inTable- = "+inTable);
+                Utility.WriteLog("inTable- = "+inTable+", "+closeTable);
 
                 String tableStr = endOfStr.substring(closeTable);
                 int endTableTag = tableStr.indexOf(">");
@@ -506,6 +591,8 @@ Utility.WriteLog("fixImagesSize: "+str);
 Utility.WriteLog("newStr: "+newStr);
         return newStr;
     }
+
+
 
     private static BitmapFactory.Options getImageDim (String imgSrc) {
         File imgFile = new File(imgSrc);
@@ -757,7 +844,23 @@ Utility.WriteLog("toStr:\n"+str);
     }
 
     public static void WriteLog(String msg) {
-        Log.i("QSP", msg);
+        String logMsg = "";
+        boolean firstMessage = true;
+        do {
+            if (msg.length() > 4000) {
+                logMsg = msg.substring(0, 4000);
+                msg = msg.substring(4000);
+            }
+            else {
+                logMsg = msg;
+                msg = "";
+            }
+            if (firstMessage) {
+                Log.i("QSP", logMsg);
+                firstMessage = false;
+            } else Log.i("(cont)", logMsg);
+
+        } while (!msg.equals(""));
     }
 
     public static void ShowError(Context context, String message) {

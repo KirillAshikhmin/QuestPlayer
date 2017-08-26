@@ -152,12 +152,12 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, "
             + "minimum-scale=1, maximum-scale=1\">"
             + "<style type=\"text/css\">"
-            + "body{margin: 0; padding: 0; color: QSPTEXTCOLOR; background-color: QSPBACKCOLOR;"
+            + "body{margin: 0; padding: 0; color: QSPTEXTCOLOR; background-color: QSPBACKCOLOR; "
             + "max-width: QSPMAXWIDTH; "
             + "font-size: QSPFONTSIZE; font-family: QSPFONTSTYLE; unusedtag=\"\"} "
-            + "a{color: QSPLINKCOLOR}"
-            + "a:link{color: QSPLINKCOLOR}"
-            + "table:{font-size: QSPFONTSIZE; font-family: QSPFONTSTYLE; }"
+            + "a{color: QSPLINKCOLOR} "
+            + "a:link{color: QSPLINKCOLOR} "
+            + "table{font-size: QSPFONTSIZE; font-family: QSPFONTSTYLE; } "
             + "</style></head>";
     public static String freshPageBodyTemplate = "<body>REPLACETEXT</body></html>";
     public static String curHtmlHead = freshPageHeadTemplate;
@@ -167,10 +167,10 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             + "<style type=\"text/css\">"
             + "body{margin: 0; padding: 0; color: " + QSPtextColor + "; background-color: " + QSPbackColor + "; "
             + "max-width: 100%; "
-            + "font-size: " + QSPfontSize + "; font-family: " + QSPfontStyle + "; unusedtag=\"\"}"
-            + "a{color: "+ QSPlinkColor +"}"
-            + "a:link{color: "+ QSPlinkColor +"}"
-            + "table:{font-size: " + QSPfontSize + "; font-family: " + QSPfontStyle + "; }"
+            + "font-size: " + QSPfontSize + "; font-family: " + QSPfontStyle + "; }"
+            + "a{color: "+ QSPlinkColor +"; }"
+            + "a:link{color: "+ QSPlinkColor +"; }"
+            + "table{font-size: " + QSPfontSize + "; font-family: " + QSPfontStyle + "; }"
             + "</style></head>"
             + freshPageBodyTemplate;
 
@@ -1527,6 +1527,8 @@ Utility.WriteLog("runGame\\");
         final String gameFileName = fileName;
         curGameFile = gameFileName;
         curGameDir = gameFileName.substring(0, gameFileName.lastIndexOf(File.separator, gameFileName.length() - 1) + 1);
+        Utility.WriteLog("curGameFile: "+curGameFile);
+        Utility.WriteLog("curGameDir: "+curGameDir);
         curSaveTitle = Utility.safetyString(gameFileName);
 
 //        saveGameDir = uiContext.getFilesDir().getAbsolutePath();

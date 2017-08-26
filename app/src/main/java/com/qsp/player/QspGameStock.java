@@ -137,6 +137,8 @@ public class QspGameStock extends TabActivity {
 	SharedPreferences settings;
 	String userSetLang;
 	String curLang = Locale.getDefault().getLanguage();
+    boolean usingSDcard = true;
+    String relGameDir = "QSP/games/";
 
 	HashMap<String, GameItem> gamesMap;
 	
@@ -230,7 +232,7 @@ public class QspGameStock extends TabActivity {
     	openDefaultTab = true;
     	gameListIsLoading = false;
     	triedToLoadGameList = false;
-    	
+
     	xmlGameListCached = null;
 
     	InitListViews();
@@ -266,6 +268,29 @@ public class QspGameStock extends TabActivity {
 			Utility.WriteLog(curLang+" <- "+userSetLang);
 		} else
 			Utility.WriteLog("GameStock:"+userSetLang+" == "+curLang+", no change");
+
+        //Set the storageType if it has changed
+        if (usingSDcard != settings.getBoolean("storageType",true)) {
+            usingSDcard = settings.getBoolean("storageType",true);
+            String strStorPath = null;
+            if (usingSDcard) {
+                strStorPath = System.getenv("SECONDARY_STORAGE");
+                if ((null == strStorPath) || (strStorPath.length() == 0)) {
+                    strStorPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
+                }
+            }
+            else if (!usingSDcard) {
+                strStorPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+            }
+            if ((strStorPath != null) && (!strStorPath.equals(""))) {
+                SharedPreferences.Editor editor = settings.edit();
+                editor.putString("gamesdir", strStorPath + "/" + relGameDir);
+                editor.commit();
+            }
+Utility.WriteLog("storageType: "+strStorPath+"/"+relGameDir);
+            RefreshLists();
+        }
+
 
     	super.onResume();
     	isActive = true;
@@ -372,16 +397,17 @@ public class QspGameStock extends TabActivity {
 
             case R.id.menu_openfile:
             // ** original code for BrowseGame directory checking **
-			//	BrowseGame(Environment.getExternalStorageDirectory().getPath(), true);
-
-			// ** begin replacement code for checking storage directory **
-				String strSDCardPath = System.getenv("SECONDARY_STORAGE");
-								if ((null == strSDCardPath) || (strSDCardPath.length() == 0)) {
-					strSDCardPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
-				}
-				BrowseGame(strSDCardPath, true);
-			// ** end replacement code for checking storage directory **
-
+                if (!settings.getBoolean("storageType",true))
+			        BrowseGame(Environment.getExternalStorageDirectory().getPath(), true);
+                else if (settings.getBoolean("storageType",true)) {
+                // ** begin replacement code for checking storage directory **
+                    String strSDCardPath = System.getenv("SECONDARY_STORAGE");
+                    if ((null == strSDCardPath) || (strSDCardPath.length() == 0)) {
+                        strSDCardPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
+                    }
+                    BrowseGame(strSDCardPath, true);
+                // ** end replacement code for checking storage directory **
+                }
                 return true;
 
             case R.id.menu_deletegames:
