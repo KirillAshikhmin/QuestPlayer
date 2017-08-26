@@ -122,10 +122,10 @@
     <string name="loadingURL"><center>讀取中...</center></string>
     <string name="resetAll">重設文字顏色和樣式設定?</string>
     <string name="resetAllSum">重設完成, 請退出設定選單</string>
+    <string name="imgHeightTitle">圖片:最大高度</string>
+    <string name="imgHeightSum">指定圖片的最大高度</string>
 
     <string name="closeGameCmd">關閉</string>
     <string name="langSummary">警告: 更改語言後程式會重新啟動, 記得先存檔!</string>
-    <string name="imgHeightTitle">圖片:最大高度</string>
-    <string name="imgHeightSum">指定圖片的最大高度</string>
 
 </resources>
