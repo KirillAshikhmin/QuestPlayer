@@ -13,7 +13,7 @@
     <string name="gestures_sum">Switch tab by Swap</string>
     <string name="using_gestures">Gestures</string>
     <string name="interface_scr_sum">Interface Setting</string>
-    <string name="interface_screen">Display Setting</string>
+    <string name="interface_screen">Display Settings</string>
     <string name="soundSum">Sound and Music</string>
     <string name="soundTitle">Sound</string>
     <string name="dialog_color_picker">Choose Color</string>
@@ -27,7 +27,7 @@
 	<string name="opt_back_action">Back Button as 1st action</string>
 	<string name="opt_big_image">Stretch Image to Screen Width</string>
 	<string name="opt_image_density">Image Fit to Screen</string>
-	<string name="optdesc_back_action">press the Back button the executes the first available actions</string>
+	<string name="optdesc_back_action">Back Button executes the first available action</string>
 	<string name="optdesc_big_image">Stretch image to the full width, but not more than maximum height</string>
 	<string name="optdesc_image_density">Stretch the image depending on the screen density</string>
     <string name="gamesdirTitle">Path to game files</string>
@@ -126,13 +126,21 @@
     <string name="imgHeightSum">Shrink images to specific height</string>
 
     <string name="closeGameCmd">Close</string>
-    <string name="langSummary">WARNING: Changing languages will terminate any active game</string>
+    <string name="langSummary">Exit menu to apply new language</string>
     <string name="loadingPageTitle">Display Loading Page</string>
     <string name="loadingPageSumm">Choose whether to show \"Loading...\" before each page loads</string>
 
-    <string name="storTypeTitle">Use External SD Card for Games</string>
-    <string name="storTypeSumOn">Currently using External SD Card</string>
-    <string name="storTypeSumOff">Currently using Internal Storage</string>
+    <string name="storTypeTitle">Use External SD Card</string>
+    <string name="storTypeSumOn">Using: External SD Card</string>
+    <string name="storTypeSumOff">Using: Internal Storage</string>
+
+    <string name="setcat_img">Image Settings</string>
+    <string name="setcat_txt">Text Settings</string>
+
+    <string name="selectDirTitle">Select Game Directory</string>
+    <string name="selectDir">[CLICK TO SELECT: \"-DIRNAME-\"]</string>
+
+
 
     <!-- ***************************************** -->
     <!-- WARNING: DO NOT TRANSLATE BELOW THIS LINE -->
@@ -157,6 +165,9 @@
     <string name="defactsColor">#ffffd7</string>
     <string name="deftypeface">0</string>
     <string name="deffontsize">16</string>
+
+    <string name="defGamePath">/storage/sdcard1/QSP/games/</string>
+    <string name="defRelPath">/QSP/games/</string>
 
     <!-- ***************************************** -->
     <!-- ******** END UNTRANSLATED REGION ******** -->
