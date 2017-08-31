@@ -8,9 +8,14 @@ This will basically be a series of bug fixes to BOOMik's Quest Player for Androi
 TO DO:
 1. Finish translations of strings.xml and prefs.xml files
 2. Update "About" menu option
-3. Get translation to properly update on exiting menu.
-4. Make a fully working "Path to Game Files" settings option
-5. Fix bugs
+3. Fix bugs
+
+Version 1.5.7
+1. Created directory browser to select QSP game folders directory
+2. Landscape mode hides the title menu during a game to improve visibility
+3. Changing the language will properly update upon exiting Settings
+4. Removed non-functional "About" menu item (will add it back in later)
+5. Various bug/display fixes (still going!)
 
 Version 1.5.6 (quickfix)
 1. Added settings option to switch between External SD card and Internal Storage
