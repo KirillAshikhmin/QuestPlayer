@@ -42,6 +42,7 @@ import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.preference.Preference;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
@@ -138,7 +139,8 @@ public class QspGameStock extends TabActivity {
 	String userSetLang;
 	String curLang = Locale.getDefault().getLanguage();
     boolean usingSDcard = true;
-    String relGameDir = "QSP/games/";
+	String relGameDir = "QSP/games/";
+	String compGameDir = "/storage/sdcard1/QSP/games/";
 
 	HashMap<String, GameItem> gamesMap;
 	
@@ -208,6 +210,12 @@ public class QspGameStock extends TabActivity {
         super.onCreate(savedInstanceState);
 		settings = PreferenceManager.getDefaultSharedPreferences(this);
 
+		userSetLang = settings.getString("lang", "en");
+		curLang = userSetLang;
+		setGSLocale(userSetLang);
+
+		setFullGamesPath();
+
         Intent gameStockIntent = getIntent();
         gameIsRunning = gameStockIntent.getBooleanExtra("game_is_running", false);
         startingGSUp = true;
@@ -269,48 +277,92 @@ public class QspGameStock extends TabActivity {
 		} else
 			Utility.WriteLog("GameStock:"+userSetLang+" == "+curLang+", no change");
 
-        //Set the storageType if it has changed
-        if (usingSDcard != settings.getBoolean("storageType",true)) {
-            usingSDcard = settings.getBoolean("storageType",true);
-            String strStorPath = null;
-            if (usingSDcard) {
-                strStorPath = System.getenv("SECONDARY_STORAGE");
-                if ((null == strStorPath) || (strStorPath.length() == 0)) {
-                    strStorPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
-                }
-            }
-            else if (!usingSDcard) {
-                strStorPath = Environment.getExternalStorageDirectory().getAbsolutePath();
-            }
-            if ((strStorPath != null) && (!strStorPath.equals(""))) {
-                SharedPreferences.Editor editor = settings.edit();
-                editor.putString("gamesdir", strStorPath + "/" + relGameDir);
-                editor.commit();
-            }
-Utility.WriteLog("storageType: "+strStorPath+"/"+relGameDir);
-            RefreshLists();
-        }
+        //Set the storage location/games directory
+		usingSDcard = settings.getBoolean("storageType",true);
+
+		Utility.WriteLog("getFullGamesPath = "+getFullGamesPath());
+		setFullGamesPath();
+
+		RefreshLists();
+//end storage/directory settings
 
 
     	super.onResume();
     	isActive = true;
 
-        //Refresh QspGameStock if the user changed the language
-        Utility.WriteLog("startingUpQSP: "+startingGSUp+", langChanged: "+langChanged);
+        //Refresh QspGameStock tabs if the user changed the language
+		if (langChanged) {
+			RefreshAllTabs();
+			setTitle(getString(R.string.menu_gamestock));
+			invalidateOptionsMenu();
+		}
+
+
+		/*
+		    Utility.WriteLog("startingUpQSP: "+startingGSUp+", langChanged: "+langChanged);
         if ((!startingGSUp) && (langChanged)) {
+			Utility.WriteLog("RECREATE*");
+			setTitle(getString(R.string.menu_gamestock));
+			recreate();
+			Utility.WriteLog("RECREATE/");
+
             Utility.WriteLog("FreeResources*");
+
             Utility.WriteLog("FreeResources*");
-            Utility.WriteLog("RECREATE*");
-            setTitle(getString(R.string.menu_gamestock));
-//            recreate();
-            Utility.WriteLog("RECREATE/");
         }
-        else startingGSUp = false;
+        else startingGSUp = false;*/
 
 
         Utility.WriteLog("[G]onResume/");
     }
-    
+
+    //Call only if settings is initialized
+    public String getFullGamesPath () {
+		String tempPath = settings.getString("compGamePath", getString(R.string.defGamePath));
+		return tempPath;
+	}
+
+	public void setFullGamesPath () {
+		String SDPath = "";
+
+		//Get external SD card flag and get directory; set extSDCard false if no external SD card
+		boolean extSDCard = settings.getBoolean("storageType",true);
+		if (extSDCard) {
+			SDPath = System.getenv("SECONDARY_STORAGE");
+			if ((null == SDPath) || (SDPath.length() == 0)) {
+				SDPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
+			}
+			if ((null == SDPath) || (SDPath.length() == 0)) {
+				SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+				extSDCard = false;
+			}
+		} else
+			SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+Utility.WriteLog("TEMP:"+SDPath);
+		//Get the relative games path and merge the two directories
+		//Add a trailing "/" to relPath and remove change "//" to "/" if present
+		String relPath = settings.getString("relGamePath",getString(R.string.defRelPath));
+		if (!relPath.endsWith("/")) relPath +="/";
+		if (!relPath.startsWith("/")) relPath = "/" + relPath;
+		String fullGamesPath = SDPath + relPath;
+		relPath = relPath.replace("//","/");
+		fullGamesPath = fullGamesPath.replace("//","/");
+
+		//Store adjusted storage type, relative path, and complete game directory
+		SharedPreferences.Editor editor = settings.edit();
+		editor.putBoolean("storageType", extSDCard);
+		editor.putString("relGamePath", relPath);
+		editor.putString("compGamePath", fullGamesPath);
+		editor.commit();
+
+
+
+		Utility.WriteLog("storageType: "+settings.getBoolean("storageType",true));
+		Utility.WriteLog("relGamePath: "+settings.getString("relGamePath",getString(R.string.defRelPath)));
+		Utility.WriteLog("compGamePath: "+settings.getString("compGamePath",getString(R.string.defGamePath)));
+
+	}
+
     @Override
     public void onPostResume()
     {
@@ -388,13 +440,13 @@ Utility.WriteLog("storageType: "+strStorPath+"/"+relGameDir);
                 intent.setClass(this, Settings.class);
                 startActivity(intent);
                 return true;
-
+/*
             case R.id.menu_about:
             	Intent updateIntent = null;
         		updateIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.market_details_url)));
         		startActivity(updateIntent); 
                 return true;
-
+*/
             case R.id.menu_openfile:
             // ** original code for BrowseGame directory checking **
                 if (!settings.getBoolean("storageType",true))
@@ -940,9 +992,8 @@ Utility.WriteLog("storageType: "+strStorPath+"/"+relGameDir);
     private boolean ScanDownloadedGames()
     {
     	//Заполняем список скачанных игр
-    	
 	String path = Utility.GetGamesPath(this);
-    	if (TextUtils.isEmpty(path))
+		if (TextUtils.isEmpty(path))
     		return false;
     	
         File gameStartDir = new File (path);
@@ -1031,6 +1082,12 @@ Utility.WriteLog("storageType: "+strStorPath+"/"+relGameDir);
    
     private void RefreshAllTabs()
     {
+		//Update all tab titles
+		TabHost tabHost = getTabHost();
+		((TextView)tabHost.getTabWidget().getChildAt(2).findViewById(android.R.id.title)).setText(getString(R.string.tab_all));
+		((TextView)tabHost.getTabWidget().getChildAt(1).findViewById(android.R.id.title)).setText(getString(R.string.tab_starred));
+		((TextView)tabHost.getTabWidget().getChildAt(0).findViewById(android.R.id.title)).setText(getString(R.string.tab_downloaded));
+
     	//Выводим списки игр на экран
 
     	//Все
@@ -1053,18 +1110,19 @@ Utility.WriteLog("storageType: "+strStorPath+"/"+relGameDir);
         //!!! STUB
         ArrayList<GameItem> gamesStarred = new ArrayList<GameItem>();
         lvStarred.setAdapter(new GameAdapter(uiContext, R.layout.game_item, gamesStarred));
-        //Определяем, какую вкладку открыть
+
+        //Determine which tab to open
         if (openDefaultTab)
         {
         	openDefaultTab = false;
         	
-        	int tabIndex = 0;//Загруженные
+        	int tabIndex = 0;//Uploaded
         	if (lvDownloaded.getAdapter().isEmpty())
         	{
         		if (lvStarred.getAdapter().isEmpty())
-        			tabIndex = 2;//Все
+        			tabIndex = 2;//All
         		else
-        			tabIndex = 1;//Отмеченные
+        			tabIndex = 1;//Reported
         	}
         	
         	getTabHost().setCurrentTab(tabIndex);

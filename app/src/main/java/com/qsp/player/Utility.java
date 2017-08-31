@@ -4,8 +4,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.sql.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -157,7 +161,8 @@ public class Utility {
     //Move certain <table>-bound attributes to the appropriate <tr> tag
     private static String fixTableAlign (String str) {
 
-        String newStr = str;
+        String newStr = "";
+        String curStr = "";
         int inTable = 0;
         Stack<String[]> attribs = new Stack<String[]>();
         Stack<Integer> startOfTable = new Stack<Integer>();
@@ -166,10 +171,13 @@ public class Utility {
         int openTableIdx = 0;
         int closeTableIdx = 0;
         int curIdx = 0;
+        int lastIdx = 0;
+        String[] curStyles;
 
         do {
-            openTableIdx = newStr.indexOf("<table",curIdx);
-            closeTableIdx = newStr.indexOf("</table",curIdx);
+            openTableIdx = str.indexOf("<table",curIdx);
+            closeTableIdx = str.indexOf("</table",curIdx);
+            curStyles = new String[0];
 
             //if no more open/close Table, end this mess
             if ((openTableIdx < 0) && (closeTableIdx < 0))
@@ -177,7 +185,7 @@ public class Utility {
                 result = false;
                 continue;
             }
-            //If closeTable before openTable
+            //If closeTable comes before openTable
             else if ( ((openTableIdx < 0) || (closeTableIdx < openTableIdx)) &&
                         (closeTableIdx >= 0) )
             {
@@ -187,56 +195,229 @@ public class Utility {
                     //attribute encoding
                     if (!attribs.isEmpty())
                     {
-                        String[] styles = attribs.pop();
-                        int curStart = startOfTable.pop();
+                        curStyles = attribs.pop();
+//                        int curStart = startOfTable.pop();
                     }
                     inTable--;
-                    curIdx = closeTableIdx+7;
                 }
 
+                //Mark the current str (start to finish) and make a curStr to process
+                lastIdx = curIdx;
+                curIdx = closeTableIdx+7;
+                curStr = str.substring(lastIdx,curIdx);
             }
+
             //If openTable before closeTable
             else if ( (openTableIdx >= 0) &&
                     ((openTableIdx < closeTableIdx) || (closeTableIdx < 0)) )
             {
                 int openTableEnd = str.substring(openTableIdx).indexOf(">");
-                //if there's an openTableEnd, add the attributes to the stack
+                //Add the attributes for this table to the stack
                 if (openTableEnd > 0 ) {
-                    attribs.push(getStyles(str.substring(openTableIdx, openTableEnd+openTableIdx)));
-                    startOfTable.push(openTableEnd);
+                    curStyles = getStyles(str.substring(openTableIdx, openTableEnd+openTableIdx));
+
+                    //Attributes are cumulative for nested tables, so add previous attributes
+                    if (!attribs.isEmpty()) {
+//Utility.WriteLog("Merging ["+StringArrayToString(curStyles)+"] + ["+StringArrayToString(attribs.peek())+"]");
+                        curStyles = MergeStrArrays(curStyles, attribs.peek());
+                    }
+
+                    attribs.push(curStyles);
+//                    startOfTable.push(openTableEnd);
                 }
-                //otherwise (no end brack for table tag), end the encoding
+                //if there's no end bracket for the table tag, end the encoding
                 else return newStr;
                 inTable++;
+
+                //Mark the current str (start to finish) and make a curStr to process
+                lastIdx = curIdx;
                 curIdx = openTableIdx+6;
+                curStr = str.substring(lastIdx,curIdx);
             }
+
+            //Once opening or closing the table is completed, process/attribute the curStr
+//Utility.WriteLog("total curStyles: "+curStyles.length+", Index: "+lastIdx+" to "+curIdx);
+//Utility.WriteLog("curStyles: "+StringArrayToString(curStyles));
+
+            if (curStyles.length != 0)
+                newStr += addTagStyles(curStr,curStyles);
+            else
+                newStr += curStr;
         } while (result);
+
+        //add the remainder of str, if any
+        if (curIdx < str.length())
+            newStr += str.substring(curIdx,str.length());
+
+//Utility.WriteLog("post-TableAlign: "+newStr);
         return newStr;
+    }
+
+    private static String StringArrayToString (String[] target) {
+        if (target.length == 0) return "";
+
+        String newStr = "";
+        for (int i=0; i<target.length; i++) {
+            if (isNullOrEmpty(target[i])) continue;
+            newStr += " "+target[i];
+        }
+        if (newStr.startsWith(" ")) newStr = newStr.substring(1);
+
+        return newStr;
+    }
+
+    private static String addTagStyles (String target,String[] styles) {
+        if (isNullOrEmpty(target)) return "";
+        if (styles.length == 0) return target;
+
+        for (int i=0; i<styles.length; i++) {
+            //if the string is null/empty or is not "X=Y", skip
+            if (isNullOrEmpty(styles[i])) continue;
+            int attribIdx = styles[i].indexOf("=");
+            if (attribIdx < 1) continue;
+
+Utility.WriteLog("Switch: "+styles[i].substring(0,attribIdx));
+            switch ( styles[i].substring(0,attribIdx) ) {
+                //if table has valign, insert it in the "<tr" and "<td" tags
+                case "valign": {
+Utility.WriteLog("Valign active");
+                    target = target.replace("<tr","<tr "+styles[i]+" ");
+                }
+
+            }
+
+        }
+
+        return target;
+    }
+
+    public static String[] MergeStrArrays (String[] array1, String[] array2) {
+        int len1 = array1.length;
+        int len2 = array2.length;
+        if ((len1 == 0) && (len2 == 0)) return null;
+        if ((len1 > 0) && (len2 == 0)) return array1;
+        if ((len1 == 0) && (len2 > 0)) return array2;
+
+        String[] newArray = new String[len1+len2];
+        int totalItems = 0;
+
+        //Concatenate both arrays, but don't duplicate attributes or add non-attributes
+        for (int i=0; i<len1; i++) {
+            //Verify the item is an attribute ("X=Y")
+            int attribIdx = array1[i].indexOf("=");
+            if (attribIdx < 1) continue;
+
+            //If the attribute is in the array, skip
+            boolean nextItem = false;
+            for (int j=0; j<totalItems; j++)
+                if (newArray[j].startsWith(array1[i].substring(0,attribIdx)))
+                    nextItem = true;
+            if (nextItem) continue;
+
+            //Add the item to the array
+            newArray[totalItems] = array1[i];
+            totalItems++;
+        }
+
+        for (int i=0; i<len2; i++) {
+            //Verify the item is an attribute ("X=Y")
+            int attribIdx = array2[i].indexOf("=");
+            if (attribIdx < 1) continue;
+
+            //If the attribute is in the array, skip it
+            boolean nextItem = false;
+            for (int j=0; j<totalItems; j++)
+                if (newArray[j].startsWith(array2[i].substring(0,attribIdx))) nextItem = true;
+            if (nextItem) continue;
+
+            //Add the item to the array
+            newArray[totalItems] = array2[i];
+            totalItems++;
+        }
+
+        String[] finalArray = new String[totalItems];
+        for (int i=0; i<totalItems; i++)
+            finalArray[i] = newArray[i];
+        return finalArray;
+
     }
 
     private static String[] getStyles (String tableTag) {
         //first, change the table to remove the spaces around "="
-Utility.WriteLog("tableTag: "+tableTag);
         tableTag = tableTag.replaceAll("[ ]*=[ ]*","=");
-Utility.WriteLog("postEquals: "+tableTag);
 
+        //Check for each style attribute in format "X=Y"
         Pattern pattern = Pattern.compile("(\\S+)=['\"]?((?:(?!/>|>|\"|'|\\s).)+)");
         Matcher matcher = pattern.matcher(tableTag);
+        List<String> styleList = new ArrayList<String>();
 
+        //Add them one-by-one as separate strings, then return an array of style tags
         int i=0;
         while (matcher.find()) {
             String group = matcher.group();
-            Utility.WriteLog("Group "+(i++)+": "+group);
+            styleList.add(group);
+            i++;
         }
-
-
-        String[] tempBin = {""};
-        return tempBin;
+        if (styleList.isEmpty()) {
+            String[] tempBin = {};
+            return tempBin;
+        }
+        else
+            return styleList.toArray(new String[styleList.size()]);
     }
 
-    public static String addSpacesWithChar(String str, String target,boolean addBefore, boolean addAfter) {
+    //Prepares an "exec:" URL tag for execution
+    public static String prepareForExec (String code) {
+        String tempCode = "";
 
-//Utility.WriteLog("[href] = \""+str+"\", [target] = \""+target+"\"");
+        //Check the code char by char for "%"
+        for (int i=0; i<code.length(); i++) {
+            //if not "%", skip it
+            if (code.charAt(i) != '%') {
+                tempCode += code.charAt(i);
+                continue;
+            }
+            //If "%" starts a URL escape code, skip it
+            if (code.length() >= i+3)
+                if ( code.substring(i,i+3).matches("%[a-zA-Z0-9][a-zA-Z0-9]") ) {
+                    tempCode += code.substring(i,i+3);
+                    i = i + 2;
+                    continue;
+                }
+            //If "%" is NOT a URL escape code, safety-encode it
+            tempCode += "-SAFEPERCENT-";
+
+        }
+
+        //Safety-encode any "+" signs that are present
+        tempCode = tempCode.replace("+","-SAFEPLUSSIGN-");
+
+        try {
+            //Decode all the URL escape codes back to normal text
+            tempCode = URLDecoder.decode(tempCode, "UTF-8");
+        } catch (UnsupportedEncodingException e) { }
+
+        //Decode all the safety-encoded percent signs
+        tempCode = tempCode.replace("-SAFEPERCENT-", "%");
+        tempCode = tempCode.replace("-SAFEPLUSSIGN-","+");
+
+        //Replace all "<br>" in exec string with " & "
+        tempCode = tempCode.replace("<br>"," & ");
+
+        //Replace all "%2b" in exec string with "+"
+        tempCode = tempCode.replace("%2b","+");
+
+        //Collapse multispace
+        tempCode = tempCode.replaceAll("/ +/"," ");
+
+        //Collapse "& &" (if any) to "&"
+        tempCode = tempCode.replace("& &","&");
+Utility.WriteLog(tempCode);
+        return tempCode;
+    }
+
+    //Find all of a certain character and adds a leading and trailing space, if needed
+    public static String addSpacesWithChar(String str, String target,boolean addBefore, boolean addAfter) {
 
         //Check if the string has the target character set
         boolean hasTarget = str.toLowerCase().contains(target.toLowerCase());
@@ -258,8 +439,6 @@ Utility.WriteLog("postEquals: "+tableTag);
                 endOfStr = endOfStr.substring(targetIndex + targetLength);
             else endOfStr = "";
 
-//Utility.WriteLog("[newStr] = \"" +newStr+"\", [target] = \""+target+"\", [endOfStr] = \""+endOfStr+"\", [targetIndex] = "+targetIndex+", [targetLength] = "+targetLength);
-
             //addBefore: if there are characters before the target, add a space if there isn't one
             if ((addBefore) && (newStr.length() > 0) && (newStr.charAt(newStr.length()-1) != ' '))
                 newStr += " ";
@@ -276,12 +455,11 @@ Utility.WriteLog("postEquals: "+tableTag);
         //finish the string
         newStr += endOfStr;
 
-//Utility.WriteLog("[newStr] = \""+newStr+"\"");
         return newStr;
     }
 
-    //This encodes all (+) symbols found in Href tags to (%2b) for URLDecoder; all other (+)
-    //symbols are changed to QSPPLUSSYMBOLCODE for later replacement
+    //This encodes all (+) symbols found in Href tags to (%2b) for URLDecoder;
+    //all other (+) symbols are changed to QSPPLUSSYMBOLCODE for later replacement
     public static String replaceHrefPlusSymbols(String str) {
         String curStr = "";
         String newStr = "";
@@ -315,8 +493,11 @@ Utility.WriteLog("postEquals: "+tableTag);
 
             //Replace all the (+) symbols within the (<...href...>) block with (%2b) then
             //add the processed curStr to newStr
-            if (curStr.contains("href") && curStr.contains("+")) {
-                newStr += curStr.replace("+","%2b");
+
+            if (curStr.contains("href")) {
+                if (curStr.contains("+"))
+                    curStr = curStr.replace("+","%2b");
+                newStr += curStr;
             }
             //if (href) is not present in (<...>), add curStr to newStr and continue
             else newStr += curStr;
@@ -331,7 +512,7 @@ Utility.WriteLog("postEquals: "+tableTag);
     //loaded into WebView but instead becomes "%2b"
     public static String encodeExec(String str) {
         boolean hasExec = str.contains("exec:");
-        if (!hasExec) return str;
+        if (!hasExec) return replaceHrefPlusSymbols(str);
 
         String endOfExecStr = str;
         String newStr = "";
@@ -358,9 +539,7 @@ Utility.WriteLog("postEquals: "+tableTag);
             }
 
             //Replace all '+' with the URL-codable '+' and attach to newStr
-
             newStr += addSpacesWithChar(replaceHrefPlusSymbols(execStr),"&",true,true);
-//            newStr += addSpacesWithChar(execStr.replace("+","%2b"),"&",true,true);
 
             hasExec = endOfExecStr.contains("exec:");
         } while (hasExec);
@@ -380,9 +559,9 @@ Utility.WriteLog("postEquals: "+tableTag);
 
 Utility.WriteLog("fixImagesSize: "+str);
 
+        if (!hasImg) return str;
         String endOfStr = str;
         String newStr= str;
-        if (!hasImg) return str;
         Pattern pattern = Pattern.compile("(\\S+)=['\"]?((?:(?!/>|>|\"|'|\\s).)+)");
         do {
             int firstImg = endOfStr.indexOf("<img");
@@ -395,7 +574,7 @@ Utility.WriteLog("fixImagesSize: "+str);
             // ** START TABLE CHECK **
             int openTable = endOfStr.indexOf("<table");
             int closeTable = endOfStr.indexOf("</table");
-Utility.WriteLog("open/close "+fisCycles+": "+openTable+", "+closeTable);
+//Utility.WriteLog("open/close "+fisCycles+": "+openTable+", "+closeTable);
 
             //if <table is found before <img or </table, inTable++
             if ((openTable >= 0)
@@ -563,9 +742,13 @@ Utility.WriteLog("open/close "+fisCycles+": "+openTable+", "+closeTable);
                     else if ((fitToWidth && (w < maxW)) || (w > maxW))
                         w = maxW;
 
-                        //if in a table, use 100% for the width so to not override the table
-                    if (inTable > 0)
-                        newStr += curStr.replace(">", "width = \"100%\">") + endOfStr;
+                    //if in a table, use 100% for the width so to not override the table
+                    if (inTable > 0) {
+                        if (h == maxH)
+                            newStr += curStr.replace(">"," height=\""+maxH+"\" max-width=100%>") + endOfStr;
+                        else
+                            newStr += curStr.replace(">", " width=\"100%\">") + endOfStr;
+                    }
                     //if not in a table AND more than one image in the line AND Image Fit to Width,
                     //multiply all the images by 1/imgsInLine. Otherwise, let WebView handle it
                     else {
@@ -574,12 +757,12 @@ Utility.WriteLog("open/close "+fisCycles+": "+openTable+", "+closeTable);
                             h = Math.round(h/imgsInLine);
                         }
                         if (maxH > 0) //add width and height if maxH > 0
-                            newStr += curStr.replace(">", "width = \"" + w + "\" height = \"" + h + "\">") + endOfStr;
+                            newStr += curStr.replace(">", "width=\"" + w + "\" height=\"" + h + "\">") + endOfStr;
                         else //add width only if maxH <= 0
-                            newStr += curStr.replace(">", "width = \"" + w + "\" >") + endOfStr;
+                            newStr += curStr.replace(">", "width=\"" + w + "\" >") + endOfStr;
                     }
                     fisCycles++;
-//                    Utility.WriteLog("endOfStr "+fisCycles+": "+endOfStr);
+//Utility.WriteLog("endOfStr "+fisCycles+": "+endOfStr);
                     continue;
                 }
 
@@ -588,7 +771,7 @@ Utility.WriteLog("open/close "+fisCycles+": "+openTable+", "+closeTable);
             }
 
         } while (hasImg);
-Utility.WriteLog("newStr: "+newStr);
+//Utility.WriteLog("newStr: "+newStr);
         return newStr;
     }
 
@@ -810,13 +993,10 @@ Utility.WriteLog("toStr:\n"+str);
 		}
         if ((null == strSDCardPath) || (strSDCardPath.length() == 0)) {
             strSDCardPath = Environment.getExternalStorageDirectory().getPath();
-
         }
 		// ** end replacement code for checking storage directory **
 
         sdDir = new File (strSDCardPath);
-
-
 
         if (sdDir.exists() && sdDir.canWrite()) {
             String flashCard = sdDir.getPath();
@@ -839,7 +1019,7 @@ Utility.WriteLog("toStr:\n"+str);
 
     public static String GetGamesPath(Context context) {
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
-        String path = settings.getString("gamesdir", null);
+        String path = settings.getString("compGamePath", null);
         return (path != null && !TextUtils.isEmpty(path)) ? path : GetDefaultPath(context);
     }
 

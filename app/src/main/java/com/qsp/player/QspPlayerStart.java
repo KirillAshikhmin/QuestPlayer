@@ -14,6 +14,7 @@ import android.gesture.Gesture;
 import android.gesture.GestureOverlayView;
 import android.gesture.GestureStroke;
 import android.gesture.GestureOverlayView.OnGesturePerformedListener;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Typeface;
@@ -28,6 +29,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.preference.PreferenceManager;
+import android.support.annotation.RequiresPermission;
 import android.support.v4.content.PermissionChecker;
 import android.text.format.DateFormat;
 import android.util.DisplayMetrics;
@@ -258,10 +260,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
                         //Exec commands with special characters in WebView must be
                         //changed back to special characters
-                        String tempCode = "";
-                        try {
-                            tempCode = URLDecoder.decode(code,"UTF-8");
-                        } catch (UnsupportedEncodingException e) { }
+                        String tempCode = Utility.prepareForExec(code);
 
                         boolean bExec = QSPExecString(tempCode, true);
                         CheckQspResult(bExec, "OnUrlClicked: QSPExecString");
@@ -418,7 +417,13 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
                 requestWindowFeature(Window.FEATURE_NO_TITLE);
             setContentView(R.layout.main);
             res = getResources();
-            userSetLang = settings.getString("lang", "en");
+
+        if (res.getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)
+            hideTitle();
+
+        userSetLang = settings.getString("lang", "en");
+            curLang = userSetLang;
+            setQSPLocale(userSetLang);
 
             main_desc = (WebView) findViewById(R.id.main_desc);
             vars_desc = (WebView) findViewById(R.id.vars_desc);
@@ -582,17 +587,26 @@ Utility.WriteLog("playerHeightLimit: " + playerHeightLimit + ", tempImgPerScreen
         waitForImageBox = false;
 
         //Refresh QspPlayerStart if the user changed the language
-Utility.WriteLog("startingUpQSP: "+startingUpQSP+", langChanged: "+langChanged);
+        if (langChanged) {
+            setCurrentWin(currentWin);
+            setTitle(R.string.app_name);
+            startingUpQSP = false;
+            invalidateOptionsMenu();
+        }
+/*
+        Utility.WriteLog("startingUpQSP: "+startingUpQSP+", langChanged: "+langChanged);
         if ((!startingUpQSP) && (langChanged)) {
+Utility.WriteLog("RECREATE*");
+            //recreate();
+Utility.WriteLog("RECREATE/");
+
 Utility.WriteLog("FreeResources*");
             FreeResources();
 Utility.WriteLog("FreeResources*");
-Utility.WriteLog("RECREATE*");
-            recreate();
-Utility.WriteLog("RECREATE/");
+            ShowGameStock();
         }
         else startingUpQSP = false;
-
+*/
         Utility.WriteLog("onResume/");
     }
 
@@ -1037,7 +1051,7 @@ Utility.WriteLog("fname1 = " + fname);
                 intent.setClass(this, Settings.class);
                 startActivity(intent);
                 return true;
-
+/*
             case R.id.menu_about:
                 Intent updateIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.market_details_url)));
                 try {
@@ -1047,7 +1061,7 @@ Utility.WriteLog("fname1 = " + fname);
                     return false;
                 }
                 return true;
-
+*/
             case R.id.menu_newgame:
                 String gameFile = curGameFile;
                 StopGame(true);
@@ -1272,8 +1286,9 @@ Utility.WriteLog("fname1 = " + fname);
         if (requestCode == ACTIVITY_SELECT_GAME) {
             if (resultCode == RESULT_OK) {
                 //Игра выбрана, запускаем ее
-                if (data == null)
+                if (data == null) {
                     return;
+                }
                 String file_name = data.getStringExtra("file_name");
                 if ((file_name == null) || file_name.equals(curGameFile))
                     return;
@@ -1891,11 +1906,11 @@ Utility.WriteLog("runGame\\");
                     if (newPage == null || newPage.equals(""))
                         main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", ""), "text/html", "UTF-8", "");
                     else {
+                        newPage = Utility.encodeExec(newPage);
                         try {
-                            newPage = Utility.replaceHrefPlusSymbols(newPage);
 //                            Utility.WriteLog("Before change:\n" + newPage);
-                            newPage = Utility.encodeExec(newPage);
 //                            Utility.WriteLog("After encodeExec():\n" + newPage);
+//                            newPage = Utility.replaceHrefPlusSymbols(newPage);
 
                             //Decode the URL, but be sure to remove any % signs before doing so
                             //as these can cause crashes. Change back after URLDecoder.
@@ -1904,33 +1919,17 @@ Utility.WriteLog("runGame\\");
                             newPage = newPage.replace("-PERCENTSIGN-", "%");
 
                             //Return the visible (+) symbols to their normal form
-                            newPage = newPage.replace("QSPPLUSSYMBOLCODE","+");
 
 //                            Utility.WriteLog("After URLDecoder():\n" + newPage);
                         } catch (UnsupportedEncodingException e) {
                             Utility.ShowError(uiContext, getString(R.string.urlNotComp).replace("-URLTEXT-", txtMainDesc));
                         }
-Utility.WriteLog("newPage: "+newPage);
+                    newPage = newPage.replace("QSPPLUSSYMBOLCODE","+");
+//Utility.WriteLog("newPage: "+newPage);
 
                         curMainDescHTML = newPage;
                         isMainDescHTML = html;
                         refreshMainDesc();
-/*                        if (html) {
-                            main_desc.getSettings().setJavaScriptEnabled(false);
-                            isMainDescHTML = true;
-                            main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
-
-                            newPage = Utility.QspStrToWebView(newPage, curGameDir, maxW, maxH, settings.getBoolean("sound", true), bigImage);
-                            setMainDescHTML(newPage);
-                            main_desc.loadDataWithBaseURL("", newPage, "text/html", "UTF-8", "");
-
-                        } else {
-                            isMainDescHTML = false;
-                            main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
-                            newPage = Utility.QspStrToStr(newPage);
-                            setMainDescHTML(newPage);
-                            main_desc.loadDataWithBaseURL("", newPage, "text/html", "UTF-8", "");
-                        }*/
                     }
                 }
             });
@@ -2329,7 +2328,11 @@ Utility.WriteLog("newPage: "+newPage);
                         return;
                     libraryThreadIsRunning = true;
 
-                    boolean bExec = QSPExecString(code, true);
+                    //Exec commands with special characters in WebView must be
+                    //changed back to special characters
+                    String tempCode = Utility.prepareForExec(code);
+
+                    boolean bExec = QSPExecString(tempCode, true);
                     CheckQspResult(bExec, "OnUrlClicked: QSPExecString");
 
                     libraryThreadIsRunning = false;
@@ -2420,17 +2423,21 @@ Utility.WriteLog("newPage: "+newPage);
     @Override
     public void onConfigurationChanged (Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-Utility.WriteLog("Config changed");
         //orientationRecreate = true;
         // Checks the orientation of the screen
-//        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+Utility.WriteLog("Config changed: landscape");
+Utility.WriteLog("filePicker: "+settings.getString("filePicker","/DEFAULT/"));
 //            Toast.makeText(this, "landscape", Toast.LENGTH_SHORT).show();
-//        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
+            hideTitle();
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
+Utility.WriteLog("Config changed: portrait");
 //            Toast.makeText(this, "portrait", Toast.LENGTH_SHORT).show();
-//        }
+            showTitle();
+        }
         if (gameIsRunning) {
             SetImageLimits();
-Utility.WriteLog("maxH: "+maxH+", maxW: "+maxW);
+//Utility.WriteLog("maxH: "+maxH+", maxW: "+maxW);
             updateFreshPageURL();
             refreshMainDesc();
             if (settings.getBoolean("showLoadingPage",true))
@@ -2441,6 +2448,34 @@ Utility.WriteLog("maxH: "+maxH+", maxW: "+maxW);
                 vars_desc.loadDataWithBaseURL("",freshPageURL.replace("REPLACETEXT",curVarsDescHTML),"text/html","UTF-8","");
         }
     }
+
+    public void hideTitle() {
+        try {
+            ((View) findViewById(android.R.id.title).getParent())
+                    .setVisibility(View.GONE);
+        } catch (Exception e) {
+        }
+        getActionBar().hide();
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().clearFlags(
+                WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+
+    }
+
+    public void showTitle() {
+        try {
+            ((View) findViewById(android.R.id.title).getParent())
+                    .setVisibility(View.VISIBLE);
+        } catch (Exception e) {
+        }
+        getActionBar().show();
+        getWindow().addFlags(
+                WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+    }
+
+
 
     //Для отображения картинок в HTML
     static QspImageGetter imgGetterDesc = new QspImageGetter();
