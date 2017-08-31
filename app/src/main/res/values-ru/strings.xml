@@ -33,7 +33,6 @@
     <string name="gamesdirTitle">Path to game files</string>
     <string name="gamesdirSum">Directory where game files are stored</string>
     <string name="langTitle">Language</string>
-    <string name="langSummary">Please restart app after changing</string>
     <string name="errorTitle">Ошибка</string>
 
     <!-- Меню -->
@@ -124,6 +123,17 @@
     <string name="loadingURL">Loading...</string>
     <string name="resetAll">Reset to default text colors and style?</string>
     <string name="resetAllSum">Exit menu to complete reset</string>
+    <string name="imgHeightTitle">Maximum Image Height</string>
+    <string name="imgHeightSum">Shrink images to specific height</string>
+
+    <string name="closeGameCmd">Close</string>
+    <string name="langSummary">WARNING: Changing languages will terminate any active game</string>
+    <string name="loadingPageTitle">Display Loading Page</string>
+    <string name="loadingPageSumm">Choose whether to show \"Loading...\" before each page loads</string>
+
+    <string name="storTypeTitle">Use External SD Card</string>
+    <string name="storTypeSumOn">Using: External SD Card</string>
+    <string name="storTypeSumOff">Using: Internal Storage</string>
 
 </resources>
 

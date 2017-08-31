@@ -138,5 +138,11 @@
 
     <string name="closeGameCmd">关闭</string>
     <string name="langSummary">警告: 更改语言后程式会重新启动, 记得先存档!</string>
+    <string name="loadingPageTitle">载入提示</string>
+    <string name="loadingPageSumm">载入过程中是否显示 \"读取中...\" </string>
+
+    <string name="storTypeTitle">游戏位置</string>
+    <string name="storTypeSumOn">使用外挂SD卡</string>
+    <string name="storTypeSumOff">使用内置空间</string>
 
 </resources>

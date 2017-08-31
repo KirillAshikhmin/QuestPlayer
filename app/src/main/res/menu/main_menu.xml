@@ -7,9 +7,9 @@
     <item android:id="@+id/menu_options"
     	android:title="@string/menu_options" />
 
-    <item
+<!--    <item
         android:id="@+id/menu_about"
-        android:title="@string/menu_about" />
+        android:title="@string/menu_about" /> -->
     <item
         android:id="@+id/menu_exit"
         android:title="@string/menu_closeapp" />
