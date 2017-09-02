@@ -165,7 +165,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     public static String curHtmlHead = freshPageHeadTemplate;
 
     public static String freshPageURL = "<html><head>"
-            + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+            + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, "
+            + "minimum-scale=1, maximum-scale=1\">"
             + "<style type=\"text/css\">"
             + "body{margin: 0; padding: 0; color: " + QSPtextColor + "; background-color: " + QSPbackColor + "; "
             + "max-width: 100%; "
@@ -195,8 +196,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     public static String getVarDescHTML () {
         return curVarsDescHTML;
     }
-    public void setVarDescHTML (String newHTMLString) {
-        curVarsDescHTML = newHTMLString;
+    public void setVarDescHTML (String newHTMLString) { curVarsDescHTML = newHTMLString;
     }
 
     private void setQSPLocale (String lang) {
@@ -797,14 +797,12 @@ Utility.WriteLog(""+padding);
             if (settings.getBoolean("showLoadingPage",true))
                 main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
             curMainDescHTML = Utility.QspStrToWebView(curMainDescHTML, curGameDir, maxW, tempMaxH, settings.getBoolean("sound", true), bigImage);
-            setMainDescHTML(curMainDescHTML);
             main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT",curMainDescHTML), "text/html", "UTF-8", "");
 
         } else {
             if (settings.getBoolean("showLoadingPage",true))
                 main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
             curMainDescHTML = Utility.QspStrToStr(curMainDescHTML);
-            setMainDescHTML(curMainDescHTML);
             main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT",curMainDescHTML), "text/html", "UTF-8", "");
         }
     }
@@ -1051,9 +1049,11 @@ Utility.WriteLog("fname1 = " + fname);
                 intent.setClass(this, Settings.class);
                 startActivity(intent);
                 return true;
-/*
+
             case R.id.menu_about:
-                Intent updateIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.market_details_url)));
+                showAbout();
+                return true;
+/*                Intent updateIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.market_details_url)));
                 try {
                     startActivity(updateIntent);
                 } catch (ActivityNotFoundException e) {
@@ -1127,6 +1127,27 @@ Utility.WriteLog("fname1 = " + fname);
         }
         return false;
     }
+
+    //Show About dialog
+    protected void showAbout() {
+        // Inflate the about message contents
+        View messageView = getLayoutInflater().inflate(R.layout.about, null, false);
+
+        // When linking text, force to always use default color. This works
+        // around a pressed color state bug.
+//        WebView textView = (WebView) messageView.findViewById(R.id.about_credits);
+//        int defaultColor = textView.getTextColors().getDefaultColor();
+//        textView.setTextColor(defaultColor);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setIcon(R.drawable.icon);
+        builder.setTitle(R.string.app_name);
+        builder.setView(messageView);
+        builder.create();
+        builder.show();
+    }
+
+
 
     private void LoadSlot(int index) {
         //Контекст UI
@@ -1906,29 +1927,23 @@ Utility.WriteLog("runGame\\");
                     if (newPage == null || newPage.equals(""))
                         main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", ""), "text/html", "UTF-8", "");
                     else {
+Utility.WriteLog("original: "+newPage);
                         newPage = Utility.encodeExec(newPage);
                         try {
-//                            Utility.WriteLog("Before change:\n" + newPage);
-//                            Utility.WriteLog("After encodeExec():\n" + newPage);
-//                            newPage = Utility.replaceHrefPlusSymbols(newPage);
-
                             //Decode the URL, but be sure to remove any % signs before doing so
                             //as these can cause crashes. Change back after URLDecoder.
                             newPage = newPage.replace("%", "-PERCENTSIGN-");
                             newPage = URLDecoder.decode(newPage, "UTF-8");
                             newPage = newPage.replace("-PERCENTSIGN-", "%");
 
-                            //Return the visible (+) symbols to their normal form
-
-//                            Utility.WriteLog("After URLDecoder():\n" + newPage);
                         } catch (UnsupportedEncodingException e) {
                             Utility.ShowError(uiContext, getString(R.string.urlNotComp).replace("-URLTEXT-", txtMainDesc));
                         }
-                    newPage = newPage.replace("QSPPLUSSYMBOLCODE","+");
-//Utility.WriteLog("newPage: "+newPage);
+                        //Return the visible (+) symbols to their normal form
+                        newPage = newPage.replace("QSPPLUSSYMBOLCODE","+");
 
-                        curMainDescHTML = newPage;
                         isMainDescHTML = html;
+                        setMainDescHTML(newPage);
                         refreshMainDesc();
                     }
                 }
@@ -1996,21 +2011,20 @@ Utility.WriteLog("runGame\\");
                         updateTitle();
                     }
                     isVarsDescHTML = html;
+                    setVarDescHTML(txtVarsDesc);
                     if (html) {
                         //vars_desc.setText(Utility.QspStrToHtml(txtVarsDesc, imgGetter, curGameDir));
                         //vars_desc.setMovementMethod(QspLinkMovementMethod.getInstance());
                         if (settings.getBoolean("showLoadingPage",true))
                             vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
-                        curVarsDescHTML = Utility.QspStrToWebView(txtVarsDesc,curGameDir,maxW,maxH,settings.getBoolean("sound",true), bigImage);
-                        vars_desc.loadDataWithBaseURL("",freshPageURL.replace("REPLACETEXT",curVarsDescHTML),"text/html","UTF-8","");
-//                        vars_desc.loadData(Utility.QspStrToWebView(txtVarsDesc,curGameDir),"text/html",null);
+                        String tempVars = Utility.QspStrToWebView(getVarDescHTML(),curGameDir,maxW,maxH,settings.getBoolean("sound",true), bigImage);
+                        vars_desc.loadDataWithBaseURL("",freshPageURL.replace("REPLACETEXT",tempVars),"text/html","UTF-8","");
                     } else {
                         //vars_desc.setText(txtVarsDesc);
                         if (settings.getBoolean("showLoadingPage",true))
                             vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
-                        curVarsDescHTML = Utility.QspStrToStr(txtVarsDesc);
-                        vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", curVarsDescHTML), "text/html", "UTF-8", "");
-//                        vars_desc.loadData(Utility.QspStrToStr(txtVarsDesc),"text/html",null);
+                        String tempVars = Utility.QspStrToStr(txtVarsDesc);
+                        vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", tempVars), "text/html", "UTF-8", "");
                     }
                 }
             });

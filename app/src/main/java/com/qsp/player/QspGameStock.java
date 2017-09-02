@@ -39,6 +39,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -54,6 +55,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebView;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ArrayAdapter;
@@ -196,6 +198,8 @@ public class QspGameStock extends TabActivity {
 			myLocale = new Locale(lang,myRegion);
 		}
 		Resources newRes = getResources();
+
+
 		DisplayMetrics dm = newRes.getDisplayMetrics();
 		Configuration conf = newRes.getConfiguration();
 		conf.locale = myLocale;
@@ -440,9 +444,11 @@ Utility.WriteLog("TEMP:"+SDPath);
                 intent.setClass(this, Settings.class);
                 startActivity(intent);
                 return true;
-/*
+
             case R.id.menu_about:
-            	Intent updateIntent = null;
+                showAbout();
+                return true;
+/*            	Intent updateIntent = null;
         		updateIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.market_details_url)));
         		startActivity(updateIntent); 
                 return true;
@@ -469,6 +475,51 @@ Utility.WriteLog("TEMP:"+SDPath);
         }        
         return false;
     }
+
+    //Show About dialog
+    protected void showAbout() {
+        // Inflate the about message contents
+        View messageView = getLayoutInflater().inflate(R.layout.about, null, false);
+
+		String tempFont = "\"\"";
+		switch (Integer.parseInt(settings.getString("typeface", "0"))) {
+			case 0:
+				tempFont = "DEFAULT";
+				break;
+			case 1:
+				tempFont = "sans-serif";
+				break;
+			case 2:
+				tempFont = "serif";
+				break;
+			case 3:
+				tempFont = "courier";
+				break;
+		}
+
+		String tempText = String.format("#%06X",(0xFFFFFF & settings.getInt("textColor", Color.parseColor("#ffffff"))));
+		String tempBack = String.format("#%06X",(0xFFFFFF & settings.getInt("backColor", Color.parseColor("#000000"))));
+		String tempLink = String.format("#%06X",(0xFFFFFF & settings.getInt("linkColor", Color.parseColor("#0000ee"))));
+		String tempSize = settings.getString("fontsize","16");
+
+		String descrip = getString(R.string.about_template);
+		descrip = descrip.replace("QSPTEXTCOLOR",tempText).replace("QSPBACKCOLOR",tempBack).replace("QSPLINKCOLOR",tempLink).replace("QSPFONTSIZE",tempSize).replace("QSPFONTSTYLE",tempFont);
+		descrip = descrip.replace("REPLACETEXT", getString(R.string.app_descrip)+getString(R.string.app_credits));
+
+		WebView descView = (WebView) messageView.findViewById(R.id.about_descrip);
+		if (descView == null) Utility.WriteLog("descView null");
+		descView.loadDataWithBaseURL("",descrip,"text/html","utf-8","");
+
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+				.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int whichButton) { }	});
+
+        builder.setView(messageView);
+        builder.create();
+        builder.show();
+    }
+
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event)  {
