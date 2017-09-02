@@ -3,12 +3,15 @@ Fork of BOOMik's Quest Player for Android
 
 Quest Player: Android apk that runs QSP games.
 
-This will basically be a series of bug fixes to BOOMik's Quest Player for Android, tested on a 7" Amazon Fire Tablet (Android 5.1.1). Requires a minimum of Android 4.4 to function.
+This is a fork of BOOMik's Quest Player, an Android port of Quest Soft Player, tested on a 7" Amazon Fire Tablet (Android 5.1.1) and a Nexus Galaxy (Android 4.4.4). Requires a minimum of Android 4.4 to function. 
 
 TO DO:
-1. Finish translations of strings.xml and prefs.xml files
-2. Update "About" menu option
-3. Fix bugs
+1. Finish translations of strings.xml and prefs.xml files for Russian, Simplified Chinese, and Traditional Chinese
+2. Fix any more bugs that show up
+
+Version 1.6
+1. Created "About Quest Player" dialog
+2. Final fixes
 
 Version 1.5.7
 1. Created directory browser to select QSP game folders directory
