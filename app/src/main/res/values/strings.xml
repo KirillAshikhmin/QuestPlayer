@@ -38,7 +38,7 @@
 	<!-- Меню Menu -->
     <string name="menu_gamestock">Game Stock</string>
     <string name="menu_options">Settings</string>
-    <string name="menu_about">About(GooglePlay)</string>
+    <string name="menu_about">About Quest Player</string>
     <string name="menu_newgame">Restart Game</string>
     <string name="menu_resumegame">Resume Game</string>
     <string name="menu_load">Load</string>
@@ -140,6 +140,25 @@
     <string name="selectDirTitle">Select Game Directory</string>
     <string name="selectDir">[CLICK TO SELECT: \"-DIRNAME-\"]</string>
 
+    <string name="app_descrip"><![CDATA[<h2><center>About Quest Player<img src=\"file:///android_res/drawable/landscape.jpg\" width=\"100%\"></center></h2>
+<h4>Quest Player is an open-source Android port of <b>Quest Soft Player</b> (<a href=\"http://qsp.su/?option=com_content&view=article&id=64\">Russian site</a>), a menu-based platform for creating interactive fiction. The most recent version can be downloaded at MrBoboFace\'s <a href=\"https://github.com/MrBoboFace/QuestPlayer\">GitHub</a>.</h4>
+<h3><center>Installing Games for Quest Player:</center></h3>
+<ol>
+	<li>Create a folder named \"QSP\" (or something similar) on your Android\'s internal storage or external SD card</li>
+	<li>To install a game, create a unique folder in the QSP folder (i.e., QSP/game1)</li>
+	<li>Next, move all files associated with that game into the new game folder</li>
+	<li>Repeat for each game (i.e., QSP/game2, QSP/game3, etc.) <i>Only one *.qsp file per folder!</i></li>
+	<li>Use Settings to point Quest Player to your primary game folder</li>
+	<li>The \"Local\" tab in Game Stock should show all your loaded games</li>
+</ol>]]></string>
+    <string name="app_credits"><![CDATA[<center><h3>Credits</h3></center>
+<ul>
+	<li><b>Coding:</b> BOOMik (v1.3), MrBoboFace (v1.4+)</li>
+	<li><b>Translations:</b> Illume (Simplified Chinese/Traditional Chinese)</li>
+	<li><b>Special Thanks:</b> Kevin Smarts and all those in <a href=\"https://tfgamessite.com/\">TFGamesSite Community</a></li>
+	<li><i>The Fifth World</i> painting by Noah Bradley (Creative Commons License; image scaled and cropped)</li>
+</ul>]]></string>
+    <string name="about_template"><![CDATA[<html><head><meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1"><style type="text/css">body{margin: 0; padding: 0; color: QSPTEXTCOLOR; background-color: QSPBACKCOLOR; max-width: 100%; font-size: QSPFONTSIZE; font-family: QSPFONTSTYLE; } a{color: QSPLINKCOLOR; } a:link{color: QSPLINKCOLOR; } table{font-size: QSPFONTSIZE; font-family: QSPFONTSTYLE; }</style></head><body>REPLACETEXT</body></html>]]></string>
 
 
     <!-- ***************************************** -->

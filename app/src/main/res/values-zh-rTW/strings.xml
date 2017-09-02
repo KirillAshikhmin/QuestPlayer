@@ -38,7 +38,7 @@
     <!-- Меню Menu -->
     <string name="menu_gamestock">遊戲架</string>
     <string name="menu_options">設定</string>
-    <string name="menu_about">關於(GooglePlay)</string>
+    <string name="menu_about">關於QuestPlayer</string>
     <string name="menu_newgame">重新啟動</string>
     <string name="menu_resumegame">回到遊戲</string>
     <string name="menu_load">讀檔</string>
