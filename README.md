@@ -9,6 +9,10 @@ TO DO:
 1. Finish translations of strings.xml and prefs.xml files for Russian, Simplified Chinese, and Traditional Chinese
 2. Fix any more bugs that show up
 
+Version 1.6.1
+1. Added display option to replace all game graphics with a neutral image. This allows a user to censor a game that contains violent, sexual, or obscene imagery.
+2. Fixed rare data loss when a page contained tandem code repeats
+
 Version 1.6
 1. Created "About Quest Player" dialog
 2. Final fixes
