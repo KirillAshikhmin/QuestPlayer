@@ -160,6 +160,11 @@
 </ul>]]></string>
     <string name="about_template"><![CDATA[<html><head><meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1"><style type="text/css">body{margin: 0; padding: 0; color: QSPTEXTCOLOR; background-color: QSPBACKCOLOR; max-width: 100%; font-size: QSPFONTSIZE; font-family: QSPFONTSTYLE; } a{color: QSPLINKCOLOR; } a:link{color: QSPLINKCOLOR; } table{font-size: QSPFONTSIZE; font-family: QSPFONTSTYLE; }</style></head><body>REPLACETEXT</body></html>]]></string>
 
+    <string name="useVidTitle">Try to replace images with video?</string>
+    <string name="useVidSumm">Searches by prefix (i.e, akl.jpg -> akl.*)</string>
+
+    <string name="hideImgTitle">Hide game graphics</string>
+    <string name="hideImgSumm">Replaces game graphics with neutral scene</string>
 
     <!-- ***************************************** -->
     <!-- WARNING: DO NOT TRANSLATE BELOW THIS LINE -->
