@@ -11,6 +11,8 @@
         <PreferenceCategory android:title="@string/setcat_img" android:key="pref_key_image_settings">
             <ListPreference android:key="imgHeight" android:summary="@string/imgHeightSum" android:title="@string/imgHeightTitle" android:entries="@array/imgHeightDesc" android:entryValues="@array/imgHeightValue" android:defaultValue="1"/>
             <CheckBoxPreference android:title="@string/opt_big_image" android:key="big_image" android:summary="@string/optdesc_big_image" />
+            <CheckBoxPreference android:title="@string/useVidTitle" android:key="videoSwitch" android:summary="@string/useVidSumm" />
+            <CheckBoxPreference android:title="@string/hideImgTitle" android:key="hideImg" android:summary="@string/hideImgSumm" android:defaultValue="false" />
         </PreferenceCategory>
 
         <PreferenceCategory android:title="@string/setcat_txt" android:key="pref_key_text_settings">
