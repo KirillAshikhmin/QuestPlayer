@@ -3,6 +3,7 @@ package com.qsp.player;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -15,9 +16,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -25,6 +29,7 @@ import android.content.pm.Signature;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -46,11 +51,14 @@ import android.text.style.AlignmentSpan;
 import android.text.style.ImageSpan;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.Patterns;
 import android.view.Display;
 import android.view.View;
 import android.view.View.MeasureSpec;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.webkit.MimeTypeMap;
+import android.webkit.URLUtil;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -120,7 +128,7 @@ public class Utility {
     }
 
 //Replacing this code with QspStrToWebView
-    public static Spanned QspStrToHtml(String str, ImageGetter imgGetter, String srcDir, int maxW, int maxH, boolean fitToWidth) {
+    public static Spanned QspStrToHtml(String str, ImageGetter imgGetter, String srcDir, int maxW, int maxH, boolean fitToWidth, boolean hideImg,Context uiContext) {
 
         if (str != null && str.length() > 0) {
             str = str.replaceAll("\r", "<br>");
@@ -129,28 +137,31 @@ public class Utility {
 
             str = fixTableAlign(str);
 
-            str = fixImagesSize(str,srcDir,true,maxW,maxH,fitToWidth);
+            str = fixImagesSize(str,srcDir,true,maxW,maxH,fitToWidth, hideImg, uiContext);
 
             return Html.fromHtml(str, imgGetter, null);
 
         }
+        Utility.WriteLog("toHtml:\n"+ str);
+
         return Html.fromHtml("");
     }
 
-    public static String QspStrToWebView(String str, String srcDir, int maxW, int maxH, boolean audioIsOn,boolean fitToWidth) {
+    public static String QspStrToWebView(String str, String srcDir, int maxW, int maxH, boolean audioIsOn,boolean fitToWidth, boolean videoSwitch, boolean hideImg, Context uiContext) {
         if (str != null && str.length() > 0) {
 //            Utility.WriteLog(str);
             str = str.replaceAll("\r", "<br>");
 
             str = fixTableAlign(str);
 
-            str = fixImagesSize(str,srcDir,false,maxW,maxH,fitToWidth);
+            str = fixImagesSize(str,srcDir,false,maxW,maxH,fitToWidth,hideImg, uiContext);
 
-            str = fixVideosLinks(str,srcDir,maxW,maxH,audioIsOn);
-
+            str = fixVideosLinks(str,srcDir,maxW,maxH,audioIsOn,hideImg,uiContext);
+            if (videoSwitch && !hideImg)
+                str = useVideoBeforeImages(str,audioIsOn,videoSwitch, uiContext);
 
 //            str = QspPlayerStart.freshPageURL.replace("REPLACETEXT", str);
-//Utility.WriteLog("toWebView:\n"+ str);
+Utility.WriteLog("toWebView:\n"+ str);
 
             return str;
 
@@ -549,17 +560,19 @@ Utility.WriteLog(tempCode);
         return newStr;
     }
 
-    public static String fixImagesSize(String str, String srcDir, boolean isForTextView, int maxW, int maxH, boolean fitToWidth) {
+    public static String fixImagesSize(String str, String srcDir, boolean isForTextView, int maxW, int maxH, boolean fitToWidth, boolean hideImg, Context uiContext) {
         boolean hasImg = str.contains("<img");
         boolean countedImg = false;
         int inTable = 0;
         int imgsInLine = 0;
+        int imgCount = 0;
 
         int fisCycles = 0;
 
 Utility.WriteLog("fixImagesSize: "+str);
 
         if (!hasImg) return str;
+        Resources res = uiContext.getResources();
         String endOfStr = str;
         String newStr= str;
         Pattern pattern = Pattern.compile("(\\S+)=['\"]?((?:(?!/>|>|\"|'|\\s).)+)");
@@ -647,6 +660,7 @@ Utility.WriteLog("fixImagesSize: "+str);
             hasImg = firstImg >=0;
             String curStr = endOfStr.substring(firstImg);
             int endImg = curStr.indexOf(">");
+            if (endImg<0) return newStr;
             curStr = curStr.substring(0,endImg+1);
             endOfStr = endOfStr.substring(firstImg+curStr.length());
 
@@ -656,18 +670,25 @@ Utility.WriteLog("fixImagesSize: "+str);
 
             if (matcher.groupCount()==0) continue;
 
-            String src = null, widthS = null, heightS = null, widthBase = null, heightBase = null;
+            String src = null, widthS = null, heightS = null, widthBase = null, heightBase = null; String altImg = null;
             try {
                 while (matcher.find()) {
                     String group = matcher.group();
-                    if (group.startsWith("src=")) src = group;
-                    else if (group.startsWith("width=")) {
+                    if (group.toLowerCase().startsWith("src=")) {
+                        if (group.length()>4)
+                            src = "src="+group.substring(4);
+                        else src = "src=";
+                    }
+                    else if (group.toLowerCase().startsWith("width=")) {
                         widthBase = group;
                         widthS = group.substring(6);
                     }
-                    else if (group.startsWith("height=")) {
+                    else if (group.toLowerCase().startsWith("height=")) {
                         heightBase = group;
                         heightS = group.substring(7);
+                    }
+                    else if (group.toLowerCase().startsWith("alt=")) {
+                        altImg = group;
                     }
                 }
 
@@ -676,7 +697,7 @@ Utility.WriteLog("fixImagesSize: "+str);
                     continue;
                 }
 
-                curStr = "<img "+src+"\" >";
+                curStr = "<img "+src+"\" i"+(imgCount++)+">";
 
                 //if this is for a TextView, don't use a URL locator
                 if (isForTextView) {
@@ -692,35 +713,59 @@ Utility.WriteLog("fixImagesSize: "+str);
                     continue;
                 }
 
-                //if this is not a system icon, treat as a URL
                 String newSrc = src;
-                //change [src=..."] to [src="]
-                if (newSrc.indexOf("\"") > 3)
-                    newSrc = newSrc.substring(0, newSrc.indexOf("src=") + 4) + newSrc.substring(newSrc.indexOf("\""));
-                //then change [src="] to a [src="file://] URL
-                if ((newSrc.indexOf("src=\"") == 0) && newSrc.length() > 5) {
-                    boolean testURIOK = newSrc.contains("://");
-                    if (newSrc.substring(5, 6).matches("^[a-zA-Z0-9]") && !testURIOK) {
-                        newSrc = newSrc.replace("src=\"", "src=\"file://" + srcDir);
-                        curStr = curStr.replace(src, newSrc);
-                    } else if (newSrc.indexOf("src=\"/") == 0) {
-                        newSrc = newSrc.replace("src=\"/", "src=\"file://" + srcDir);
-                        curStr = curStr.replace(src, newSrc);
+
+                if (!hideImg) {
+
+                    //change [src=..."] to [src="]
+                    if (newSrc.indexOf("\"") > 3)
+                        newSrc = newSrc.substring(0, newSrc.indexOf("src=") + 4) + newSrc.substring(newSrc.indexOf("\""));
+
+                    //src is file URI without file://, then add file://
+                    if ((newSrc.matches("^src=\"[/]?[[^/:][/]?]+[^/:]+"))) {
+                        if (newSrc.matches("^src=\"[^/].*")) {
+                            newSrc = newSrc.replace("src=\"", "src=\"file://" + srcDir);
+                            curStr = curStr.replace(src, newSrc);
+                        } else if (newSrc.matches("^src=\"/.*")) {
+                            newSrc = newSrc.replace("src=\"/", "src=\"file://" + srcDir);
+                            curStr = curStr.replace(src, newSrc);
+                        }
                     }
+                    //If src is file:// URI, don't do anything (placeholders for future use)
+                    else if ((newSrc.matches("^src=\"file://[/]?[[^/:][/]?]+"))) {
+                    }
+                    //If src is generic URI, don't do anything (placeholders for future use)
+                    else if ((newSrc.matches("^src=\"[a-zA-Z]+://[[^/][/]?]+"))) {
+                    } else ;
+                }
+                else {
+                    newSrc = "src=\"file:///android_res/drawable/hiddenimg.jpg";
+                    curStr = curStr.replace(src, newSrc);
                 }
 
-//Utility.WriteLog(newSrc);
-                if (!newSrc.contains("///")) {
-                    newStr += curStr + endOfStr;
-                    continue;
+                //If there is no alt string, add one with the img source
+                if (isNullOrEmpty(altImg) && (src.indexOf("\"")>0)) {
+                    curStr = curStr.replace("<img", "<img alt=\"ALT-IMG-TEXT\"");
+                    String altStr = src.substring(src.indexOf("\"")).replace("\"","");
+                    curStr = curStr.replace("ALT-IMG-TEXT",altStr);
                 }
-//Utility.WriteLog(newSrc.substring(newSrc.indexOf("///")+2));
-                BitmapFactory.Options imgDim = getImageDim(newSrc.substring(newSrc.indexOf("///")+2));
+
+Utility.WriteLog(newSrc.substring(newSrc.indexOf("///")+2));
+                BitmapFactory.Options imgDim = null;
+                if (hideImg) {
+                    imgDim = new BitmapFactory.Options();
+                    imgDim.inJustDecodeBounds = true;
+                    BitmapFactory.decodeResource(res,R.drawable.hiddenimg,imgDim);
+                }
+                else if (newSrc.contains("file://"))
+                    imgDim = getImageDimFromFile(newSrc.substring(newSrc.indexOf("///")+2));
+                else
+                    imgDim = getImageDimFromURI(newSrc.replace("src=\"",""),uiContext);
                 if (imgDim == null) {
 //Utility.WriteLog("imgDim is null");
                     newStr += curStr + endOfStr;
                 }
-                else {
+
 //Utility.WriteLog("imgDim.outWidth = " + imgDim.outWidth + ", imgDim.outHeight = " + imgDim.outHeight);
 
 
@@ -757,27 +802,43 @@ Utility.WriteLog("fixImagesSize: "+str);
                             h = Math.round(h/imgsInLine);
                         }
                         if (maxH > 0) //add width and height if maxH > 0
-                            newStr += curStr.replace(">", "width=\"" + w + "\" height=\"" + h + "\">") + endOfStr;
+                            newStr += curStr.replace(">", " width=\"" + w + "\" height=\"" + h + "\">") + endOfStr;
                         else //add width only if maxH <= 0
-                            newStr += curStr.replace(">", "width=\"" + w + "\" >") + endOfStr;
+                            newStr += curStr.replace(">", " width=\"" + w + "\" >") + endOfStr;
                     }
                     fisCycles++;
 //Utility.WriteLog("endOfStr "+fisCycles+": "+endOfStr);
                     continue;
-                }
+
 
             } catch (Exception e) {
                 Log.e("fixImagesSize","unable to parse "+curStr,e);
             }
 
         } while (hasImg);
-//Utility.WriteLog("newStr: "+newStr);
+Utility.WriteLog("newStr: "+newStr);
         return newStr;
     }
 
 
+    private static BitmapFactory.Options getImageDimFromURI (String imgURI, Context uiContext) {
+        BitmapFactory.Options opt = new BitmapFactory.Options();
+        opt.inJustDecodeBounds = true;
 
-    private static BitmapFactory.Options getImageDim (String imgSrc) {
+        try {
+            BitmapFactory.decodeStream(
+                    uiContext.getContentResolver().openInputStream(Uri.parse(imgURI)),
+                    null,
+                    opt);
+        }
+        catch (FileNotFoundException e) {
+            return null;
+        }
+
+        return opt;
+    }
+
+    private static BitmapFactory.Options getImageDimFromFile (String imgSrc) {
         File imgFile = new File(imgSrc);
         //if the imgFile doesn't exist, return null
         if(!imgFile.exists()) {
@@ -822,8 +883,8 @@ Utility.WriteLog("fixImagesSize: "+str);
         return totalImages;
     }
 
-    private static String fixVideosLinks (String str, String srcDir, int maxW, int maxH,boolean audioIsOn) {
-
+    private static String fixVideosLinks (String str, String srcDir, int maxW, int maxH,boolean audioIsOn, boolean hideImg, Context uiContext) {
+        int vidCount = 0;
         boolean hasVid = str.contains("<video");
 
         String endOfStr = str;
@@ -856,11 +917,17 @@ Utility.WriteLog("fixImagesSize: "+str);
             if (!audioIsOn && !curStr.contains(" muted ") && !curStr.contains(" muted>"))
                 curStr = curStr.replace(">"," muted>");
 
+            curStr = curStr.replace(">"," v"+(vidCount++)+"");
+
             String src = null, widthS = null, heightS = null, widthBase = null, heightBase = null;
             try {
                 while (matcher.find()) {
                     String group = matcher.group();
-                    if (group.startsWith("src=")) src = group;
+                    if (group.toLowerCase().startsWith("src=")) {
+                        if (group.length()>4)
+                            src = "src="+group.substring(4);
+                        else src = "src=";
+                    }
                     else if (group.startsWith("width=")) {
                         widthBase = group;
                         widthS = group.substring(6);
@@ -876,27 +943,31 @@ Utility.WriteLog("fixImagesSize: "+str);
                     continue;
                 }
 
+
                 String newSrc = src;
-                //change [src=..."] to [src="]
-                if (newSrc.indexOf("\"") > 3)
-                    newSrc = newSrc.substring(0, newSrc.indexOf("src=") + 4) + newSrc.substring(newSrc.indexOf("\""));
-                //then change [src="] to a [src="file://] URL
-                if ((newSrc.indexOf("src=\"") == 0) && newSrc.length() > 5) {
-                    if (newSrc.substring(5, 6).matches("^[a-zA-Z0-9]")) {
-                        newSrc = newSrc.replace("src=\"", "src=\"file://" + srcDir);
-                        curStr = curStr.replace(src, newSrc);
-                    } else if (newSrc.indexOf("src=\"/") == 0) {
-                        newSrc = newSrc.replace("src=\"/", "src=\"file://" + srcDir);
-                        curStr = curStr.replace(src, newSrc);
+                //First, remove all spaces between src= and the first quote;
+                //i.e., change [src=    "URL] to [src="URL]
+                //However, use neutral image if hiding images
+                if (!hideImg) {
+                    if (newSrc.indexOf("\"") > 3)
+                        newSrc = newSrc.substring(0, newSrc.indexOf("src=") + 4) + newSrc.substring(newSrc.indexOf("\""));
+
+                    //then change [src="] to [src="file://] URL
+                    if ((newSrc.indexOf("src=\"") == 0) && newSrc.length() > 5) {
+                        if (newSrc.substring(5, 6).matches("^[a-zA-Z0-9]")) {
+                            newSrc = newSrc.replace("src=\"", "src=\"file://" + srcDir);
+                            curStr = curStr.replace(src, newSrc);
+                        } else if (newSrc.indexOf("src=\"/") == 0) {
+                            newSrc = newSrc.replace("src=\"/", "src=\"file://" + srcDir);
+                            curStr = curStr.replace(src, newSrc);
+                        }
                     }
                 }
+                else {
+                    newSrc = curStr.replace(src,"src=\"file:///android_res/raw/hiddenimg.webm");
+                    curStr = newSrc;
+                }
 
-                // Lock the image to the screen width
-/*                int paddingW = Math.round(16 * (Resources.getSystem().getDisplayMetrics().xdpi / Resources.getSystem().getDisplayMetrics().DENSITY_DEFAULT));
-                int paddingH = Math.round(16 * (Resources.getSystem().getDisplayMetrics().ydpi / Resources.getSystem().getDisplayMetrics().DENSITY_DEFAULT));
-                int maxW = Resources.getSystem().getDisplayMetrics().widthPixels - paddingW;
-                int maxH = Resources.getSystem().getDisplayMetrics().heightPixels - paddingH;
-*/
                 // ** Remove leading quote (") character if present **
                 if (!isNullOrEmpty(widthS)) {
                     if (widthS.startsWith("\"")) { widthS = widthS.substring(1); }
@@ -907,7 +978,6 @@ Utility.WriteLog("fixImagesSize: "+str);
 
                 int w = isNullOrEmpty(widthS) ? 0 : Integer.parseInt(widthS);
                 int h = isNullOrEmpty(heightS) ? 0 : Integer.parseInt(heightS);
-
                 //if width and height are not both present, set width only
                 //width = maxW if video > maxW or width <= 0
                 if (isNullOrEmpty(widthS) || isNullOrEmpty(heightS)) {
@@ -918,27 +988,160 @@ Utility.WriteLog("fixImagesSize: "+str);
                 }
 
                 //if width/height are set, reduce them to maxW/maxH
-                if (w > maxW) {
+                if ((w > maxW) && (maxW > 0)) {
                     if (!isNullOrEmpty(heightS)) h = Math.round(h*maxW/w);
                     w = maxW;
                 }
-                if (h > maxH) {
+                if ((h > maxH) && (maxH > 0)) {
                     if (!isNullOrEmpty(widthS)) w = Math.round(w*maxH/h);
                     h = maxH;
                 }
 
-                curStr = curStr.replace(widthBase, "width=\"" + w);
-                curStr = curStr.replace(heightBase, "height=\"" + h);
+                if (w > 0)
+                    curStr = curStr.replace(widthBase, "width=\"" + w);
+                else curStr = curStr.replace(widthBase, "width=\"");
+                if (h > 0)
+                    curStr = curStr.replace(heightBase, "height=\"" + h);
+                else curStr = curStr.replace(heightBase, "height=\"");
 
-                newStr += curStr + endOfStr;
 
 
             } catch (Exception e) {
                 Log.e("fixImagesSize","unable parse "+curStr,e);
             }
+            newStr += curStr + endOfStr;
+            Utility.WriteLog("fixedVidLinks: "+newStr);
         } while (hasVid);
         return newStr;
 
+    }
+
+    private static String useVideoBeforeImages (String str, boolean audioIsOn, boolean videoSwitch, Context uiContext) {
+
+        boolean hasImg = str.contains("<img");
+
+        Utility.WriteLog("useVideoBeforeImages: "+str);
+
+        if (!hasImg) return str;
+        String endOfvidStr = str;
+        String vidStr = str;
+        Pattern pattern = Pattern.compile("(\\S+)=['\"]?((?:(?!/>|>|\"|'|\\s).)+)");
+        do {
+            int firstImg = endOfvidStr.indexOf("<img");
+            if (firstImg==-1) {
+                hasImg=false;
+                continue;
+            }
+
+            hasImg = firstImg >=0;
+            String curStr = endOfvidStr.substring(firstImg);
+            int endImg = curStr.indexOf(">");
+            if (endImg<0) return vidStr;
+            curStr = curStr.substring(0,endImg+1);
+            endOfvidStr = endOfvidStr.substring(firstImg+curStr.length());
+
+            vidStr = vidStr.substring(0,vidStr.indexOf(curStr));
+
+            Utility.WriteLog("\nvidStr: "+vidStr+"\n");
+            Utility.WriteLog("Img: "+firstImg+" to "+endImg+", vidStr: "+vidStr.length()+", curStr: "+curStr.length()+", endOfvidStr: "+endOfvidStr.length());
+
+            Matcher matcher = pattern.matcher(curStr);
+
+            if (matcher.groupCount()==0) {
+                vidStr+=curStr + endOfvidStr;
+                continue;
+            }
+
+            String src = null; String altImg = null;
+            try {
+                while (matcher.find()) {
+                    String group = matcher.group();
+                    if (group.toLowerCase().startsWith("src=")) {
+                        if (group.length()>4)
+                            src = "src="+group.substring(4);
+                        else src = null;
+                    }
+                }
+
+                if (isNullOrEmpty(src)) {
+                    vidStr += curStr + endOfvidStr;
+                    continue;
+                }
+
+                //trueSrc will be the file URL;
+                //skip this <img if it's not a file:// OR if there's no ".abc" at the end
+                String trueSrc = src.replace("src=\"file://","");
+//Utility.WriteLog("trueSrc: "+trueSrc);
+                int fileNameIdx = trueSrc.lastIndexOf("/")+1;
+                int suffixIdx = trueSrc.lastIndexOf(".");
+
+//Utility.WriteLog("fileNameIdx "+fileNameIdx+", suffixIdx "+suffixIdx);
+                if ((suffixIdx < 1) || (suffixIdx < fileNameIdx) || (suffixIdx < trueSrc.length()-4) ) {
+                    vidStr += curStr + endOfvidStr;
+                    continue;
+                }
+
+                //Get list of files in <img directory with similar prefix
+                File imgFile = new File(trueSrc);
+                File imgDir = new File(trueSrc.substring(0,trueSrc.lastIndexOf("/")));
+                if (!imgDir.exists()) {
+                    vidStr += curStr + endOfvidStr;
+                    continue;
+                }
+
+                String tempFileName = imgFile.getName();
+                int fileSuffixIdx = tempFileName.indexOf(".");
+                if (fileSuffixIdx < 0) {
+                    vidStr += curStr+endOfvidStr;
+                    continue;
+                }
+                final String filePrefix = tempFileName.substring(0,fileSuffixIdx);
+//Utility.WriteLog("imgDir isFile = " + imgFile.isFile());
+//Utility.WriteLog("filePrefix = " + filePrefix);
+//Utility.WriteLog("imgDir isDirectory = " + imgDir.isDirectory());
+                File[] altFileList = imgDir.listFiles(new FilenameFilter() {
+                    @Override
+                    public boolean accept(File dir, String name) {
+                        return name.matches("^"+filePrefix+"\\.[\\w]+");
+                    }
+                });
+//Utility.WriteLog("Total files found = "+altFileList.length);
+
+
+                //Check each file
+                boolean imgChanged = false;
+                for (int i=0; (i<altFileList.length) || imgChanged;i++) {
+                //Test if current file is a video file
+                    String altFileName = altFileList[i].getName();
+                    String altFileExt = altFileName.substring(altFileName.indexOf(".")+1);
+                    MimeTypeMap myMTM = MimeTypeMap.getSingleton();
+                    String tempFileType = myMTM.getMimeTypeFromExtension(altFileExt);
+//Utility.WriteLog(altFileList[i].getName()+" extension is "+altFileExt+" and is "+tempFileType);
+                //if no type, skip
+                    if (isNullOrEmpty(tempFileType)) continue;
+
+                    //if video okay, replace <img with <video
+                    if (tempFileType.startsWith("video")) {
+//Utility.WriteLog("Will replace <img with <video using "+altFileName);
+                        curStr = curStr.replace("<img", "<video");
+                        curStr = curStr.replace(src, src.substring(0, src.lastIndexOf(".") + 1) + altFileExt);
+                        if (!audioIsOn && !curStr.contains(" muted ") && !curStr.contains(" muted>"))
+                            curStr = curStr.replace(">", " muted>");
+                        curStr = curStr.replace(">", " autoplay loop>Video unavailable</video>");
+                        imgChanged = true;
+                    }
+
+                }
+
+            } catch (Exception e) {
+                Log.e("useVideoBeforeImages","unable to parse "+curStr,e);
+            }
+
+            vidStr += curStr + endOfvidStr;
+
+        } while (hasImg);
+Utility.WriteLog("finished vidStr = "+vidStr);
+        return vidStr;
     }
 
     private static boolean isNullOrEmpty(String string) {
@@ -946,7 +1149,7 @@ Utility.WriteLog("fixImagesSize: "+str);
     }
 
     public static String QspStrToStr(String str) {
-Utility.WriteLog("toStr:\n"+str);
+//Utility.WriteLog("toStr:\n"+str);
         String result = "";
         if (str != null && str.length() > 0) {
             result = str.replaceAll("\r", "");

@@ -116,6 +116,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private boolean sdcard_mounted = false;
     private boolean backAction = false;
     private boolean bigImage = false;
+    private boolean videoSwitch = false;
+    private boolean hideImg = false;
     private boolean imageDensity;
     private String userSetLang;
     private String curLang = Locale.getDefault().getLanguage();
@@ -179,9 +181,9 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
     public static String autoplayURL = "javascript: (function() {"+
             "var allVideos = document.getElementsByTag(\"video\"); " +
-            "for (var i = 0; i < allVideos.length; i++)" +
-            "allVideos[i].play();" +
-            "})()";
+            "for (var i = 0; i < allVideos.length; i++) {" +
+            "allVideos[i].removeAttribute('controls'); allVideos[i].play(); " +
+            "} })()";
 
     //used to detect and parse "exec:" commands
     private QSPWebViewClient main_descClient;
@@ -524,9 +526,19 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
         boolean bigImageChanged = false;
         boolean newBigImage = settings.getBoolean("big_image", false);
-Utility.WriteLog("bigImage: " + bigImage + ", newBigImage: "+newBigImage+", bigImageChanged: "+bigImageChanged);
         if (bigImage != newBigImage) bigImageChanged = true;
         bigImage = newBigImage;
+
+        boolean videoSwitchChanged = false;
+        boolean newVideoSwitch = settings.getBoolean("videoSwitch",false);
+        if (videoSwitch != newVideoSwitch) videoSwitchChanged = true;
+        videoSwitch = newVideoSwitch;
+
+        boolean hideImgChanged = false;
+        boolean newHideImg = settings.getBoolean("hideImg",false);
+        if (hideImg != newHideImg) hideImgChanged = true;
+        hideImg = newHideImg;
+
 
         boolean imgPerScreenChanged = false;
         float tempImgPerScreen = Float.parseFloat(settings.getString("imgHeight", "1"));
@@ -574,7 +586,7 @@ Utility.WriteLog("playerHeightLimit: " + playerHeightLimit + ", tempImgPerScreen
         //Here is where the display settings are applied
         SetImageLimits();
         ApplyViewSettings();
-        if (bigImageChanged || imgPerScreenChanged)
+        if (bigImageChanged || imgPerScreenChanged || videoSwitchChanged || hideImgChanged)
             refreshMainDesc();
 
         if (sdcard_mounted && gameIsRunning && !waitForImageBox) {
@@ -791,19 +803,24 @@ Utility.WriteLog(""+padding);
     }
 
     private void refreshMainDesc () {
+        String tempHtml = "";
         if (isMainDescHTML) {
             int tempMaxH = maxH;
             if(playerHeightLimit == 1) tempMaxH = -1;
             if (settings.getBoolean("showLoadingPage",true))
                 main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
-            curMainDescHTML = Utility.QspStrToWebView(curMainDescHTML, curGameDir, maxW, tempMaxH, settings.getBoolean("sound", true), bigImage);
-            main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT",curMainDescHTML), "text/html", "UTF-8", "");
-
+            tempHtml = Utility.QspStrToWebView(curMainDescHTML, curGameDir, maxW, tempMaxH, settings.getBoolean("sound", true), bigImage, videoSwitch, hideImg, uiContext);
+            Utility.WriteLog(tempHtml);
+            main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT",tempHtml), "text/html", "UTF-8", "");
+//            curMainDescHTML = Utility.QspStrToWebView(curMainDescHTML, curGameDir, maxW, tempMaxH, settings.getBoolean("sound", true), bigImage);
+//            main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT",curMainDescHTML), "text/html", "UTF-8", "");
         } else {
             if (settings.getBoolean("showLoadingPage",true))
                 main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
-            curMainDescHTML = Utility.QspStrToStr(curMainDescHTML);
-            main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT",curMainDescHTML), "text/html", "UTF-8", "");
+            tempHtml = Utility.QspStrToStr(curMainDescHTML);
+            main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT",tempHtml), "text/html", "UTF-8", "");
+//            curMainDescHTML = Utility.QspStrToStr(curMainDescHTML);
+//            main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT",curMainDescHTML), "text/html", "UTF-8", "");
         }
     }
 
@@ -1958,7 +1975,7 @@ Utility.WriteLog("original: "+newPage);
                 JniResult actsResult = (JniResult) QSPGetActionData(i);
                 if (html)
                     acts[i] = new QSPItem(imgGetter.getDrawable(actsResult.str2),
-                            Utility.QspStrToHtml(actsResult.str1, imgGetter, curGameDir,maxW,maxH, bigImage));
+                            Utility.QspStrToHtml(actsResult.str1, imgGetter, curGameDir,maxW,maxH, bigImage, hideImg, uiContext));
                 else
                     acts[i] = new QSPItem(imgGetter.getDrawable(actsResult.str2), actsResult.str1);
             }
@@ -1984,7 +2001,7 @@ Utility.WriteLog("original: "+newPage);
                 JniResult objsResult = (JniResult) QSPGetObjectData(i);
                 if (html)
                     objs[i] = new QSPItem(imgGetter.getDrawable(objsResult.str2),
-                            Utility.QspStrToHtml(objsResult.str1, imgGetter, curGameDir,maxW,maxH, bigImage));
+                            Utility.QspStrToHtml(objsResult.str1, imgGetter, curGameDir,maxW,maxH, bigImage, hideImg, uiContext));
                 else
                     objs[i] = new QSPItem(imgGetter.getDrawable(objsResult.str2), objsResult.str1);
             }
@@ -2017,7 +2034,7 @@ Utility.WriteLog("original: "+newPage);
                         //vars_desc.setMovementMethod(QspLinkMovementMethod.getInstance());
                         if (settings.getBoolean("showLoadingPage",true))
                             vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
-                        String tempVars = Utility.QspStrToWebView(getVarDescHTML(),curGameDir,maxW,maxH,settings.getBoolean("sound",true), bigImage);
+                        String tempVars = Utility.QspStrToWebView(getVarDescHTML(),curGameDir,maxW,maxH,settings.getBoolean("sound",true), bigImage, videoSwitch, hideImg, uiContext);
                         vars_desc.loadDataWithBaseURL("",freshPageURL.replace("REPLACETEXT",tempVars),"text/html","UTF-8","");
                     } else {
                         //vars_desc.setText(txtVarsDesc);
@@ -2075,7 +2092,7 @@ Utility.WriteLog("original: "+newPage);
                         })
                         .create();
                 if (html)
-                    msgBox.setMessage(Utility.QspStrToHtml(msg, imgGetter, curGameDir,maxW,maxH, bigImage));
+                    msgBox.setMessage(Utility.QspStrToHtml(msg, imgGetter, curGameDir,maxW,maxH, bigImage, hideImg,uiContext));
                 else
                     msgBox.setMessage(msg);
                 msgBox.setCancelable(false);
@@ -2186,7 +2203,7 @@ Utility.WriteLog("original: "+newPage);
             public void run() {
                 inputboxResult = "";
                 if (html)
-                    inputboxDialog.setMessage(Utility.QspStrToHtml(inputboxTitle, imgGetter, curGameDir,maxW,maxH, bigImage));
+                    inputboxDialog.setMessage(Utility.QspStrToHtml(inputboxTitle, imgGetter, curGameDir,maxW,maxH, bigImage,hideImg,uiContext));
                 else
                     inputboxDialog.setMessage(inputboxTitle);
                 inputboxDialog.show();
