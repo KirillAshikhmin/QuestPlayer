@@ -9,6 +9,12 @@ TO DO:
 1. Finish translations of strings.xml and prefs.xml files for Russian, Simplified Chinese, and Traditional Chinese
 2. Fix any more bugs that show up
 
+Version 1.6.2
+1. Reinstated Theme option for fonts style
+2. Fixed bug preventing link color from updating when leaving settings
+3. Changed Display Settings option to "Image Settings" and "Text Settings"
+4. New Russian translations by Unregistred!
+
 Version 1.6.1
 1. Added display option to replace all game graphics with a neutral image. This allows a user to censor a game that contains violent, sexual, or obscene imagery.
 2. Fixed rare data loss when a page contained tandem code repeats
