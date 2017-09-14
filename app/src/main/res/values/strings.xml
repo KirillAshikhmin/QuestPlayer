@@ -154,7 +154,11 @@
     <string name="app_credits"><![CDATA[<center><h3>Credits</h3></center>
 <ul>
 	<li><b>Coding:</b> BOOMik (v1.3), MrBoboFace (v1.4+)</li>
-	<li><b>Translations:</b> Illume (Simplified Chinese/Traditional Chinese)</li>
+	<li><b>Translations:</b></li></ul>
+	<ul style="list-style-type:none">
+	    <li>Illume (Simplified Chinese/Traditional Chinese)</li>
+	    <li>Unregistred (Russian)</li>
+	</ul><ul>
 	<li><b>Special Thanks:</b> Kevin Smarts and all those in <a href=\"https://tfgamessite.com/\">TFGamesSite Community</a></li>
 	<li><i>The Fifth World</i> painting by Noah Bradley (Creative Commons License; image scaled and cropped)</li>
 </ul>]]></string>
@@ -165,6 +169,9 @@
 
     <string name="hideImgTitle">Hide game graphics</string>
     <string name="hideImgSumm">Replaces game graphics with neutral scene</string>
+
+    <string name="spaceWarn">**WARNING!** Space detected in game name! Please rename game folder and remove spaces!\n</string>
+    <string name="themeSumm">Choose color scheme</string>
 
     <!-- ***************************************** -->
     <!-- WARNING: DO NOT TRANSLATE BELOW THIS LINE -->
@@ -183,12 +190,32 @@
     <string name="isSetS">is set</string>
     <string name="exitedS">exited</string>
 
-    <string name="defbackColor">#000000</string>
-    <string name="deftextColor">#ffffff</string>
-    <string name="deflinkColor">#0000ee</string>
-    <string name="defactsColor">#ffffd7</string>
     <string name="deftypeface">0</string>
     <string name="deffontsize">16</string>
+
+    <string name="deftheme">0</string>
+    <string name="defbackColor">#000000</string>
+    <string name="deftextColor">#ffffff</string>
+    <string name="deflinkColor">#3333ff</string>
+    <string name="defactsColor">#ffffd7</string>
+
+    <string name="lighttheme">1</string>
+    <string name="lightbackColor">#ffffff</string>
+    <string name="lighttextColor">#000000</string>
+    <string name="lightlinkColor">#0000cc</string>
+    <string name="lightactsColor">#333300</string>
+
+    <string name="desktheme">2</string>
+    <string name="deskbackColor">#DCEA86</string>
+    <string name="desktextColor">#072A1F</string>
+    <string name="desklinkColor">#36715E</string>
+    <string name="deskactsColor">#659728</string>
+
+    <string name="customtheme">-1</string>
+    <string name="defcustombackColor">#000000</string>
+    <string name="defcustomtextColor">#FFFFFF</string>
+    <string name="defcustomlinkColor">#3333FF</string>
+    <string name="defcustomactsColor">#FFFFD7</string>
 
     <string name="defGamePath">/storage/sdcard1/QSP/games/</string>
     <string name="defRelPath">/QSP/games/</string>

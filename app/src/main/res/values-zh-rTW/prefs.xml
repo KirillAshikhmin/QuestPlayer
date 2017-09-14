@@ -21,9 +21,10 @@
         <item>22</item>
     </string-array>
     <string-array name="themeName">
-        <item>深色調</item>
+        <item>深色調 (系統預設)</item>
         <item>淺色調</item>
         <item>系統色</item>
+        <item>Custom</item>
     </string-array>
     <string-array name="langName">
         <item>English</item>

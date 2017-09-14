@@ -21,9 +21,10 @@
         <item>22</item>
     </string-array>
     <string-array name="themeName">
-        <item>Темная</item>
+        <item>Темная (Default)</item>
         <item>Светлая</item>
         <item>Рабочий стол</item>
+        <item>Custom</item>
     </string-array>
     <string-array name="langName">
         <item>English</item>
