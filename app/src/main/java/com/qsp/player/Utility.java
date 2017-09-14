@@ -137,6 +137,8 @@ public class Utility {
 
             str = fixTableAlign(str);
 
+            str = minimizeBreaks(str);
+
             str = fixImagesSize(str,srcDir,true,maxW,maxH,fitToWidth, hideImg, uiContext);
 
             return Html.fromHtml(str, imgGetter, null);
@@ -149,8 +151,10 @@ public class Utility {
 
     public static String QspStrToWebView(String str, String srcDir, int maxW, int maxH, boolean audioIsOn,boolean fitToWidth, boolean videoSwitch, boolean hideImg, Context uiContext) {
         if (str != null && str.length() > 0) {
-//            Utility.WriteLog(str);
+            Utility.WriteLog("Orig. Text: "+str);
             str = str.replaceAll("\r", "<br>");
+
+            str = minimizeBreaks(str);
 
             str = fixTableAlign(str);
 
@@ -167,6 +171,22 @@ Utility.WriteLog("toWebView:\n"+ str);
 
         }
         return "";
+    }
+
+    //Remove <br> at beginning of page, combine <br><br> into single break
+    private static String minimizeBreaks (String str) {
+        String newStr = str;
+
+        //Remove <br> (and leading whitespace characters) at start
+        newStr = newStr.replaceFirst("^[\\s]*<br>","");
+
+        //Replace </center><br> with just </center>
+        newStr = newStr.replaceAll("</center>[\\s]*<br>","</center>");
+
+        //Replace <br><br> (plus leading whitespace/intervening spaces) with single <br>
+        newStr = newStr.replaceAll("[\\s]*<br>[ ]*<br>","<br>");
+
+        return newStr;
     }
 
     //Move certain <table>-bound attributes to the appropriate <tr> tag
@@ -287,11 +307,11 @@ Utility.WriteLog("toWebView:\n"+ str);
             int attribIdx = styles[i].indexOf("=");
             if (attribIdx < 1) continue;
 
-Utility.WriteLog("Switch: "+styles[i].substring(0,attribIdx));
+//Utility.WriteLog("Switch: "+styles[i].substring(0,attribIdx));
             switch ( styles[i].substring(0,attribIdx) ) {
                 //if table has valign, insert it in the "<tr" and "<td" tags
                 case "valign": {
-Utility.WriteLog("Valign active");
+//Utility.WriteLog("Valign active");
                     target = target.replace("<tr","<tr "+styles[i]+" ");
                 }
 
@@ -569,7 +589,7 @@ Utility.WriteLog(tempCode);
 
         int fisCycles = 0;
 
-Utility.WriteLog("fixImagesSize: "+str);
+//Utility.WriteLog("fixImagesSize: "+str);
 
         if (!hasImg) return str;
         Resources res = uiContext.getResources();
@@ -721,6 +741,9 @@ Utility.WriteLog("fixImagesSize: "+str);
                     if (newSrc.indexOf("\"") > 3)
                         newSrc = newSrc.substring(0, newSrc.indexOf("src=") + 4) + newSrc.substring(newSrc.indexOf("\""));
 
+                    //Change all the spaces within the link to %20 (%20 represents a space)
+                    newSrc = newSrc.replace(" ","%20");
+
                     //src is file URI without file://, then add file://
                     if ((newSrc.matches("^src=\"[/]?[[^/:][/]?]+[^/:]+"))) {
                         if (newSrc.matches("^src=\"[^/].*")) {
@@ -750,7 +773,7 @@ Utility.WriteLog("fixImagesSize: "+str);
                     curStr = curStr.replace("ALT-IMG-TEXT",altStr);
                 }
 
-Utility.WriteLog(newSrc.substring(newSrc.indexOf("///")+2));
+//Utility.WriteLog(newSrc.substring(newSrc.indexOf("///")+2));
                 BitmapFactory.Options imgDim = null;
                 if (hideImg) {
                     imgDim = new BitmapFactory.Options();
@@ -816,7 +839,7 @@ Utility.WriteLog(newSrc.substring(newSrc.indexOf("///")+2));
             }
 
         } while (hasImg);
-Utility.WriteLog("newStr: "+newStr);
+//Utility.WriteLog("newStr: "+newStr);
         return newStr;
     }
 

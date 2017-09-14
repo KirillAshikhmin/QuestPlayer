@@ -676,12 +676,16 @@ Utility.WriteLog("TEMP:"+SDPath);
 			return;
 		
 			StringBuilder txt = new StringBuilder();
+			if (selectedGame.title.contains(" ")) {
+				txt.append(getString(R.string.spaceWarn)+"\n");
+			}
 			if(selectedGame.author.length()>0)
 				txt.append("Author: ").append(selectedGame.author);
 			if(selectedGame.version.length()>0)
 				txt.append("\nVersion: ").append(selectedGame.version);
 			if(selectedGame.file_size>0)
 				txt.append("\nSize: ").append(selectedGame.file_size/1024).append(" Kilobytes");
+Utility.WriteLog("Dialog txt: "+txt);
 			AlertDialog.Builder bld = new AlertDialog.Builder(uiContext).setMessage(txt)
 			.setTitle(selectedGame.title)
 			.setIcon(R.drawable.icon)

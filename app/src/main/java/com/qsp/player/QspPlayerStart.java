@@ -144,6 +144,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private static String defaultQSPactsColor = "#ffffd7";
     private static String defaultQSPfontSize = "16";
     private static String defaultQSPfontStyle = "DEFAULT";
+    private static String defaultQSPfontTheme = "0";
 
     private static String QSPtextColor = defaultQSPtextColor;
     private static String QSPbackColor = defaultQSPbackColor;
@@ -151,6 +152,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private static String QSPactsColor = defaultQSPactsColor;
     private static String QSPfontSize = defaultQSPfontSize;
     private static String QSPfontStyle = defaultQSPfontStyle;
+    private static String QSPfontTheme = defaultQSPfontStyle;
 
     public static String freshPageHeadTemplate = "<html><head>"
             + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, "
@@ -434,6 +436,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             vars_descClient = new QSPWebViewClient();
             main_desc.setWebViewClient(main_descClient);
             vars_desc.setWebViewClient(vars_descClient);
+            main_desc.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
             main_desc.getSettings().setMediaPlaybackRequiresUserGesture(false);
 
             float imgPerScreen = Float.parseFloat(settings.getString("imgHeight", "1"));
@@ -441,11 +444,11 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
             freshPageURL = freshPageHeadTemplate + freshPageBodyTemplate;
 
-            defaultQSPtextColor = res.getString(R.string.deftextColor);
-            defaultQSPbackColor = res.getString(R.string.defbackColor);
-            defaultQSPlinkColor = res.getString(R.string.deflinkColor);
-            defaultQSPactsColor = res.getString(R.string.defactsColor);
-            defaultQSPfontSize = res.getString(R.string.deffontsize);
+//            defaultQSPtextColor = res.getString(R.string.deftextColor);
+//            defaultQSPbackColor = res.getString(R.string.defbackColor);
+//            defaultQSPlinkColor = res.getString(R.string.deflinkColor);
+//            defaultQSPactsColor = res.getString(R.string.defactsColor);
+//            defaultQSPfontSize = res.getString(R.string.deffontsize);
             //defaultQSPfontStyle = res.getString(R.string.deftypeface);
 
             //used to detect LongClicks on images in main_desc or vars_desc
@@ -524,26 +527,25 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
         if (settings.getBoolean("gestures", false))
             gestures.addOnGesturePerformedListener(this);
 
-        boolean bigImageChanged = false;
+
+        boolean settingsChanged = false;
+
         boolean newBigImage = settings.getBoolean("big_image", false);
-        if (bigImage != newBigImage) bigImageChanged = true;
+        if (bigImage != newBigImage) settingsChanged = true;
         bigImage = newBigImage;
 
-        boolean videoSwitchChanged = false;
         boolean newVideoSwitch = settings.getBoolean("videoSwitch",false);
-        if (videoSwitch != newVideoSwitch) videoSwitchChanged = true;
+        if (videoSwitch != newVideoSwitch) settingsChanged = true;
         videoSwitch = newVideoSwitch;
 
-        boolean hideImgChanged = false;
         boolean newHideImg = settings.getBoolean("hideImg",false);
-        if (hideImg != newHideImg) hideImgChanged = true;
+        if (hideImg != newHideImg) settingsChanged = true;
         hideImg = newHideImg;
 
-
-        boolean imgPerScreenChanged = false;
         float tempImgPerScreen = Float.parseFloat(settings.getString("imgHeight", "1"));
-        if (playerHeightLimit != 1/tempImgPerScreen) imgPerScreenChanged = true;
-Utility.WriteLog("playerHeightLimit: " + playerHeightLimit + ", tempImgPerScreen: "+tempImgPerScreen+", imgPerScreenChanged: "+imgPerScreenChanged);
+        if (playerHeightLimit != 1/tempImgPerScreen) settingsChanged = true;
+Utility.WriteLog("playerHeightLimit: " + playerHeightLimit + ", tempImgPerScreen: "+tempImgPerScreen);
+
 
         backAction = settings.getBoolean("back_action", false);
         hotKeys = settings.getBoolean("acts_hot_keys", false);
@@ -556,19 +558,26 @@ Utility.WriteLog("playerHeightLimit: " + playerHeightLimit + ", tempImgPerScreen
             QSPtextColor = defaultQSPtextColor;
             QSPbackColor = defaultQSPbackColor;
             QSPlinkColor = defaultQSPlinkColor;
+            QSPactsColor = defaultQSPactsColor;
             QSPfontSize = defaultQSPfontSize;
             QSPfontStyle = defaultQSPfontStyle;
+            QSPfontStyle = defaultQSPfontTheme;
 
             SharedPreferences.Editor ed = settings.edit();
             ed.putBoolean("resetAll",false);
             ed.putInt("textColor",Color.parseColor(defaultQSPtextColor));
             ed.putInt("backColor",Color.parseColor(defaultQSPbackColor));
-            ed.putInt("actsColor",Color.parseColor(defaultQSPactsColor));
             ed.putInt("linkColor",Color.parseColor(defaultQSPlinkColor));
+            ed.putInt("actsColor",Color.parseColor(defaultQSPactsColor));
             ed.putString("fontsize",defaultQSPfontSize);
             ed.putString("typeface",res.getString(R.string.deftypeface));
+            ed.putString("theme",res.getString(R.string.deftheme));
             ed.apply();
         }
+        //If not resetting to default, check for font color/theme changes
+        else
+            ApplyFontTheme();
+
 
         //Set the language if it has changed
         boolean langChanged = false;
@@ -586,8 +595,7 @@ Utility.WriteLog("playerHeightLimit: " + playerHeightLimit + ", tempImgPerScreen
         //Here is where the display settings are applied
         SetImageLimits();
         ApplyViewSettings();
-        if (bigImageChanged || imgPerScreenChanged || videoSwitchChanged || hideImgChanged)
-            refreshMainDesc();
+        if (settingsChanged) refreshMainDesc();
 
         if (sdcard_mounted && gameIsRunning && !waitForImageBox) {
             //Запускаем таймер
@@ -717,6 +725,108 @@ Utility.WriteLog("FreeResources*");
         startActivityForResult(myIntent, ACTIVITY_SELECT_GAME);
     }
 
+    private void ApplyFontTheme () {
+        String newText = getString(R.string.deftextColor);
+        String newBack = getString(R.string.defbackColor);
+        String newLink = getString(R.string.deflinkColor);
+        String newActs = getString(R.string.defactsColor);
+
+        //Get current theme from settings (theme change overrides all color changes)
+        String newTheme = settings.getString("theme",getString(R.string.deftheme));
+        //if theme has changed AND is not custom (-1), apply colors and exit
+Utility.WriteLog("QSPfonttheme: "+QSPfontTheme+", newTheme = "+newTheme);
+
+        if (!newTheme.equals(QSPfontTheme)) {
+            SharedPreferences.Editor ed = settings.edit();
+            QSPfontTheme = newTheme;
+            //If switching from Custom theme, save the color values for Custom
+            if (!newTheme.equals("-1")) {
+                ed.putInt("customtextColor",Color.parseColor(QSPtextColor));
+                ed.putInt("custombackColor",Color.parseColor(QSPbackColor));
+                ed.putInt("customlinkColor",Color.parseColor(QSPlinkColor));
+                ed.putInt("customactsColor",Color.parseColor(QSPactsColor));
+            }
+
+            switch (Integer.parseInt(newTheme)) {
+                //Default - already set values to default above
+                case 0:
+                    break;
+                //Light Theme
+                case 1:
+                    newText = getString(R.string.lighttextColor);
+                    newBack = getString(R.string.lightbackColor);
+                    newLink = getString(R.string.lightlinkColor);
+                    newActs = getString(R.string.lightactsColor);
+                    break;
+                //Desktop Theme
+                case 2:
+                    newText = getString(R.string.desktextColor);
+                    newBack = getString(R.string.deskbackColor);
+                    newLink = getString(R.string.desklinkColor);
+                    newActs = getString(R.string.deskactsColor);
+                    break;
+                //Custom Theme - saves last user settings
+                case -1:
+                    newText = String.format("#%06X",(0xFFFFFF & settings.getInt("customtextColor",Color.parseColor(getString(R.string.defcustomtextColor)))));
+                    newBack = String.format("#%06X",(0xFFFFFF & settings.getInt("custombackColor", Color.parseColor(getString(R.string.defcustombackColor)))));
+                    newLink = String.format("#%06X",(0xFFFFFF & settings.getInt("customlinkColor",Color.parseColor(getString(R.string.defcustomlinkColor)))));
+                    newActs = String.format("#%06X",(0xFFFFFF & settings.getInt("customactsColor",Color.parseColor(getString(R.string.defcustomactsColor)))));
+                    break;
+            }
+            QSPtextColor = newText;
+            QSPbackColor = newBack;
+            QSPlinkColor = newLink;
+            QSPactsColor = newActs;
+
+            ed.putInt("textColor",Color.parseColor(newText));
+            ed.putInt("backColor",Color.parseColor(newBack));
+            ed.putInt("linkColor",Color.parseColor(newLink));
+            ed.putInt("actsColor",Color.parseColor(newActs));
+            ed.apply();
+            Utility.WriteLog("theme change:\n"+
+                    "new text: "+String.format("#%06X",(0xFFFFFF & settings.getInt("textColor",Color.parseColor(defaultQSPtextColor))))+
+                    "\nnew back: "+String.format("#%06X",(0xFFFFFF & settings.getInt("backColor", Color.parseColor(defaultQSPbackColor))))+
+                    "\nnew link: "+String.format("#%06X",(0xFFFFFF & settings.getInt("linkColor",Color.parseColor(defaultQSPlinkColor)))) +
+                    "\nnew acts: "+String.format("#%06X",(0xFFFFFF & settings.getInt("actsColor",Color.parseColor(defaultQSPactsColor)))));
+            return;
+        }
+
+        //If not changed OR custom theme, get current colors from settings
+        newText = String.format("#%06X",(0xFFFFFF & settings.getInt("textColor",Color.parseColor(defaultQSPtextColor))));
+        newBack = String.format("#%06X",(0xFFFFFF & settings.getInt("backColor", Color.parseColor(defaultQSPbackColor))));
+        newLink = String.format("#%06X",(0xFFFFFF & settings.getInt("linkColor",Color.parseColor(defaultQSPlinkColor))));
+        newActs = String.format("#%06X",(0xFFFFFF & settings.getInt("actsColor",Color.parseColor(defaultQSPactsColor))));
+
+        //Compare to current theme colors; if any changed, change theme to "Custom"
+        boolean setCustom = false;
+        if (!newText.equals(QSPtextColor)) {
+            QSPtextColor = newText;
+            setCustom = true;
+        }
+        if (!newBack.equals(QSPbackColor)) {
+            QSPbackColor = newBack;
+            setCustom = true;
+        }
+        if (!newLink.equals(QSPlinkColor)) {
+            QSPlinkColor = newLink;
+            setCustom = true;
+        }
+        if (!newActs.equals(QSPactsColor)) {
+            QSPactsColor = newActs;
+            setCustom = true;
+        }
+        //Set theme to custom and then save all colors as "Custom" color values
+        if(setCustom && settings.getString("theme",getString(R.string.deftheme)) != getString(R.string.customtheme)) {
+            SharedPreferences.Editor ed = settings.edit();
+            ed.putString("theme", res.getString(R.string.customtheme));
+            ed.putInt("customtextColor",Color.parseColor(QSPtextColor));
+            ed.putInt("custombackColor",Color.parseColor(QSPbackColor));
+            ed.putInt("customlinkColor",Color.parseColor(QSPlinkColor));
+            ed.putInt("customactsColor",Color.parseColor(QSPactsColor));
+            ed.apply();
+        }
+    }
+
     private void ApplyFontSettingsToTextView(TextView tv, int textColor) {
         Typeface tf = Typeface.DEFAULT;
         switch (Integer.parseInt(settings.getString("typeface", "0"))) {
@@ -742,28 +852,34 @@ Utility.WriteLog("FreeResources*");
     }
 
     private void ApplyViewSettings() {
-        int backColor = settings.getInt("backColor", Color.parseColor(defaultQSPbackColor));
+        int backColor = settings.getInt("backColor", Color.parseColor(QSPbackColor));
         View v = findViewById(R.id.main);
         v.setBackgroundColor(backColor);
         ListView lv = (ListView) findViewById(R.id.inv);
         lv.setCacheColorHint(backColor);
 
-
+// Log entry to check font settings update
 //        Utility.WriteLog("defaultQSPtextColor = " + defaultQSPtextColor +
 //        "\ndefaultQSPbackColor = " + defaultQSPbackColor +
 //        "\ndefaultQSPlinkColor = " + defaultQSPlinkColor +
-//        "\ndefaultQSPactsColor = " + defaultQSPactsColor);
+//        "\ndefaultQSPactsColor = " + defaultQSPactsColor +
+//        "\ndefaultQSPfontStyle = " + defaultQSPfontStyle +
+//        "\ndefaultQSPfontTheme = " + defaultQSPfontTheme);
 
         updateFreshPageURL();
 
         Utility.WriteLog(freshPageURL);
 
         //Inject javascript to change the current page's settings to the new style
+        //--using a for loop to apply QSPlinkColor to every link
         String command = "javascript:(function() {"+
                 "document.getElementsByTagName(\"body\")[0].style.backgroundColor = \"" + QSPbackColor + "\"; "+
                 "document.getElementsByTagName(\"body\")[0].style.fontFamily = \"" + QSPfontStyle + "\"; "+
                 "document.getElementsByTagName(\"body\")[0].style.fontSize = \"" + QSPfontSize + "\"; "+
                 "document.getElementsByTagName(\"body\")[0].style.color = \"" + QSPtextColor + "\"; "+
+
+                "var links = document.getElementsByTagName(\"a\");" +
+                "for(var i=0; i<links.length; i++) { if (links[i].href) { links[i].style.color = \"" + QSPlinkColor + "\"; } } "+
                 "})()";
         Utility.WriteLog("command: "+command);
 
@@ -786,7 +902,7 @@ Utility.WriteLog("FreeResources*");
 
     private float SetImageLimits () {
         int padding = main_desc.getPaddingLeft() + main_desc.getPaddingRight();
-Utility.WriteLog(""+padding);
+//Utility.WriteLog("padding: "+padding);
         DisplayMetrics QSP_displayMetrics = getResources().getDisplayMetrics();
 
         float imgPerScreen = Float.parseFloat(settings.getString("imgHeight", "1"));
@@ -2458,7 +2574,6 @@ Utility.WriteLog("original: "+newPage);
         // Checks the orientation of the screen
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
 Utility.WriteLog("Config changed: landscape");
-Utility.WriteLog("filePicker: "+settings.getString("filePicker","/DEFAULT/"));
 //            Toast.makeText(this, "landscape", Toast.LENGTH_SHORT).show();
             hideTitle();
         } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
@@ -2468,6 +2583,7 @@ Utility.WriteLog("Config changed: portrait");
         }
         if (gameIsRunning) {
             SetImageLimits();
+            ApplyViewSettings();
 //Utility.WriteLog("maxH: "+maxH+", maxW: "+maxW);
             updateFreshPageURL();
             refreshMainDesc();
