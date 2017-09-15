@@ -14,6 +14,10 @@ Version 1.6.2
 2. Fixed bug preventing link color from updating when leaving settings
 3. Changed Display Settings option to "Image Settings" and "Text Settings"
 4. New Russian translations by Unregistred!
+Quick fix!
+  5. Update to credits page.
+  6. Added new Chinese translations
+  7. Fixed random crash occurring with some games
 
 Version 1.6.1
 1. Added display option to replace all game graphics with a neutral image. This allows a user to censor a game that contains violent, sexual, or obscene imagery.
