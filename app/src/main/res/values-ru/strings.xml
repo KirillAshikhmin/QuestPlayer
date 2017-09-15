@@ -163,8 +163,6 @@
 	<li><b>Особое спасибо:</b> Kevin Smarts и всему <a href=\"https://tfgamessite.com/\">TFGamesSite сообществу</a></li>
 	<li><i>Изображения Пятого Мира</i> созданы Noah Bradley (Творческие Сообщества; изображения уменьшены и обрезаны)</li>
 </ul>]]></string>
-    <string name="about_template"><![CDATA[<html><head><meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1"><style type="text/css">body{margin: 0; padding: 0; color: QSPTEXTCOLOR; background-color: QSPBACKCOLOR; max-width: 100%; font-size: QSPFONTSIZE; font-family: QSPFONTSTYLE; } a{color: QSPLINKCOLOR; } a:link{color: QSPLINKCOLOR; } table{font-size: QSPFONTSIZE; font-family: QSPFONTSTYLE; }</style></head><body>REPLACETEXT</body></html>]]></string>
-
     <string name="useVidTitle">Пробовать заменить картинки на видео?</string>
     <string name="useVidSumm">Искать по префиксу (т.е. akl.jpg -> akl.*)</string>
 

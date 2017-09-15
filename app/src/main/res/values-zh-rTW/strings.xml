@@ -48,9 +48,9 @@
     <string name="menu_closeapp">關閉QuestPlayer</string>
 
     <!-- Вкладки Tabs -->
-    <string name="tab_all">線上</string>
+    <string name="tab_all">全部</string>
     <string name="tab_downloaded">本機</string>
-    <string name="tab_starred">標記</string>
+    <string name="tab_starred">市場</string>
 
     <!-- Прочее Other -->
     <string name="app_name">Quest Player</string>
@@ -133,4 +133,40 @@
     <string name="storTypeTitle">遊戲位置</string>
     <string name="storTypeSumOn">使用外掛SD卡</string>
     <string name="storTypeSumOff">使用內置空間</string>
+
+    <string name="setcat_img">Image Settings</string>
+    <string name="setcat_txt">Text Settings</string>
+
+    <string name="selectDirTitle">Select Game Directory</string>
+    <string name="selectDir">[CLICK TO SELECT: \"-DIRNAME-\"]</string>
+
+    <string name="app_descrip"><![CDATA[<h2><center>關於 Quest Player<img src=\"file:///android_res/drawable/landscape.jpg\" width=\"100%\"></center></h2>
+<h4><b>Quest Soft Player</b> (<a href=\"http://qsp.su/?option=com_content&view=article&id=64\">俄文網站</a>), 是個跨平台的互動電子小說軟體. <B>Quest Player</B> 是其開源的安卓版播放器. 最新的版本可以在 MrBoboFace 的 <a href=\"https://github.com/MrBoboFace/QuestPlayer\">GitHub</a> 找到.</h4><br>
+<h3><center>遊戲安裝指南:</center></h3>
+<ol>
+	<li>在你的內置儲存區 或 SD卡 的根目錄建立 \"QSP\" 資料夾(或其他你偏好的名稱)</li>
+	<li>在QSP目錄內建立子資料夾. 資料夾名稱會作為遊戲名稱顯示 (範例: QSP/game1)</li>
+	<li>把遊戲的.qsp檔和圖片, 音樂等複製入 QSP/game1</li>
+	<li>如果要安裝其他遊戲, 重複上述步驟 (例: QSP/game2, QSP/game3, 以此類推) <i>注意: 每個資料夾裡只能有1個 .qsp 檔!</i></li>
+	<li>在 QSP player 裡, 設定 - 遊戲位置/遊戲目錄, 設定正確的資料夾位置</li>
+	<li>這些遊戲會出現在遊戲架中的 \"本機\" 分頁中</li>
+</ol>]]></string>
+    <string name="app_credits"><![CDATA[<center><h3>創作團隊</h3></center>
+<ul>
+	<li><b>程式:</b>Nex (~v1.0.201), BOOMik (v1.3), MrBoboFace (v1.4+)</li>
+	<li><b>翻譯:</b> Illume (簡體中文/繁體中文/英文~v1.3)</li>
+	<li><b>特別感謝:</b> Kevin Smarts 和所有 <a href=\"https://tfgamessite.com/\">TFGamesSite Community</a> 的協力者</li>
+	<li><i>第五世界</i> 畫家 Noah Bradley (Creative Commons License; 圖片被縮放和裁切過)</li>
+</ul>]]></string>
+    <string name="about_template"><![CDATA[<html><head><meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1"><style type="text/css">body{margin: 0; padding: 0; color: QSPTEXTCOLOR; background-color: QSPBACKCOLOR; max-width: 100%; font-size: QSPFONTSIZE; font-family: QSPFONTSTYLE; } a{color: QSPLINKCOLOR; } a:link{color: QSPLINKCOLOR; } table{font-size: QSPFONTSIZE; font-family: QSPFONTSTYLE; }</style></head><body>REPLACETEXT</body></html>]]></string>
+
+    <string name="useVidTitle">Try to replace images with video?</string>
+    <string name="useVidSumm">Searches by prefix (i.e, akl.jpg -> akl.*)</string>
+
+    <string name="hideImgTitle">Hide game graphics</string>
+    <string name="hideImgSumm">Replaces game graphics with neutral scene</string>
+
+    <string name="spaceWarn">**WARNING!** Space detected in game name! Please rename game folder and remove spaces!\n</string>
+    <string name="themeSumm">Choose color scheme</string>
+
 </resources>
