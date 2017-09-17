@@ -9,6 +9,13 @@ TO DO:
 1. Finish translations of strings.xml and prefs.xml files for Russian, Simplified Chinese, and Traditional Chinese
 2. Fix any more bugs that show up
 
+Version 1.6.3
+1. Fixed HTML parsing so image maps will scale and be implemented properly
+2. Enabled multi-file compatibility for games; if your game has multiple QSP files in a directory, each file will now appear as a separate option in the game list
+3. Saved games are now localized based on game directory, not QSP file name. The save/load list created by "QSP/games/MyGame/mygame1.2.qsp" will be available to "QSP/games/mygame1.3.qsp" and vice versa.
+4. Local games are now sorted by alphanumeric order
+5. Fixed some menu bugs
+
 Version 1.6.2
 1. Reinstated Theme option for fonts style
 2. Fixed bug preventing link color from updating when leaving settings
