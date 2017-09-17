@@ -226,7 +226,7 @@ Utility.WriteLog("startpathX: "+startpath);
         if (names.length < 2+shift) return names;
         Arrays.sort(names, shift, names.length, new Comparator<CharSequence>() {
             public int compare(CharSequence name1, CharSequence name2) {
-                return name1.toString().compareTo(name2.toString());
+                return name1.toString().toLowerCase().compareTo(name2.toString().toLowerCase());
             }
         });
         return names;
