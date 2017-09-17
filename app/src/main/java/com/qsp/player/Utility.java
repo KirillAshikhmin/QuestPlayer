@@ -10,6 +10,7 @@ import java.net.URLDecoder;
 import java.sql.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Stack;
 import java.util.regex.Matcher;
@@ -161,6 +162,7 @@ public class Utility {
             str = fixImagesSize(str,srcDir,false,maxW,maxH,fitToWidth,hideImg, uiContext);
 
             str = fixVideosLinks(str,srcDir,maxW,maxH,audioIsOn,hideImg,uiContext);
+
             if (videoSwitch && !hideImg)
                 str = useVideoBeforeImages(str,audioIsOn,videoSwitch, uiContext);
 
@@ -443,7 +445,8 @@ Utility.WriteLog("toWebView:\n"+ str);
 
         //Collapse "& &" (if any) to "&"
         tempCode = tempCode.replace("& &","&");
-Utility.WriteLog(tempCode);
+
+Utility.WriteLog("prepareForExec: "+tempCode);
         return tempCode;
     }
 
@@ -685,19 +688,24 @@ Utility.WriteLog(tempCode);
             endOfStr = endOfStr.substring(firstImg+curStr.length());
 
             newStr = newStr.substring(0,newStr.indexOf(curStr));
+
+            //Remove img spaces so that all "X...=" become "X="; this will enable better matching
+Utility.WriteLog("Before space removal: "+curStr);
+            curStr = curStr.replaceAll("\\s*=\\s*","=");
+Utility.WriteLog("After space removal: "+curStr);
+
             Matcher matcher = pattern.matcher(curStr);
 
 
             if (matcher.groupCount()==0) continue;
 
-            String src = null, widthS = null, heightS = null, widthBase = null, heightBase = null; String altImg = null;
+            String src = null, widthS = null, heightS = null, widthBase = null, heightBase = null, usemapImg = null, altImg = null;
             try {
                 while (matcher.find()) {
                     String group = matcher.group();
-                    if (group.toLowerCase().startsWith("src=")) {
+                    if (group.toLowerCase().startsWith("src=\"")) {
                         if (group.length()>4)
                             src = "src="+group.substring(4);
-                        else src = "src=";
                     }
                     else if (group.toLowerCase().startsWith("width=")) {
                         widthBase = group;
@@ -707,8 +715,9 @@ Utility.WriteLog(tempCode);
                         heightBase = group;
                         heightS = group.substring(7);
                     }
-                    else if (group.toLowerCase().startsWith("alt=")) {
-                        altImg = group;
+                    else if (group.toLowerCase().startsWith("usemap=\"")) {
+                        if (group.length()>7)
+                            usemapImg = "usemap="+group.substring(7);
                     }
                 }
 
@@ -717,7 +726,8 @@ Utility.WriteLog(tempCode);
                     continue;
                 }
 
-                curStr = "<img "+src+"\" i"+(imgCount++)+">";
+                //Initial img string with src and map
+                curStr = "<img "+src+"\" "+" i"+(imgCount++)+">";
 
                 //if this is for a TextView, don't use a URL locator
                 if (isForTextView) {
@@ -746,18 +756,20 @@ Utility.WriteLog(tempCode);
 
                     //src is file URI without file://, then add file://
                     if ((newSrc.matches("^src=\"[/]?[[^/:][/]?]+[^/:]+"))) {
+Utility.WriteLog("newSrc matches URI without file://");
                         if (newSrc.matches("^src=\"[^/].*")) {
                             newSrc = newSrc.replace("src=\"", "src=\"file://" + srcDir);
-                            curStr = curStr.replace(src, newSrc);
+                            newSrc = CorrectJpegFileName(newSrc);
                         } else if (newSrc.matches("^src=\"/.*")) {
                             newSrc = newSrc.replace("src=\"/", "src=\"file://" + srcDir);
-                            curStr = curStr.replace(src, newSrc);
+                            newSrc = CorrectJpegFileName(newSrc);
                         }
+                        curStr = curStr.replace(src, newSrc);
                     }
-                    //If src is file:// URI, don't do anything (placeholders for future use)
+                    //If src is file:// URI, don't do anything (placeholder for future use)
                     else if ((newSrc.matches("^src=\"file://[/]?[[^/:][/]?]+"))) {
                     }
-                    //If src is generic URI, don't do anything (placeholders for future use)
+                    //If src is generic URI, don't do anything (placeholder for future use)
                     else if ((newSrc.matches("^src=\"[a-zA-Z]+://[[^/][/]?]+"))) {
                     } else ;
                 }
@@ -766,12 +778,18 @@ Utility.WriteLog(tempCode);
                     curStr = curStr.replace(src, newSrc);
                 }
 
-                //If there is no alt string, add one with the img source
-                if (isNullOrEmpty(altImg) && (src.indexOf("\"")>0)) {
+                //Add an [alt=""] string with the img source
+                if ((src.indexOf("\"")>0)) {
                     curStr = curStr.replace("<img", "<img alt=\"ALT-IMG-TEXT\"");
                     String altStr = src.substring(src.indexOf("\"")).replace("\"","");
                     curStr = curStr.replace("ALT-IMG-TEXT",altStr);
                 }
+
+                //Add in the "usemap" code, if there is one
+                if (!isNullOrEmpty(usemapImg)) {
+                    curStr = curStr.replace("<img", "<img "+usemapImg+"\"");
+                }
+
 
 //Utility.WriteLog(newSrc.substring(newSrc.indexOf("///")+2));
                 BitmapFactory.Options imgDim = null;
@@ -781,9 +799,11 @@ Utility.WriteLog(tempCode);
                     BitmapFactory.decodeResource(res,R.drawable.hiddenimg,imgDim);
                 }
                 else if (newSrc.contains("file://"))
-                    imgDim = getImageDimFromFile(newSrc.substring(newSrc.indexOf("///")+2));
+                    if (new File(newSrc.substring(newSrc.indexOf("///") + 2)).exists())
+                        imgDim = getImageDimFromFile(newSrc.substring(newSrc.indexOf("///") + 2));
                 else
-                    imgDim = getImageDimFromURI(newSrc.replace("src=\"",""),uiContext);
+                    if (new File(newSrc.replace("src=\"","")).exists())
+                        imgDim = getImageDimFromURI(newSrc.replace("src=\"",""),uiContext);
                 if (imgDim == null) {
 //Utility.WriteLog("imgDim is null");
                     newStr += curStr + endOfStr;
@@ -796,6 +816,7 @@ Utility.WriteLog(tempCode);
 //                    newStr += curStr.replace(">","style=\"width: 100%; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"; \">") + endOfStr;
                     int h = imgDim.outHeight;
                     int w = imgDim.outWidth;
+
                     if (maxH > 0) {
                         if ((fitToWidth && (w < maxW)) || (w > maxW)) {
                             h = Math.round(h * maxW / w);
@@ -806,9 +827,21 @@ Utility.WriteLog(tempCode);
                             h = maxH;
                         }
                     }
-                    //skip height adjustment if maxH <= 0
+                    //skip height adjustment if maxH <= 0 and just check for stretching a small
+                    //image max width (fitToWidth) or reducing a big image to max width
                     else if ((fitToWidth && (w < maxW)) || (w > maxW))
                         w = maxW;
+
+                //if there is a usemap tag AND image size has been changed, find the map and update
+                //the coordinates using the conversion factor.
+                if(!isNullOrEmpty(usemapImg) && ((h != imgDim.outHeight)||(w != imgDim.outWidth))) {
+                    float tempW = new Float(w);
+                    float tempDimW = new Float(imgDim.outWidth);
+                    float convFact = tempW/tempDimW;
+//                    Utility.WriteLog("tempW="+w+", tempDimW="+imgDim.outWidth+", convFact="+convFact);
+                    newStr = fixMapCoords(newStr,usemapImg,convFact);
+                    curStr = fixMapCoords(curStr,usemapImg,convFact);
+                }
 
                     //if in a table, use 100% for the width so to not override the table
                     if (inTable > 0) {
@@ -843,6 +876,298 @@ Utility.WriteLog(tempCode);
         return newStr;
     }
 
+    //Find the <map> tag for <img usemap="X"> and fix the coordinates
+    private static String fixMapCoords (String str, String usemapStr, float conversionFactor) {
+Utility.WriteLog("fixMapCoords: "+str);
+        //If either string is null, or usemapStr doesn't have a "#NAME", return
+        if (isNullOrEmpty(str) || isNullOrEmpty(usemapStr)) {
+            return str;
+        }
+        int trueMapIdx = usemapStr.indexOf("#");
+        if ((trueMapIdx < 0) || (trueMapIdx == usemapStr.length())) return str;
+
+        //Get the map name NAME from usemapStr from format #NAME
+        String trueMapName = null;
+        int trueMapEnd = usemapStr.substring(trueMapIdx).indexOf("\"");
+        if (trueMapIdx+1 < trueMapEnd) trueMapName = usemapStr.substring(trueMapIdx+1,trueMapEnd).toLowerCase();
+        else trueMapName = usemapStr.substring(trueMapIdx+1).toLowerCase();
+
+        boolean hasArea = str.contains("<area");
+        if (!hasArea) return str;
+        String newMapStr = str;
+        int insideMap = 0;
+        String endMapStr = str;
+        String curMapName = null;
+        Pattern pattern = Pattern.compile("(\\S+)=['\"]?((?:(?!/>|>|\"|'|\\s).)+)");
+
+        //Examine all <area tags within str that are exactly one <map tag deep
+        do {
+            //If there area no more <area tags, finish the check
+            int firstArea = endMapStr.indexOf("<area");
+            if (firstArea==-1) {
+                hasArea=false;
+                continue;
+            }
+
+            //First, find a <map region; cannot perform area fix outside the map region
+            // ** START MAP CHECK **
+            int openMap = endMapStr.indexOf("<map");
+            int closeMap = endMapStr.indexOf("</map");
+
+            //if <map is found before <area or </map, insideMap++; record the map "name" if only
+            //one map tag deep (ignore embedded maps)
+            if ((openMap >= 0)
+                    && (openMap < firstArea)
+                    && ( (openMap < closeMap) || (closeMap < 0) )) {
+                insideMap++;
+                Utility.WriteLog("insideMap+ = "+insideMap+", "+openMap);
+
+                String mapTagStr = endMapStr.substring(openMap);
+                int endTableTag = mapTagStr.indexOf(">");
+                if (endTableTag > 0) {
+                    mapTagStr = mapTagStr.substring(0, endTableTag + 1);
+                    if (insideMap == 1) curMapName = getTagName(mapTagStr).toLowerCase();
+                }
+
+                endMapStr = endMapStr.substring(openMap+mapTagStr.length());
+
+                newMapStr += mapTagStr;
+                continue;
+            }
+
+            //if inside a <map> AND </map is found before <area or <map, insideMap--; if no longer
+            //in a map, clear the map "name"
+            if ((insideMap > 0)
+                    && (closeMap >= 0)
+                    && (closeMap < firstArea)
+                    && ((closeMap < openMap) || (openMap < 0))) {
+                insideMap--;
+Utility.WriteLog("insideMap- = "+insideMap+", "+closeMap);
+
+                String mapTagStr = endMapStr.substring(closeMap);
+                int endTableTag = mapTagStr.indexOf(">");
+                mapTagStr = mapTagStr.substring(0,endTableTag+1);
+                endMapStr = endMapStr.substring(closeMap+mapTagStr.length());
+
+                if (insideMap == 0) curMapName = null;
+
+                newMapStr += mapTagStr;
+                continue;
+            }
+            // ** END MAP CHECK **
+
+Utility.WriteLog("End Map Check, Start Area Check");
+
+            // ** BEGIN AREA TAG PROCESSING **
+            hasArea = firstArea >=0;
+            String curMapStr = endMapStr.substring(firstArea);
+            int endArea = curMapStr.indexOf(">");
+
+            //if <area tag doesn't end, end the process immediately
+            if (endArea<0) return newMapStr;
+
+            //Setup newMapStr, newCurStr, and endMapStr for the <area...> tag
+            curMapStr = curMapStr.substring(0,endArea+1);
+            endMapStr = endMapStr.substring(firstArea+curMapStr.length());
+            newMapStr = newMapStr.substring(0,newMapStr.indexOf(curMapStr));
+
+            //If this area is not within a first level map (insideMap == 1), or there is no
+            //usable map name, skip this area
+            if ((insideMap != 1) || isNullOrEmpty(curMapName)) {
+                newMapStr += curMapStr + endMapStr;
+                continue;
+            }
+
+            //Remove area spaces so that all "X...=" become "X="; this will enable better matching
+Utility.WriteLog("Before <area> space removal: "+curMapStr);
+            curMapStr = curMapStr.replaceAll("\\s*=\\s*","=");
+Utility.WriteLog("After <area> space removal: "+curMapStr);
+
+            Matcher matcher = pattern.matcher(curMapStr);
+            if (matcher.groupCount()==0) continue;
+
+            //Grab the coordinates attribute
+            String coordStr = null;
+            ArrayList<Integer> coordInt = new ArrayList<Integer>();
+            try {
+                while (matcher.find()) {
+                    String group = matcher.group();
+                    if (group.toLowerCase().startsWith("coords=\"")) {
+                        if (group.length() > 8)
+                            coordStr = "coords=\""+group.substring(8);
+                    }
+                }
+
+Utility.WriteLog("coordStr: "+coordStr+"||trueMapName: "+trueMapName+"||curMapName: "+curMapName);
+                //if no coordinates present or the map name doesn't match, skip this area tag
+                if (isNullOrEmpty(coordStr) || !curMapName.equals(trueMapName)) {
+                    newMapStr += curMapStr + endMapStr;
+                    continue;
+                }
+
+                //Look for numbers within the coordinates group; catch possible decimal places
+                Pattern p = Pattern.compile("\\d+[.\\d+]?");
+                Matcher m = p.matcher(coordStr);
+                while (m.find()) {
+                    String tempIntAsStr = m.group();
+                    //Dump decimal places if present (round down)
+                    if (tempIntAsStr.contains("."))
+                        tempIntAsStr = tempIntAsStr.substring(0,tempIntAsStr.indexOf("."));
+Utility.WriteLog("Found tempInt: "+tempIntAsStr);
+                    int tempInt = Integer.parseInt(tempIntAsStr);
+
+                    //Apply the conversion factor for the area coordinates
+                    float tempFloat = (tempInt*conversionFactor);
+                    tempInt = Math.round(tempFloat);
+Utility.WriteLog("tempIntAsStr: "+tempIntAsStr+" * convFact: "+conversionFactor+" = tempFloat: "+tempFloat+" = tempInt: "+tempInt);
+
+                    coordInt.add(tempInt);
+                }
+
+Utility.WriteLog("Total coords found: "+coordInt.size());
+
+                //Skip this area if there were no coordinates to convert
+                if (coordInt.isEmpty()) {
+                    newMapStr += curMapStr + endMapStr;
+                    continue;
+                }
+
+                //Fabricate the new coordinates string from the new coordinate values
+                String newCoords = "coords=\"" + coordInt.get(0);
+                for (int i=1; i<coordInt.size(); i++)
+                    newCoords += ","+coordInt.get(i);
+
+Utility.WriteLog("curMapStr: "+curMapStr);
+Utility.WriteLog("coordStr: "+coordStr+", newCoords: "+newCoords);
+
+                //replace the curMapStr coordinates with the new version
+                curMapStr = curMapStr.replace(coordStr,newCoords);
+
+            } catch (Exception e) {
+                Log.e("fixMapCoords","unable to parse "+curMapStr,e);
+            }
+
+            newMapStr += curMapStr + endMapStr;
+        } while (hasArea);
+
+
+        return newMapStr;
+    }
+
+    //Takes an HTML tag and looks for the first name="X", and returns X
+    private static String getTagName (String tagStr) {
+Utility.WriteLog("getTagName from: "+tagStr);
+        if (isNullOrEmpty(tagStr)) return null;
+        if (!tagStr.toLowerCase().contains("name")) return null;
+
+        Pattern pattern = Pattern.compile("(\\S+)=['\"]?((?:(?!/>|>|\"|'|\\s).)+)");
+        Matcher matchTag = pattern.matcher(tagStr);
+        if (matchTag.groupCount()==0) return null;
+
+        String tagName = null;
+        try {
+            while (matchTag.find()) {
+                String group = matchTag.group();
+                if (group.toLowerCase().startsWith("name=\"")) {
+                    tagName = group.substring(6);
+                }
+            }
+        } catch (Exception e) {
+            Log.e("getTagName","unable to parse "+tagStr,e);
+        }
+Utility.WriteLog("tagName: "+tagName);
+        return tagName;
+    }
+
+    private static String CorrectJpegFileName (String src) {
+        String newSrc = src;
+        //trueSrc will be the file URL;
+        //skip this <img if it's not a file:// OR if there's no ".abc" at the end
+        String trueSrc = src.replace("src=\"file://","");
+//Utility.WriteLog("trueSrc: "+trueSrc);
+        int fileNameIdx = trueSrc.lastIndexOf("/")+1;
+        int suffixIdx = trueSrc.lastIndexOf(".");
+
+//Utility.WriteLog("fileNameIdx "+fileNameIdx+", suffixIdx "+suffixIdx);
+        if ((suffixIdx < 1) || (suffixIdx < fileNameIdx) || (suffixIdx < trueSrc.length()-4) ) {
+            return newSrc;
+        }
+
+        //Get list of files in <img directory with similar prefix
+        File imgFile = new File(trueSrc);
+        File imgDir = new File(trueSrc.substring(0,trueSrc.lastIndexOf("/")));
+        if (!imgDir.exists() || imgFile.exists()) {
+            return newSrc;
+        }
+
+        String tempFileName = imgFile.getName();
+        int fileSuffixIdx = tempFileName.indexOf(".");
+        if (fileSuffixIdx < 0) {
+            return newSrc;
+        }
+        final String filePrefix = tempFileName.substring(0,fileSuffixIdx);
+//Utility.WriteLog("imgDir isFile = " + imgFile.isFile());
+//Utility.WriteLog("filePrefix = " + filePrefix);
+//Utility.WriteLog("imgDir isDirectory = " + imgDir.isDirectory());
+        File[] altFileList = imgDir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.matches("^"+filePrefix+"\\.[\\w]+");
+            }
+        });
+//Utility.WriteLog("Total files found = "+altFileList.length);
+
+
+        //Check each file;
+        boolean changeExt = false;
+        boolean imgChanged = false;
+        int extValue = -1;
+        for (int i=0; (i<altFileList.length) || imgChanged;i++) {
+            //Test if current file is a video file
+            String altFileName = altFileList[i].getName();
+            String altFileExt = altFileName.substring(altFileName.indexOf(".")+1);
+            MimeTypeMap myMTM = MimeTypeMap.getSingleton();
+            String tempFileType = myMTM.getMimeTypeFromExtension(altFileExt);
+//Utility.WriteLog(altFileList[i].getName()+" extension is "+altFileExt+" and is "+tempFileType);
+            //if no type, skip
+            if (isNullOrEmpty(tempFileType)) continue;
+
+            //If fileType okay, check images by preference: [gif] > [jpg/jpeg] > [png] > [other]
+            if (tempFileType.startsWith("image")) {
+                switch (altFileExt.toLowerCase()) {
+                    case "gif":
+                        if (extValue < 30) {
+                            changeExt = true;
+                            extValue = 30;
+                        }
+                        break;
+                    case "jpg": case "jpeg":
+                        if (extValue < 20) {
+                            changeExt = true;
+                            extValue = 20;
+                        }
+                        break;
+                    case "png":
+                        if (extValue < 10) {
+                            changeExt = true;
+                            extValue = 10;
+                        }
+                        break;
+                    default:
+                        if (extValue < 0) {
+                            changeExt = true;
+                            extValue = 0;
+                        }
+                        break;
+                }
+                if (changeExt)
+                    newSrc = newSrc.replace(src, src.substring(0, src.lastIndexOf(".") + 1) + altFileExt);
+                changeExt = false;
+            }
+
+        }
+        return newSrc;
+    }
 
     private static BitmapFactory.Options getImageDimFromURI (String imgURI, Context uiContext) {
         BitmapFactory.Options opt = new BitmapFactory.Options();
@@ -1030,7 +1355,7 @@ Utility.WriteLog(tempCode);
 
 
             } catch (Exception e) {
-                Log.e("fixImagesSize","unable parse "+curStr,e);
+                Log.e("fixVidLinks","unable parse "+curStr,e);
             }
             newStr += curStr + endOfStr;
             Utility.WriteLog("fixedVidLinks: "+newStr);
@@ -1387,5 +1712,39 @@ Utility.WriteLog("finished vidStr = "+vidStr);
         return newStr;
     }
 
+    //Sort an ArrayList of Files by file name
+    public static ArrayList<File> FileSorter (ArrayList<File> files) {
+        //Skip if there aren't at least two files
+        if (files.size() < 2) return files;
 
+        File[] fileArray = files.toArray(new File[files.size()]);
+        Arrays.sort(fileArray, new Comparator<File>() {
+            public int compare(File f1, File f2) {
+                return f1.getName().toLowerCase().compareTo(f2.getName().toLowerCase());
+            }
+        });
+
+        ArrayList<File> returnedList = new ArrayList<File>();
+
+        for(int i=0; i<fileArray.length; i++)
+            returnedList.add(fileArray[i]);
+
+        return returnedList;
+    }
+
+
+    public static File[] FileSorter (File[] files) {
+        //Skip if there aren't at least two files
+        if (files.length < 2) return files;
+
+        File[] sortedFiles = files;
+
+        Arrays.sort(sortedFiles, new Comparator<File>() {
+            public int compare(File f1, File f2) {
+                return f1.getName().toLowerCase().compareTo(f2.getName().toLowerCase());
+            }
+        });
+
+        return sortedFiles;
+    }
 }

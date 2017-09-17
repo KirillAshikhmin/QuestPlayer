@@ -16,6 +16,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.zip.ZipEntry;
@@ -566,6 +567,7 @@ Utility.WriteLog("TEMP:"+SDPath);
         	@Override
         	public void onTabChanged(String tabId) {
         		int tabNum = getTabHost().getCurrentTab();
+Utility.WriteLog("GameStock Tab "+tabNum);
         		if (((tabNum == STARRED_TABNUM) || (tabNum == ALL_TABNUM)) && (xmlGameListCached == null) && !gameListIsLoading) {
         			if (Utility.haveInternet(uiContext))
         			{
@@ -676,7 +678,7 @@ Utility.WriteLog("TEMP:"+SDPath);
 			return;
 		
 			StringBuilder txt = new StringBuilder();
-			if (selectedGame.title.contains(" ")) {
+			if (selectedGame.game_file.contains(" ")) {
 				txt.append(getString(R.string.spaceWarn)+"\n");
 			}
 			if(selectedGame.author.length()>0)
@@ -1055,29 +1057,44 @@ Utility.WriteLog("Dialog txt: "+txt);
         File[] sdcardFiles = gameStartDir.listFiles();        
         ArrayList<File> qspGameDirs = new ArrayList<File>();
         ArrayList<File> qspGameFiles = new ArrayList<File>();
-        //Сначала добавляем все папки
-		if (sdcardFiles!=null)
-        for (File currentFile : sdcardFiles)
-        {
-        	if (currentFile.isDirectory() && !currentFile.isHidden() && !currentFile.getName().startsWith("."))
-        	{
-        		//Из папок добавляем только те, в которых есть игра
-                File[] curDirFiles = currentFile.listFiles();        
-                for (File innerFile : curDirFiles)
-                {
-                	if (!innerFile.isHidden() && (innerFile.getName().endsWith(".qsp") || innerFile.getName().endsWith(".gam")))
-                	{
-                		qspGameDirs.add(currentFile);
-                		qspGameFiles.add(innerFile);
-                		break;
-                	}
-                }
-        	}
-        }
+		ArrayList<Boolean> qspGamePack = new ArrayList<Boolean>();
+		String lastGame = "[ none ]"; //invalid file name for use in the first cycle
+
+		//Look at every directory in the QSP games folder after first sorting the list
+		if (sdcardFiles!=null) {
+			sdcardFiles = Utility.FileSorter(sdcardFiles);
+			for (File currentFile : sdcardFiles) {
+				if (currentFile.isDirectory() && !currentFile.isHidden() && !currentFile.getName().startsWith(".")) {
+
+					//Sort the files in the current game directory, then for each QSP/GAM file, add
+					//the directory and game to an array
+					File[] curDirFiles = currentFile.listFiles();
+					curDirFiles = Utility.FileSorter(curDirFiles);
+					for (File innerFile : curDirFiles) {
+						if (!innerFile.isHidden() && (innerFile.getName().toLowerCase().endsWith(".qsp") || innerFile.getName().toLowerCase().endsWith(".gam"))) {
+							Utility.WriteLog("[" + qspGamePack.size() + "], currentFile: " + currentFile.getName() + ", lastGame: " + lastGame);
+
+							//Mark the "Pack" array if the directory holds more than one QSP game file
+							if (currentFile.getName().equals(lastGame) && !lastGame.equals("")) {
+								qspGamePack.set(qspGamePack.size() - 1, true);
+								qspGamePack.add(true);
+							} else qspGamePack.add(false);
+							qspGameDirs.add(currentFile);
+							qspGameFiles.add(innerFile);
+//                		break; <-- removed so all QSP and GAM files are checked and loaded, not just the first
+							lastGame = currentFile.getName();
+						}
+					}
+				}
+			}
+		}
 
         //Ищем загруженные игры в карте
         for (int i=0; i<qspGameDirs.size(); i++)
         {
+Utility.WriteLog("qspGameDirs["+i+"]: "+qspGameDirs.get(i).getName()+
+					", qspGameFiles["+i+"]: "+qspGameFiles.get(i).getName()+
+					", qspGamePack["+i+"]: "+qspGamePack.get(i));
         	File d = qspGameDirs.get(i);
         	GameItem game = null;
         	File infoFile = new File(d.getPath().concat("/").concat(GAME_INFO_FILENAME));
@@ -1119,6 +1136,11 @@ Utility.WriteLog("Dialog txt: "+txt);
         		game.title = displayName;
         		game.game_id = displayName;
         	}
+        	//If this is part of a pack of game files, add in the individual file name, too
+        	if (qspGamePack.get(i)) {
+				game.title += " ("+qspGameFiles.get(i).getName()+")";
+				game.game_id += " ("+qspGameFiles.get(i).getName()+")";
+			}
         	File f = qspGameFiles.get(i);
     		game.game_file = f.getPath();
     		game.downloaded = true;
@@ -1164,6 +1186,11 @@ Utility.WriteLog("Dialog txt: "+txt);
         //Отмеченные
         //!!! STUB
         ArrayList<GameItem> gamesStarred = new ArrayList<GameItem>();
+		for (HashMap.Entry<String, GameItem> e : gamesMap.entrySet())
+		{
+			if (!e.getValue().downloaded)
+				gamesStarred.add(e.getValue());
+		}
         lvStarred.setAdapter(new GameAdapter(uiContext, R.layout.game_item, gamesStarred));
 
         //Determine which tab to open

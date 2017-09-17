@@ -205,7 +205,7 @@ Utility.WriteLog("startpathX: "+startpath);
         //Sort both arrays
         CharSequence[] sortedItems = new CharSequence[items.length];
         sortedItems = NameSorter(shift,items);
-        qspBrowseDir = FileSorter(qspBrowseDir);
+        qspBrowseDir = Utility.FileSorter(qspBrowseDir);
 
         for (int i=0; i<qspBrowseDir.size(); i++)
             Utility.WriteLog(items[i+shift]+" = "+qspBrowseDir.get(i).getName());
@@ -232,8 +232,9 @@ Utility.WriteLog("startpathX: "+startpath);
         return names;
     }
 
+    /*
     //Sort the ArrayList of Files by file name
-    private ArrayList<File> FileSorter (ArrayList<File> files) {
+    public static ArrayList<File> FileSorter (ArrayList<File> files) {
         //Skip if there aren't at least two files
         if (files.size() < 2) return files;
 
@@ -251,6 +252,7 @@ Utility.WriteLog("startpathX: "+startpath);
 
         return returnedList;
     }
+    */
 
     android.content.DialogInterface.OnClickListener browseFolderClick = new DialogInterface.OnClickListener()
     {
