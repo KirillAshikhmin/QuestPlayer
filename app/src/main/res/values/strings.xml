@@ -147,18 +147,23 @@
 	<li>Create a folder named \"QSP\" (or something similar) on your Android\'s internal storage or external SD card</li>
 	<li>To install a game, create a unique folder in the QSP folder (i.e., QSP/game1)</li>
 	<li>Next, move all files associated with that game into the new game folder</li>
-	<li>Repeat for each game (i.e., QSP/game2, QSP/game3, etc.) <i>Only one *.qsp file per folder!</i></li>
+	<li>Repeat for each game (i.e., QSP/game2, QSP/game3, etc.)</li>
 	<li>Use Settings to point Quest Player to your primary game folder</li>
 	<li>The \"Local\" tab in Game Stock should show all your loaded games</li>
 </ol>]]></string>
     <string name="app_credits"><![CDATA[<center><h3>Credits</h3></center>
 <ul>
-	<li><b>Coding:</b> Nex (~v1.0.201), BOOMik (v1.3), MrBoboFace (v1.4+)</li>
-	<li><b>Translations:</b></li></ul>
+	<li><b>Coding:</b>
+	<ul style="list-style-type:none">
+	    <li>Nex (~v1.0.201)</li>
+	    <li>BOOMik (v1.3)</li>
+	    <li>MrBoboFace (v1.4+)</li>
+	</ul>
+	<li><b>Translations:</b></li>
 	<ul style="list-style-type:none">
 	    <li>Illume (English~v1.3/Simplified Chinese/Traditional Chinese)</li>
 	    <li>Unregistred (Russian)</li>
-	</ul><ul>
+	</ul>
 	<li><b>Special Thanks:</b> Kevin Smarts and all those in <a href=\"https://tfgamessite.com/\">TFGamesSite Community</a></li>
 	<li><i>The Fifth World</i> painting by Noah Bradley (Creative Commons License; image scaled and cropped)</li>
 </ul>]]></string>
@@ -168,7 +173,7 @@
     <string name="hideImgTitle">Hide game graphics</string>
     <string name="hideImgSumm">Replaces game graphics with neutral scene</string>
 
-    <string name="spaceWarn">**WARNING!** Space detected in game name! Please rename game folder and remove spaces!\n</string>
+    <string name="spaceWarn">**WARNING!** Space detected in game path! Please rename game folder and remove spaces!\n</string>
     <string name="themeSumm">Choose color scheme</string>
 
     <!-- ***************************************** -->

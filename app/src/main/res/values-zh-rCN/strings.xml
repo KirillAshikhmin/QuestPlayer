@@ -158,14 +158,23 @@
 	<li>在你的内置储存区 或 SD卡 的根目录建立 \"QSP\" 资料夹(或其他你偏好的名称)</li>
 	<li>在QSP目录内建立子资料夹. 资料夹名称会作为游戏名称显示 (范例: QSP/game1)</li>
 	<li>把游戏的.qsp档和图片, 音乐等复制入 QSP/game1</li>
-	<li>如果要安装其他游戏, 重复上述步骤 (例: QSP/game2, QSP/game3, 以此类推) <i>注意: 每个资料夹里只能有1个 .qsp 档!</i></li>
+	<li>如果要安装其他游戏, 重复上述步骤 (例: QSP/game2, QSP/game3, 以此类推)</li>
 	<li>在 QSP player 里, 设定 - 游戏位置/游戏目录, 设定正确的资料夹位置</li>
 	<li>这些游戏会出现在游戏架中的 \"本机\" 分页中</li>
 </ol>]]></string>
-    <string name="app_credits"><![CDATA[<center><center><h3>创作团队</h3></center>
+    <string name="app_credits"><![CDATA[<center><h3>创作团队</h3></center>
 <ul>
-	<li><b>程式:</b> Nex (~v1.0.201), BOOMik (v1.3), MrBoboFace (v1.4+)</li>
-	<li><b>翻译:</b> Illume (简体中文/繁体中文/英文~v1.3)</li>
+	<li><b>程式:</b></li>
+	<ul style="list-style-type:none">
+	    <li>Nex (~v1.0.201)</li>
+	    <li>BOOMik (v1.3)</li>
+	    <li>MrBoboFace (v1.4+)</li>
+	</ul>
+	<li><b>翻译:</b></li>
+	<ul style="list-style-type:none">
+	    <li>Illume (简体中文/繁体中文/英文~v1.3)</li>
+		<li>Unregistred (俄罗斯)</li>
+	</ul>
 	<li><b>特别感谢:</b> Kevin Smarts 和所有 <a href=\"https://tfgamessite.com/\">TFGamesSite Community</a> 的协力者</li>
 	<li><i>第五世界</i> 画家 Noah Bradley (Creative Commons License; 图片被缩放和裁切过)</li>
 </ul>]]></string>
