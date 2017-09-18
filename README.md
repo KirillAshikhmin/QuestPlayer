@@ -15,6 +15,9 @@ Version 1.6.3
 3. Saved games are now localized based on game directory, not QSP file name. The save/load list created by "QSP/games/MyGame/mygame1.2.qsp" will be available to "QSP/games/mygame1.3.qsp" and vice versa.
 4. Local games are now sorted by alphanumeric order
 5. Fixed some menu bugs
+Quick Fix!
+  6. Fixed sorting error in Game Stock and improved alogrithm 
+  7. Fixed bug where image and video source files with spaces didn't parse properly
 
 Version 1.6.2
 1. Reinstated Theme option for fonts style
