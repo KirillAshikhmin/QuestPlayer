@@ -67,6 +67,7 @@ import android.widget.Toast;
 import org.w3c.dom.Text;
 import org.xml.sax.XMLReader;
 
+import pl.droidsonroids.gif.GifAnimationMetaData;
 import pl.droidsonroids.gif.GifDrawable;
 import android.text.Html.TagHandler;
 
@@ -690,9 +691,9 @@ Utility.WriteLog("prepareForExec: "+tempCode);
             newStr = newStr.substring(0,newStr.indexOf(curStr));
 
             //Remove img spaces so that all "X...=" become "X="; this will enable better matching
-Utility.WriteLog("Before space removal: "+curStr);
+//Utility.WriteLog("Before space removal: "+curStr);
             curStr = curStr.replaceAll("\\s*=\\s*","=");
-Utility.WriteLog("After space removal: "+curStr);
+//Utility.WriteLog("After space removal: "+curStr);
 
             Matcher matcher = pattern.matcher(curStr);
 
@@ -703,9 +704,12 @@ Utility.WriteLog("After space removal: "+curStr);
             try {
                 while (matcher.find()) {
                     String group = matcher.group();
+
                     if (group.toLowerCase().startsWith("src=\"")) {
                         if (group.length()>4)
                             src = "src="+group.substring(4);
+                        if (src.contains("\"") || src.contains("'"))
+                            src = GetFullSrc(curStr,src);
                     }
                     else if (group.toLowerCase().startsWith("width=")) {
                         widthBase = group;
@@ -874,6 +878,49 @@ Utility.WriteLog("newSrc matches URI without file://");
         } while (hasImg);
 //Utility.WriteLog("newStr: "+newStr);
         return newStr;
+    }
+
+    private static String GetFullSrc (String fullStr, String src) {
+        if (isNullOrEmpty(fullStr) || isNullOrEmpty(src) || !fullStr.contains(src)) return null;
+
+        //Crop everything before src
+        String newSrc = fullStr.substring(fullStr.indexOf(src));
+
+        Utility.WriteLog("src: "+src+"\nnewSrc: "+newSrc);
+
+        //Find the first " or '; return src if there is no " or '
+        boolean singleQuote = false;
+        int firstQuote = newSrc.indexOf("\"");
+        if (firstQuote < 0) {
+            firstQuote = newSrc.indexOf("'");
+            if (firstQuote < 0) return src;
+            singleQuote = true;
+        }
+Utility.WriteLog("firstQuote: "+firstQuote+", singleQuote: "+singleQuote);
+        //Stop if the quote is at the end of the string
+        if (newSrc.length() < firstQuote+2) return src;
+
+        //Find the next " or '; return src if there's no second " or '
+        int nextQuote;
+        if (singleQuote) {
+            nextQuote = newSrc.indexOf("'",firstQuote+1);
+            if ((nextQuote < 0)) return src;
+        }
+        else {
+            nextQuote = newSrc.indexOf("\"",firstQuote+1);
+            if ((nextQuote < 0)) return src;
+        }
+
+Utility.WriteLog("firstQuote: "+firstQuote+", singleQuote: "+singleQuote+", nextQuote: "+nextQuote);
+
+        //Make sure the second quote is before the next =; return src if = is before the next quote
+        int equalsIdx = newSrc.indexOf("=",firstQuote+1);
+        if ((equalsIdx < nextQuote) && (equalsIdx != -1)) return src;
+
+        newSrc = newSrc.substring(0,nextQuote);
+
+Utility.WriteLog("final newSrc: "+newSrc);
+        return newSrc;
     }
 
     //Find the <map> tag for <img usemap="X"> and fix the coordinates
@@ -1273,8 +1320,10 @@ Utility.WriteLog("tagName: "+tagName);
                     String group = matcher.group();
                     if (group.toLowerCase().startsWith("src=")) {
                         if (group.length()>4)
-                            src = "src="+group.substring(4);
+                            src = "src=" + group.substring(4);
                         else src = "src=";
+                        if (src.contains("\"") || src.contains("'"))
+                            src = GetFullSrc(curStr,src);
                     }
                     else if (group.startsWith("width=")) {
                         widthBase = group;
@@ -1406,8 +1455,10 @@ Utility.WriteLog("tagName: "+tagName);
                     String group = matcher.group();
                     if (group.toLowerCase().startsWith("src=")) {
                         if (group.length()>4)
-                            src = "src="+group.substring(4);
+                            src = "src=" + group.substring(4);
                         else src = null;
+                        if (src.contains("\"") || src.contains("'"))
+                            src = GetFullSrc(curStr,src);
                     }
                 }
 
@@ -1712,6 +1763,27 @@ Utility.WriteLog("finished vidStr = "+vidStr);
         return newStr;
     }
 
+    //Sort an ArrayList of GameItem by title (what is seen on the GameStock menu)
+    public static ArrayList<QspGameStock.GameItem> GameSorter (ArrayList<QspGameStock.GameItem> items) {
+        //Skip if there aren't at least two files
+        if (items.size() < 2) return items;
+
+        QspGameStock.GameItem[] gameArray = items.toArray(new QspGameStock.GameItem[items.size()]);
+        Arrays.sort(gameArray, new Comparator<QspGameStock.GameItem>() {
+            public int compare(QspGameStock.GameItem f1, QspGameStock.GameItem f2) {
+                return f1.title.toLowerCase().compareTo(f2.title.toLowerCase());
+            }
+        });
+
+        ArrayList<QspGameStock.GameItem> returnedList = new ArrayList<QspGameStock.GameItem>();
+
+        for(int i=0; i<gameArray.length; i++)
+            returnedList.add(gameArray[i]);
+
+        return returnedList;
+    }
+
+
     //Sort an ArrayList of Files by file name
     public static ArrayList<File> FileSorter (ArrayList<File> files) {
         //Skip if there aren't at least two files
@@ -1732,7 +1804,7 @@ Utility.WriteLog("finished vidStr = "+vidStr);
         return returnedList;
     }
 
-
+    //Sort an array of Files by file name
     public static File[] FileSorter (File[] files) {
         //Skip if there aren't at least two files
         if (files.length < 2) return files;

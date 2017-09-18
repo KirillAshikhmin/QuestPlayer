@@ -1166,13 +1166,14 @@ Utility.WriteLog("qspGameDirs["+i+"]: "+qspGameDirs.get(i).getName()+
 		((TextView)tabHost.getTabWidget().getChildAt(0).findViewById(android.R.id.title)).setText(getString(R.string.tab_downloaded));
 
     	//Выводим списки игр на экран
-
+/*
     	//Все
         ArrayList<GameItem> gamesAll = new ArrayList<GameItem>();
         for (HashMap.Entry<String, GameItem> e : gamesMap.entrySet())
         {
         	gamesAll.add(e.getValue());
         }
+		gamesAll = Utility.GameSorter(gamesAll);
         lvAll.setAdapter(new GameAdapter(uiContext, R.layout.game_item, gamesAll));
         //Загруженные
         ArrayList<GameItem> gamesDownloaded = new ArrayList<GameItem>();
@@ -1181,6 +1182,7 @@ Utility.WriteLog("qspGameDirs["+i+"]: "+qspGameDirs.get(i).getName()+
         	if (e.getValue().downloaded)
         		gamesDownloaded.add(e.getValue());
         }
+		gamesDownloaded = Utility.GameSorter(gamesDownloaded);
         lvDownloaded.setAdapter(new GameAdapter(uiContext, R.layout.game_item, gamesDownloaded));
         
         //Отмеченные
@@ -1191,6 +1193,26 @@ Utility.WriteLog("qspGameDirs["+i+"]: "+qspGameDirs.get(i).getName()+
 			if (!e.getValue().downloaded)
 				gamesStarred.add(e.getValue());
 		}
+		gamesStarred = Utility.GameSorter(gamesStarred);
+        lvStarred.setAdapter(new GameAdapter(uiContext, R.layout.game_item, gamesStarred));
+*/
+
+		ArrayList<GameItem> gamesAll = new ArrayList<GameItem>();
+		ArrayList<GameItem> gamesDownloaded = new ArrayList<GameItem>();
+		ArrayList<GameItem> gamesStarred = new ArrayList<GameItem>();
+		for (HashMap.Entry<String, GameItem> e : gamesMap.entrySet())
+		{
+        	gamesAll.add(e.getValue());
+        	if (e.getValue().downloaded)
+        		gamesDownloaded.add(e.getValue());
+			else
+				gamesStarred.add(e.getValue());
+		}
+		gamesAll = Utility.GameSorter(gamesAll);
+        lvAll.setAdapter(new GameAdapter(uiContext, R.layout.game_item, gamesAll));
+		gamesDownloaded = Utility.GameSorter(gamesDownloaded);
+        lvDownloaded.setAdapter(new GameAdapter(uiContext, R.layout.game_item, gamesDownloaded));
+		gamesStarred = Utility.GameSorter(gamesStarred);
         lvStarred.setAdapter(new GameAdapter(uiContext, R.layout.game_item, gamesStarred));
 
         //Determine which tab to open
