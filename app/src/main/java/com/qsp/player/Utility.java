@@ -131,22 +131,22 @@ public class Utility {
 
 //Replacing this code with QspStrToWebView
     public static Spanned QspStrToHtml(String str, ImageGetter imgGetter, String srcDir, int maxW, int maxH, boolean fitToWidth, boolean hideImg,Context uiContext) {
-
+Utility.WriteLog("Original (StrToHtml): "+str);
         if (str != null && str.length() > 0) {
             str = str.replaceAll("\r", "<br>");
             str = str.replaceAll("(?i)</td>", "");
             str = str.replaceAll("(?i)</tr>", "<br>");
 
-            str = fixTableAlign(str);
-
             str = minimizeBreaks(str);
+
+            str = fixTableAlign(str);
 
             str = fixImagesSize(str,srcDir,true,maxW,maxH,fitToWidth, hideImg, uiContext);
 
+Utility.WriteLog("toHtml:\n"+ str);
             return Html.fromHtml(str, imgGetter, null);
 
         }
-        Utility.WriteLog("toHtml:\n"+ str);
 
         return Html.fromHtml("");
     }
@@ -162,7 +162,7 @@ public class Utility {
 
             str = fixImagesSize(str,srcDir,false,maxW,maxH,fitToWidth,hideImg, uiContext);
 
-            str = fixVideosLinks(str,srcDir,maxW,maxH,audioIsOn,hideImg,uiContext);
+            str = fixVideosLinks(str,srcDir,maxW,maxH,audioIsOn,fitToWidth,hideImg,uiContext);
 
             if (videoSwitch && !hideImg)
                 str = useVideoBeforeImages(str,audioIsOn,videoSwitch, uiContext);
@@ -188,6 +188,10 @@ Utility.WriteLog("toWebView:\n"+ str);
 
         //Replace <br><br> (plus leading whitespace/intervening spaces) with single <br>
         newStr = newStr.replaceAll("[\\s]*<br>[ ]*<br>","<br>");
+
+        //Remove extra breaks in tables and table rows
+        newStr = newStr.replace("<table><br>","<table>");
+        newStr = newStr.replace("<tr><br>","<tr>");
 
         return newStr;
     }
@@ -273,10 +277,12 @@ Utility.WriteLog("toWebView:\n"+ str);
 //Utility.WriteLog("total curStyles: "+curStyles.length+", Index: "+lastIdx+" to "+curIdx);
 //Utility.WriteLog("curStyles: "+StringArrayToString(curStyles));
 
-            if (curStyles.length != 0)
-                newStr += addTagStyles(curStr,curStyles);
-            else
-                newStr += curStr;
+            if (curStyles != null) {
+                if (curStyles.length != 0)
+                    newStr += addTagStyles(curStr, curStyles);
+                else
+                    newStr += curStr;
+            }
         } while (result);
 
         //add the remainder of str, if any
@@ -618,7 +624,7 @@ Utility.WriteLog("prepareForExec: "+tempCode);
                     && (openTable < firstImg)
                     && ( (openTable < closeTable) || (closeTable < 0) )) {
                 inTable++;
-                Utility.WriteLog("inTable+ = "+inTable+", "+openTable);
+//Utility.WriteLog("inTable+ = "+inTable+", "+openTable);
 
                 String tableStr = endOfStr.substring(openTable);
                 int endTableTag = tableStr.indexOf(">");
@@ -700,15 +706,20 @@ Utility.WriteLog("prepareForExec: "+tempCode);
 
             if (matcher.groupCount()==0) continue;
 
-            String src = null, widthS = null, heightS = null, widthBase = null, heightBase = null, usemapImg = null, altImg = null;
+            String src = null, widthS = null, heightS = null, widthBase = null, heightBase = null, usemapImg = null, altImg = null, quoteTag = "\"";
             try {
                 while (matcher.find()) {
                     String group = matcher.group();
 
-                    if (group.toLowerCase().startsWith("src=\"")) {
-                        if (group.length()>4)
-                            src = "src="+group.substring(4);
-                        if (src.contains("\"") || src.contains("'"))
+                    if (group.toLowerCase().startsWith("src=")) {
+                        if (group.length()>4) {
+                            src = "src=" + group.substring(4);
+                            if (src.charAt(4)=='\'')
+                                quoteTag = "'";
+                            if (src.charAt(4) != quoteTag.charAt(0))
+                                src.replace("src=","src=\"");
+                        }
+                        if (src.contains(quoteTag))
                             src = GetFullSrc(curStr,src);
                     }
                     else if (group.toLowerCase().startsWith("width=")) {
@@ -730,17 +741,18 @@ Utility.WriteLog("prepareForExec: "+tempCode);
                     continue;
                 }
 
+
                 //Initial img string with src and map
-                curStr = "<img "+src+"\" "+" i"+(imgCount++)+">";
+                curStr = "<img "+src+quoteTag+" "+" i"+(imgCount++)+">";
 
                 //if this is for a TextView, don't use a URL locator
                 if (isForTextView) {
                     String iconSrc = src;
                     //change [src=..."] to [src="]
-                    if (iconSrc.indexOf("\"") > 3)
-                        iconSrc = iconSrc.substring(0, iconSrc.indexOf("src=") + 4) + iconSrc.substring(iconSrc.indexOf("\""));
+                    if (iconSrc.indexOf(quoteTag) > 3)
+                        iconSrc = iconSrc.substring(0, iconSrc.indexOf("src=") + 4) + iconSrc.substring(iconSrc.indexOf(quoteTag));
                     //Then add in the root directory for the game files
-                    src = iconSrc.replace("src=\"/", "src=\"" + srcDir);
+                    src = iconSrc.replace("src="+quoteTag+"/", "src="+quoteTag + srcDir);
                     curStr = curStr.replace(src, iconSrc);
 
                     newStr += curStr+endOfStr;
@@ -749,65 +761,67 @@ Utility.WriteLog("prepareForExec: "+tempCode);
 
                 String newSrc = src;
 
-                if (!hideImg) {
-
                     //change [src=..."] to [src="]
-                    if (newSrc.indexOf("\"") > 3)
-                        newSrc = newSrc.substring(0, newSrc.indexOf("src=") + 4) + newSrc.substring(newSrc.indexOf("\""));
+                    if (newSrc.indexOf(quoteTag) > 3)
+                        newSrc = newSrc.substring(0, newSrc.indexOf("src=") + 4) + newSrc.substring(newSrc.indexOf(quoteTag));
 
                     //Change all the spaces within the link to %20 (%20 represents a space)
                     newSrc = newSrc.replace(" ","%20");
 
                     //src is file URI without file://, then add file://
-                    if ((newSrc.matches("^src=\"[/]?[[^/:][/]?]+[^/:]+"))) {
+                    if ((newSrc.matches("^src=[\"'][/]?[[^/:][/]?]+[^/:]+"))) {
 Utility.WriteLog("newSrc matches URI without file://");
-                        if (newSrc.matches("^src=\"[^/].*")) {
-                            newSrc = newSrc.replace("src=\"", "src=\"file://" + srcDir);
+                        if (newSrc.matches("^src=[\"'][^/].*")) {
+                            newSrc = newSrc.replace("src="+quoteTag, "src="+quoteTag+"file://" + srcDir);
                             newSrc = CorrectJpegFileName(newSrc);
-                        } else if (newSrc.matches("^src=\"/.*")) {
-                            newSrc = newSrc.replace("src=\"/", "src=\"file://" + srcDir);
+                        } else if (newSrc.matches("^src=[\"']/.*")) {
+                            newSrc = newSrc.replace("src="+quoteTag+"/", "src="+quoteTag+"file://" + srcDir);
                             newSrc = CorrectJpegFileName(newSrc);
                         }
                         curStr = curStr.replace(src, newSrc);
                     }
                     //If src is file:// URI, don't do anything (placeholder for future use)
-                    else if ((newSrc.matches("^src=\"file://[/]?[[^/:][/]?]+"))) {
+                    else if ((newSrc.matches("^src=[\"']file://[/]?[[^/:][/]?]+"))) {
                     }
                     //If src is generic URI, don't do anything (placeholder for future use)
-                    else if ((newSrc.matches("^src=\"[a-zA-Z]+://[[^/][/]?]+"))) {
+                    else if ((newSrc.matches("^src=[\"'][a-zA-Z]+://[[^/][/]?]+"))) {
                     } else ;
-                }
-                else {
-                    newSrc = "src=\"file:///android_res/drawable/hiddenimg.jpg";
-                    curStr = curStr.replace(src, newSrc);
-                }
 
                 //Add an [alt=""] string with the img source
-                if ((src.indexOf("\"")>0)) {
+                if ((src.indexOf(quoteTag)>0)) {
                     curStr = curStr.replace("<img", "<img alt=\"ALT-IMG-TEXT\"");
-                    String altStr = src.substring(src.indexOf("\"")).replace("\"","");
+                    String altStr = src.substring(src.indexOf(quoteTag)).replace(quoteTag,"");
                     curStr = curStr.replace("ALT-IMG-TEXT",altStr);
                 }
 
                 //Add in the "usemap" code, if there is one
                 if (!isNullOrEmpty(usemapImg)) {
-                    curStr = curStr.replace("<img", "<img "+usemapImg+"\"");
+                    curStr = curStr.replace("<img", "<img "+usemapImg+quoteTag);
                 }
 
 
 //Utility.WriteLog(newSrc.substring(newSrc.indexOf("///")+2));
                 BitmapFactory.Options imgDim = null;
-                if (hideImg) {
-                    imgDim = new BitmapFactory.Options();
-                    imgDim.inJustDecodeBounds = true;
-                    BitmapFactory.decodeResource(res,R.drawable.hiddenimg,imgDim);
-                }
-                else if (newSrc.contains("file://"))
+
+                //if (false && hideImg) {
+                //    imgDim = new BitmapFactory.Options();
+                //    imgDim.inJustDecodeBounds = true;
+                //    BitmapFactory.decodeResource(res,R.drawable.hiddenimg,imgDim);
+                //}
+
+                if (newSrc.contains("file://"))
                     if (new File(newSrc.substring(newSrc.indexOf("///") + 2)).exists())
                         imgDim = getImageDimFromFile(newSrc.substring(newSrc.indexOf("///") + 2));
                 else
-                    if (new File(newSrc.replace("src=\"","")).exists())
-                        imgDim = getImageDimFromURI(newSrc.replace("src=\"",""),uiContext);
+                    if (new File(newSrc.replace("src="+quoteTag,"")).exists())
+                        imgDim = getImageDimFromURI(newSrc.replace("src="+quoteTag,""),uiContext);
+
+                //Conceal the image if user is hiding graphics, but after checking size
+                if (hideImg) {
+                    String hideSrc = "src="+quoteTag+"file:///android_res/drawable/hiddenimg.jpg";
+                    curStr = curStr.replace(newSrc, hideSrc);
+                }
+
                 if (imgDim == null) {
 //Utility.WriteLog("imgDim is null");
                     newStr += curStr + endOfStr;
@@ -821,7 +835,9 @@ Utility.WriteLog("newSrc matches URI without file://");
                     int h = imgDim.outHeight;
                     int w = imgDim.outWidth;
 
-                    if (maxH > 0) {
+//                Utility.WriteLog("h: "+h+", maxH: "+maxH);
+
+                if (maxH > 0) {
                         if ((fitToWidth && (w < maxW)) || (w > maxW)) {
                             h = Math.round(h * maxW / w);
                             w = maxW;
@@ -847,9 +863,13 @@ Utility.WriteLog("newSrc matches URI without file://");
                     curStr = fixMapCoords(curStr,usemapImg,convFact);
                 }
 
+//Utility.WriteLog("h: "+h+", maxH: "+maxH);
                     //if in a table, use 100% for the width so to not override the table
                     if (inTable > 0) {
-                        if (h == maxH)
+                        //Scale the hideImg down if the height is less than maxH
+                        if ((hideImg) && (h < maxH))
+                            newStr += curStr.replace(">", " height=\""+h+"\" max-width=100%>") + endOfStr;
+                        else if (h == maxH)
                             newStr += curStr.replace(">"," height=\""+maxH+"\" max-width=100%>") + endOfStr;
                         else
                             newStr += curStr.replace(">", " width=\"100%\">") + endOfStr;
@@ -861,7 +881,14 @@ Utility.WriteLog("newSrc matches URI without file://");
                             w = Math.round(w/imgsInLine);
                             h = Math.round(h/imgsInLine);
                         }
-                        if (maxH > 0) //add width and height if maxH > 0
+                        //Scale the hideImg to height or width, based on whether original image was scaled that way
+                        if (hideImg) {
+                            if (maxH < 0)
+                                newStr += curStr.replace(">", " width=\"" + w + "\">") + endOfStr;
+                            else
+                                newStr += curStr.replace(">", " height=\"" + h + "\">") + endOfStr;
+                        }
+                        else if (maxH > 0) //add width and height if maxH > 0
                             newStr += curStr.replace(">", " width=\"" + w + "\" height=\"" + h + "\">") + endOfStr;
                         else //add width only if maxH <= 0
                             newStr += curStr.replace(">", " width=\"" + w + "\" >") + endOfStr;
@@ -886,7 +913,7 @@ Utility.WriteLog("newSrc matches URI without file://");
         //Crop everything before src
         String newSrc = fullStr.substring(fullStr.indexOf(src));
 
-        Utility.WriteLog("src: "+src+"\nnewSrc: "+newSrc);
+//Utility.WriteLog("src: "+src+"\nnewSrc: "+newSrc);
 
         //Find the first " or '; return src if there is no " or '
         boolean singleQuote = false;
@@ -896,7 +923,7 @@ Utility.WriteLog("newSrc matches URI without file://");
             if (firstQuote < 0) return src;
             singleQuote = true;
         }
-Utility.WriteLog("firstQuote: "+firstQuote+", singleQuote: "+singleQuote);
+//Utility.WriteLog("firstQuote: "+firstQuote+", singleQuote: "+singleQuote);
         //Stop if the quote is at the end of the string
         if (newSrc.length() < firstQuote+2) return src;
 
@@ -1278,9 +1305,12 @@ Utility.WriteLog("tagName: "+tagName);
         return totalImages;
     }
 
-    private static String fixVideosLinks (String str, String srcDir, int maxW, int maxH,boolean audioIsOn, boolean hideImg, Context uiContext) {
+    private static String fixVideosLinks (String str, String srcDir, int maxW, int maxH,boolean audioIsOn, boolean fitToWidth, boolean hideImg, Context uiContext) {
         int vidCount = 0;
+        int inVideo = 0;
         boolean hasVid = str.contains("<video");
+        boolean hasVidExit = str.contains("</video");
+        boolean hasSrc = str.contains("<source");
 
         String endOfStr = str;
         String newStr= str;
@@ -1289,17 +1319,135 @@ Utility.WriteLog("tagName: "+tagName);
         Pattern pattern = Pattern.compile("(\\S+)=['\"]?((?:(?!/>|>|\"|'|\\s).)+)");
         do {
             int firstVid = endOfStr.indexOf("<video");
+            int exitVid = endOfStr.indexOf("</video");
+            int firstSrc = endOfStr.indexOf("<source");
+            hasVidExit = exitVid >= 0;
+            hasSrc = firstSrc >= 0;
+Utility.WriteLog("firstVid: "+firstVid+", exitVid: "+exitVid+", firstSrc: "+firstSrc);
+
+            //If in a <video tag, check for the next <video, </video, or <source and process
+            //the earliest one first
+            //Check </video
+            if ((hasVidExit)
+                    && ((exitVid < firstSrc) || (firstSrc < 0))
+                    && ((exitVid < firstVid) || (firstVid < 0))) {
+
+                String curStr = endOfStr.substring(exitVid);
+                int endExitVid = curStr.indexOf(">");
+                if (endExitVid<0) return newStr;
+                curStr = curStr.substring(0,endExitVid+1);
+                endOfStr = endOfStr.substring(exitVid+curStr.length());
+                newStr = newStr.substring(0,newStr.indexOf(curStr));
+
+                if (inVideo > 0) inVideo--;
+                newStr +=curStr + endOfStr;
+                continue;
+            }
+
+            //If next is a <source tag, process only if inside a <video tag
+            if ((hasSrc)
+                    && (inVideo > 0)
+                    && ((firstSrc < exitVid) || (exitVid < 0))
+                    && ((firstSrc < firstVid) || (firstVid < 0))) {
+
+                //** BEGIN <SOURCE PROCESSING **
+                String curStr = endOfStr.substring(firstSrc);
+                int endSrc = curStr.indexOf(">");
+                if (endSrc<0) return newStr;
+                curStr = curStr.substring(0,endSrc+1);
+                endOfStr = endOfStr.substring(firstSrc+curStr.length());
+                newStr = newStr.substring(0,newStr.indexOf(curStr));
+
+                //Remove img spaces so that all "X...=" become "X="; this will enable better matching
+//Utility.WriteLog("Before space removal: "+curStr);
+                curStr = curStr.replaceAll("\\s*=\\s*","=");
+//Utility.WriteLog("After space removal: "+curStr);
+
+                //use matcher to parse, only fix src values
+                Matcher matcher = pattern.matcher(curStr);
+
+                if (matcher.groupCount()==0) continue;
+                String src = null, quoteTag = "\"";
+                try {
+                    while (matcher.find()) {
+                        String group = matcher.group();
+                        if (group.toLowerCase().startsWith("src=")) {
+                            if (group.length() > 4) {
+                                src = "src=" + group.substring(4);
+                                if (src.charAt(4) == '\'')
+                                    quoteTag = "'";
+                                if (src.charAt(4) != quoteTag.charAt(0))
+                                    src.replace("src=","src=\"");
+                            }
+                            else src = "src=";
+                            if (src.contains(quoteTag))
+                                src = GetFullSrc(curStr, src);
+                        }
+                    }
+
+                    //If no src OR src has a ":" in it (i.e., proper URI), skip this <source tag
+                    if ((isNullOrEmpty(src)) || (src.contains(":"))) {
+                        newStr += curStr + endOfStr;
+                        continue;
+                    }
+
+                    String newSrc = src;
+                    //First, remove all spaces between src= and the first quote;
+                    //i.e., change [src=    "URL] to [src="URL]
+                    //However, use neutral image if hiding images
+                    if (!hideImg) {
+                        if (newSrc.indexOf(quoteTag) > 3)
+                            newSrc = newSrc.substring(0, newSrc.indexOf("src=") + 4) + newSrc.substring(newSrc.indexOf(quoteTag));
+
+                        //then change [src="] to [src="file://] URL
+                        if ((newSrc.indexOf("src="+quoteTag) == 0) && newSrc.length() > 5) {
+                            if (newSrc.substring(5, 6).matches("^[a-zA-Z0-9]")) {
+                                newSrc = newSrc.replace("src="+quoteTag, "src="+quoteTag+"file://" + srcDir);
+                                curStr = curStr.replace(src, newSrc);
+                            } else if (newSrc.indexOf("src="+quoteTag+"/") == 0) {
+                                newSrc = newSrc.replace("src="+quoteTag+"/", "src="+quoteTag+"file://" + srcDir);
+                                curStr = curStr.replace(src, newSrc);
+                            }
+                        }
+                    }
+                    //Use a neutral webm if user wants to hide graphics
+                    else {
+                        newSrc = curStr.replace(src,"src="+quoteTag+"file:///android_res/raw/hiddenimg.webm");
+                        curStr = newSrc;
+                    }
+
+                } catch (Exception e) {
+                    Log.e("fixVidLinks_Source","unable parse "+curStr,e);
+                }
+
+                newStr +=curStr + endOfStr;
+                //** END <SOURCE PROCESSING **
+
+                continue;
+            }
+
+            //If no more <video, exit as there are no more </video and <source
             if (firstVid==-1) {
                 hasVid=false;
                 continue;
             }
+
+            //Start working on <video tag
+            vidCount++; inVideo++;
             hasVid = firstVid >=0;
             String curStr = endOfStr.substring(firstVid);
             int endVid = curStr.indexOf(">");
+            if (endVid < 0) return newStr;
             curStr = curStr.substring(0,endVid+1);
             endOfStr = endOfStr.substring(firstVid+curStr.length());
 
             newStr = newStr.substring(0,newStr.indexOf(curStr));
+
+            //Remove img spaces so that all "X...=" become "X="; this will enable better matching
+//Utility.WriteLog("Before space removal: "+curStr);
+            curStr = curStr.replaceAll("\\s*=\\s*","=");
+//Utility.WriteLog("After space removal: "+curStr);
+
             Matcher matcher = pattern.matcher(curStr);
 
             if (matcher.groupCount()==0) continue;
@@ -1312,17 +1460,22 @@ Utility.WriteLog("tagName: "+tagName);
             if (!audioIsOn && !curStr.contains(" muted ") && !curStr.contains(" muted>"))
                 curStr = curStr.replace(">"," muted>");
 
-            curStr = curStr.replace(">"," v"+(vidCount++)+"");
+            curStr = curStr.replace(">"," v"+(vidCount++)+">");
 
-            String src = null, widthS = null, heightS = null, widthBase = null, heightBase = null;
+            String src = null, widthS = null, heightS = null, widthBase = null, heightBase = null, quoteTag = "\"";
             try {
                 while (matcher.find()) {
                     String group = matcher.group();
                     if (group.toLowerCase().startsWith("src=")) {
-                        if (group.length()>4)
+                        if (group.length()>4) {
                             src = "src=" + group.substring(4);
+                            if (src.charAt(4) == '\'')
+                                quoteTag = "'";
+                            if (src.charAt(4) != quoteTag.charAt(0))
+                                src.replace("src=","src=\"");
+                        }
                         else src = "src=";
-                        if (src.contains("\"") || src.contains("'"))
+                        if (src.contains(quoteTag))
                             src = GetFullSrc(curStr,src);
                     }
                     else if (group.startsWith("width=")) {
@@ -1336,6 +1489,12 @@ Utility.WriteLog("tagName: "+tagName);
                 }
 
                 if (isNullOrEmpty(src)) {
+                    //Make sure to close the video tag if it's not closed on the page
+                    if (!endOfStr.contains("</video")) {
+                        curStr = curStr.concat("</video>");
+                        if (inVideo > 0) inVideo--;
+                    }
+
                     newStr += curStr + endOfStr;
                     continue;
                 }
@@ -1346,22 +1505,22 @@ Utility.WriteLog("tagName: "+tagName);
                 //i.e., change [src=    "URL] to [src="URL]
                 //However, use neutral image if hiding images
                 if (!hideImg) {
-                    if (newSrc.indexOf("\"") > 3)
-                        newSrc = newSrc.substring(0, newSrc.indexOf("src=") + 4) + newSrc.substring(newSrc.indexOf("\""));
+                    if (newSrc.indexOf(quoteTag) > 3)
+                        newSrc = newSrc.substring(0, newSrc.indexOf("src=") + 4) + newSrc.substring(newSrc.indexOf(quoteTag));
 
                     //then change [src="] to [src="file://] URL
-                    if ((newSrc.indexOf("src=\"") == 0) && newSrc.length() > 5) {
+                    if ((newSrc.indexOf("src="+quoteTag) == 0) && newSrc.length() > 5) {
                         if (newSrc.substring(5, 6).matches("^[a-zA-Z0-9]")) {
-                            newSrc = newSrc.replace("src=\"", "src=\"file://" + srcDir);
+                            newSrc = newSrc.replace("src="+quoteTag, "src="+quoteTag+"file://" + srcDir);
                             curStr = curStr.replace(src, newSrc);
-                        } else if (newSrc.indexOf("src=\"/") == 0) {
-                            newSrc = newSrc.replace("src=\"/", "src=\"file://" + srcDir);
+                        } else if (newSrc.indexOf("src="+quoteTag+"/") == 0) {
+                            newSrc = newSrc.replace("src="+quoteTag+"/", "src="+quoteTag+"file://" + srcDir);
                             curStr = curStr.replace(src, newSrc);
                         }
                     }
                 }
                 else {
-                    newSrc = curStr.replace(src,"src=\"file:///android_res/raw/hiddenimg.webm");
+                    newSrc = curStr.replace(src,"src="+quoteTag+"file:///android_res/raw/hiddenimg.webm");
                     curStr = newSrc;
                 }
 
@@ -1375,11 +1534,20 @@ Utility.WriteLog("tagName: "+tagName);
 
                 int w = isNullOrEmpty(widthS) ? 0 : Integer.parseInt(widthS);
                 int h = isNullOrEmpty(heightS) ? 0 : Integer.parseInt(heightS);
-                //if width and height are not both present, set width only
-                //width = maxW if video > maxW or width <= 0
+
+                //if neither width or height are present, use max values as height/width
                 if (isNullOrEmpty(widthS) || isNullOrEmpty(heightS)) {
-                    if ((w <= 0) || (w > maxW)) w = maxW;
-                    curStr = curStr.replace(">", " width=\"" + w + "\">");
+//                    if ((w <= 0) || (w > maxW)) w = maxW;
+                    if (fitToWidth)
+                        curStr = curStr.replace(">", " width=\"" + maxW + "\" height=\""+maxH+"\">");
+                    else
+                        curStr = curStr.replace(">", " width=\"" + maxW + "\" height=\""+maxH+"\">");
+                    //Make sure to close the video tag if it's not closed on the page
+                    if (!endOfStr.contains("</video")) {
+                        curStr = curStr.concat("</video>");
+                        if (inVideo > 0) inVideo--;
+                    }
+
                     newStr += curStr + endOfStr;
                     continue;
                 }
@@ -1402,13 +1570,19 @@ Utility.WriteLog("tagName: "+tagName);
                 else curStr = curStr.replace(heightBase, "height=\"");
 
 
-
             } catch (Exception e) {
                 Log.e("fixVidLinks","unable parse "+curStr,e);
             }
+
+            //Make sure to close the video tag if it's not closed on the page
+            if (!endOfStr.contains("</video")) {
+                curStr = curStr.concat("</video>");
+                if (inVideo > 0) inVideo--;
+            }
+
             newStr += curStr + endOfStr;
             Utility.WriteLog("fixedVidLinks: "+newStr);
-        } while (hasVid);
+        } while (hasVid || hasSrc || hasVidExit);
         return newStr;
 
     }
@@ -1449,15 +1623,20 @@ Utility.WriteLog("tagName: "+tagName);
                 continue;
             }
 
-            String src = null; String altImg = null;
+            String src = null, altImg = null, quoteTag = "\"";
             try {
                 while (matcher.find()) {
                     String group = matcher.group();
                     if (group.toLowerCase().startsWith("src=")) {
-                        if (group.length()>4)
+                        if (group.length()>4) {
                             src = "src=" + group.substring(4);
+                            if (src.charAt(4) == '\'')
+                                quoteTag = "'";
+                            if (src.charAt(4) != quoteTag.charAt(0))
+                                src.replace("src=","src=\"");
+                        }
                         else src = null;
-                        if (src.contains("\"") || src.contains("'"))
+                        if (src.contains(quoteTag))
                             src = GetFullSrc(curStr,src);
                     }
                 }
@@ -1469,7 +1648,7 @@ Utility.WriteLog("tagName: "+tagName);
 
                 //trueSrc will be the file URL;
                 //skip this <img if it's not a file:// OR if there's no ".abc" at the end
-                String trueSrc = src.replace("src=\"file://","");
+                String trueSrc = src.replace("src="+quoteTag+"file://","");
 //Utility.WriteLog("trueSrc: "+trueSrc);
                 int fileNameIdx = trueSrc.lastIndexOf("/")+1;
                 int suffixIdx = trueSrc.lastIndexOf(".");

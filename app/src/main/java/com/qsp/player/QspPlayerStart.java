@@ -145,6 +145,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private static String defaultQSPfontSize = "16";
     private static String defaultQSPfontStyle = "DEFAULT";
     private static String defaultQSPfontTheme = "0";
+    private static String defaultQSPobjectFit = "scale-down";
+    private static String QSPobjectFitBig = "contain";
 
     private static String QSPtextColor = defaultQSPtextColor;
     private static String QSPbackColor = defaultQSPbackColor;
@@ -152,7 +154,8 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private static String QSPactsColor = defaultQSPactsColor;
     private static String QSPfontSize = defaultQSPfontSize;
     private static String QSPfontStyle = defaultQSPfontStyle;
-    private static String QSPfontTheme = defaultQSPfontStyle;
+    private static String QSPfontTheme = defaultQSPfontTheme;
+    private static String QSPobjectFit = defaultQSPobjectFit;
 
     public static String freshPageHeadTemplate = "<html><head>"
             + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, "
@@ -164,6 +167,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             + "a{color: QSPLINKCOLOR} "
             + "a:link{color: QSPLINKCOLOR} "
             + "hr{max-width: QSPMAXWIDTH} "
+            + "video{object-fit: QSPOBJECTFIT; pointer-events:none; }"
             + "table{font-size: QSPFONTSIZE; font-family: QSPFONTSTYLE; } "
             + "</style></head>";
     public static String freshPageBodyTemplate = "<body>REPLACETEXT</body></html>";
@@ -178,6 +182,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
             + "font-size: " + QSPfontSize + "; font-family: " + QSPfontStyle + "; }"
             + "a{color: "+ QSPlinkColor +"; }"
             + "a:link{color: "+ QSPlinkColor +"; }"
+            + "video{object-fit: "+QSPobjectFit+"; pointer-events:none; }"
             + "hr{max-width: 100%; }"
             + "table{font-size: " + QSPfontSize + "; font-family: " + QSPfontStyle + "; }"
             + "</style></head>"
@@ -536,6 +541,9 @@ Utility.WriteLog("onPageFinished: "+url);
         if (bigImage != newBigImage) settingsChanged = true;
         bigImage = newBigImage;
 
+        if (bigImage) QSPobjectFit = QSPobjectFitBig;
+        else QSPobjectFit = defaultQSPobjectFit;
+
         boolean newVideoSwitch = settings.getBoolean("videoSwitch",false);
         if (videoSwitch != newVideoSwitch) settingsChanged = true;
         videoSwitch = newVideoSwitch;
@@ -563,7 +571,7 @@ Utility.WriteLog("playerHeightLimit: " + playerHeightLimit + ", tempImgPerScreen
             QSPactsColor = defaultQSPactsColor;
             QSPfontSize = defaultQSPfontSize;
             QSPfontStyle = defaultQSPfontStyle;
-            QSPfontStyle = defaultQSPfontTheme;
+            QSPfontTheme = defaultQSPfontTheme;
 
             SharedPreferences.Editor ed = settings.edit();
             ed.putBoolean("resetAll",false);
@@ -597,7 +605,10 @@ Utility.WriteLog("playerHeightLimit: " + playerHeightLimit + ", tempImgPerScreen
         //Here is where the display settings are applied
         SetImageLimits();
         ApplyViewSettings();
-        if (settingsChanged) refreshMainDesc();
+        if (settingsChanged) {
+            RefreshMainDesc();
+            RefreshVarsDesc();
+        }
 
         if (sdcard_mounted && gameIsRunning && !waitForImageBox) {
             //Запускаем таймер
@@ -920,7 +931,7 @@ Utility.WriteLog("QSPfonttheme: "+QSPfontTheme+", newTheme = "+newTheme);
         return density;
     }
 
-    private void refreshMainDesc () {
+    private void RefreshMainDesc () {
         String tempHtml = "";
         if (isMainDescHTML) {
             int tempMaxH = maxH;
@@ -937,6 +948,24 @@ Utility.WriteLog("QSPfonttheme: "+QSPfontTheme+", newTheme = "+newTheme);
             if (curMainDescHTML != null)
                 tempHtml = Utility.QspStrToStr(curMainDescHTML);
             main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT",tempHtml), "text/html", "UTF-8", "");
+        }
+    }
+
+    private void RefreshVarsDesc () {
+        String tempHtml = "";
+
+        if (isVarsDescHTML) {
+            if (settings.getBoolean("showLoadingPage",true))
+                vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
+            if(getVarDescHTML() != null)
+                tempHtml = Utility.QspStrToWebView(getVarDescHTML(),curGameDir,maxW,maxH,settings.getBoolean("sound",true), bigImage, videoSwitch, hideImg, uiContext);
+            vars_desc.loadDataWithBaseURL("",freshPageURL.replace("REPLACETEXT",tempHtml),"text/html","UTF-8","");
+        } else {
+            if (settings.getBoolean("showLoadingPage",true))
+                vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
+            if (getVarDescHTML() != null)
+                tempHtml = Utility.QspStrToStr(getVarDescHTML());
+            vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", tempHtml), "text/html", "UTF-8", "");
         }
     }
 
@@ -975,6 +1004,7 @@ Utility.WriteLog("QSPfonttheme: "+QSPfontTheme+", newTheme = "+newTheme);
         curHtmlHead = curHtmlHead.replace("QSPLINKCOLOR",tempLink);
         curHtmlHead = curHtmlHead.replace("QSPBACKCOLOR",tempBack);
         curHtmlHead = curHtmlHead.replace("QSPMAXWIDTH", ""+maxW+"px");
+        curHtmlHead = curHtmlHead.replace("QSPOBJECTFIT",QSPobjectFit);
 //        Utility.WriteLog("new: "+curHtmlHead);
 
 
@@ -1737,6 +1767,7 @@ Utility.WriteLog("runGame\\");
         imgGetterDesc.setDirectory(curGameDir);
         imgGetterDesc.setScreenWidth(getWindow().getWindowManager().getDefaultDisplay().getWidth() - padding);
         imgGetterDesc.setScreenHeight(getWindow().getWindowManager().getDefaultDisplay().getHeight() - padding);
+        imgGetter.setFullSize(bigImage);
         imgGetterDesc.setFullSize(bigImage);
 
         //Clear all fields
@@ -2083,7 +2114,7 @@ Utility.WriteLog("original: "+newPage);
 
                         isMainDescHTML = html;
                         setMainDescHTML(newPage);
-                        refreshMainDesc();
+                        RefreshMainDesc();
                     }
                 }
             });
@@ -2121,11 +2152,15 @@ Utility.WriteLog("original: "+newPage);
             final QSPItem[] objs = new QSPItem[nObjsCount];
             for (int i = 0; i < nObjsCount; i++) {
                 JniResult objsResult = (JniResult) QSPGetObjectData(i);
-                if (html)
+                if (html) {
                     objs[i] = new QSPItem(imgGetter.getDrawable(objsResult.str2),
-                            Utility.QspStrToHtml(objsResult.str1, imgGetter, curGameDir,maxW,maxH, bigImage, hideImg, uiContext));
-                else
+                            Utility.QspStrToHtml(objsResult.str1, imgGetter, curGameDir, maxW, maxH, bigImage, hideImg, uiContext));
+Utility.WriteLog("objsHTML str1: "+objsResult.str1+", str2: "+objsResult.str2);
+                }
+                else {
                     objs[i] = new QSPItem(imgGetter.getDrawable(objsResult.str2), objsResult.str1);
+Utility.WriteLog("obsELSE str1: "+objsResult.str1+", str2: "+objsResult.str2);
+                }
             }
             runOnUiThread(new Runnable() {
                 public void run() {
@@ -2151,7 +2186,8 @@ Utility.WriteLog("original: "+newPage);
                     }
                     isVarsDescHTML = html;
                     setVarDescHTML(txtVarsDesc);
-                    if (html) {
+                    RefreshVarsDesc();
+                    /*if (html) {
                         //vars_desc.setText(Utility.QspStrToHtml(txtVarsDesc, imgGetter, curGameDir));
                         //vars_desc.setMovementMethod(QspLinkMovementMethod.getInstance());
                         if (settings.getBoolean("showLoadingPage",true))
@@ -2164,7 +2200,7 @@ Utility.WriteLog("original: "+newPage);
                             vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
                         String tempVars = Utility.QspStrToStr(txtVarsDesc);
                         vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", tempVars), "text/html", "UTF-8", "");
-                    }
+                    }*/
                 }
             });
         }
@@ -2597,8 +2633,9 @@ Utility.WriteLog("Config changed: portrait");
             SetImageLimits();
             ApplyViewSettings();
 //Utility.WriteLog("maxH: "+maxH+", maxW: "+maxW);
-            refreshMainDesc();
-            if (settings.getBoolean("showLoadingPage",true))
+            RefreshMainDesc();
+            RefreshVarsDesc();
+/*            if (settings.getBoolean("showLoadingPage",true))
                 vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
             String tempVarsDesc = "";
             if (isVarsDescHTML) {
@@ -2608,7 +2645,7 @@ Utility.WriteLog("Config changed: portrait");
             else {
                 if (curVarsDescHTML != null) tempVarsDesc = curVarsDescHTML;
                 vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", tempVarsDesc), "text/html", "UTF-8", "");
-            }
+            }*/
         }
     }
 
