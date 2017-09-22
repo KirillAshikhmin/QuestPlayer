@@ -9,6 +9,11 @@ TO DO:
 1. Finish translations of strings.xml and prefs.xml files for Russian, Simplified Chinese, and Traditional Chinese
 2. Fix any more bugs that show up
 
+Version 1.6.4
+1. Fixed image bugs and a few crash problems
+2. Neutral image used when hiding images now conforms to the same general dimensions as the original image
+3. Third panel page will now update properly on settings changes
+
 Version 1.6.3
 1. Fixed HTML parsing so image maps will scale and be implemented properly
 2. Enabled multi-file compatibility for games; if your game has multiple QSP files in a directory, each file will now appear as a separate option in the game list
