@@ -13,6 +13,7 @@ Version 1.6.4
 1. Fixed image bugs and a few crash problems
 2. Neutral image used when hiding images now conforms to the same general dimensions as the original image
 3. Third panel page will now update properly on settings changes
+4. Coding error in table parser (quick fix)
 
 Version 1.6.3
 1. Fixed HTML parsing so image maps will scale and be implemented properly
