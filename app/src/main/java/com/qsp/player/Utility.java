@@ -283,6 +283,9 @@ Utility.WriteLog("toWebView:\n"+ str);
                 else
                     newStr += curStr;
             }
+            else
+                newStr += curStr;
+
         } while (result);
 
         //add the remainder of str, if any
@@ -599,7 +602,7 @@ Utility.WriteLog("prepareForExec: "+tempCode);
 
         int fisCycles = 0;
 
-//Utility.WriteLog("fixImagesSize: "+str);
+Utility.WriteLog("fixImagesSize: "+str);
 
         if (!hasImg) return str;
         Resources res = uiContext.getResources();
