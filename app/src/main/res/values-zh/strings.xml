@@ -145,11 +145,11 @@
     <string name="storTypeSumOn">使用外挂SD卡</string>
     <string name="storTypeSumOff">使用内置空间</string>
 
-    <string name="setcat_img">Image Settings</string>
-    <string name="setcat_txt">Text Settings</string>
+    <string name="setcat_img">图片设定</string>
+    <string name="setcat_txt">文字设定</string>
 
-    <string name="selectDirTitle">Select Game Directory</string>
-    <string name="selectDir">[CLICK TO SELECT: \"-DIRNAME-\"]</string>
+    <string name="selectDirTitle">选择游戏目录位置</string>
+    <string name="selectDir">[设为: \"-DIRNAME-\"]</string>
 
     <string name="app_descrip"><![CDATA[<h2><center>关于 Quest Player<img src=\"file:///android_res/drawable/landscape.jpg\" width=\"100%\"></center></h2>
 <h4><b>Quest Soft Player</b> (<a href=\"http://qsp.su/?option=com_content&view=article&id=64\">俄文网站</a>), 是个跨平台的互动电子小说软体. <B>Quest Player</B> 是其开源的安卓版播放器. 最新的版本可以在 MrBoboFace 的 <a href=\"https://github.com/MrBoboFace/QuestPlayer\">GitHub</a> 找到.</h4><br>
@@ -157,7 +157,7 @@
 <ol>
 	<li>在你的内置储存区 或 SD卡 的根目录建立 \"QSP\" 资料夹(或其他你偏好的名称)</li>
 	<li>在QSP目录内建立子资料夹. 资料夹名称会作为游戏名称显示 (范例: QSP/game1)</li>
-	<li>把游戏的.qsp档和图片, 音乐等复制入 QSP/game1</li>
+	<li>把游戏的.qsp档和图片, 音乐等复制入 QSP/game1<br>注意: 游戏资料夹 或 .qsp档名内不能有空白或特殊字元</li>
 	<li>如果要安装其他游戏, 重复上述步骤 (例: QSP/game2, QSP/game3, 以此类推)</li>
 	<li>在 QSP player 里, 设定 - 游戏位置/游戏目录, 设定正确的资料夹位置</li>
 	<li>这些游戏会出现在游戏架中的 \"本机\" 分页中</li>
@@ -180,13 +180,13 @@
 </ul>]]></string>
     <string name="about_template"><![CDATA[<html><head><meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1"><style type="text/css">body{margin: 0; padding: 0; color: QSPTEXTCOLOR; background-color: QSPBACKCOLOR; max-width: 100%; font-size: QSPFONTSIZE; font-family: QSPFONTSTYLE; } a{color: QSPLINKCOLOR; } a:link{color: QSPLINKCOLOR; } table{font-size: QSPFONTSIZE; font-family: QSPFONTSTYLE; }</style></head><body>REPLACETEXT</body></html>]]></string>
 
-    <string name="useVidTitle">Try to replace images with video?</string>
-    <string name="useVidSumm">Searches by prefix (i.e, akl.jpg -> akl.*)</string>
+    <string name="useVidTitle">自动寻找替代图片?</string>
+    <string name="useVidSumm">找不到图片时, 试着显示同名的图档 (例: akl.jpg -> akl.*)</string>
 
-    <string name="hideImgTitle">Hide game graphics</string>
-    <string name="hideImgSumm">Replaces game graphics with neutral scene</string>
+    <string name="hideImgTitle">隐藏游戏图片</string>
+    <string name="hideImgSumm">用普通图片取代游戏指定的图片</string>
 
-    <string name="spaceWarn">**WARNING!** Space detected in game name! Please rename game folder and remove spaces!\n</string>
-    <string name="themeSumm">Choose color scheme</string>
+    <string name="spaceWarn">**警告!** 游戏资料夹 或 qsp 档名不能有空格, 请重新命名!\n</string>
+    <string name="themeSumm">预设的颜色和样式</string>
 
 </resources>
