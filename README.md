@@ -14,6 +14,7 @@ Version 1.6.5
 2. Added source path correction subroutine in case of minor HTML coding errors with <img> tags.
 3. More aggressive removal of unnecessary line breaks.
 4. More minor bug fixes.
+5. Added preview to menu for font color settings.
 
 Version 1.6.4
 1. Fixed image bugs and a few crash problems
