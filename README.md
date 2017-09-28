@@ -9,6 +9,12 @@ TO DO:
 1. Finish translations of strings.xml and prefs.xml files for Russian, Simplified Chinese, and Traditional Chinese
 2. Fix any more bugs that show up
 
+Version 1.6.5
+1. "Auto-Clear" settings option: activate if large empty space that sometimes appears around the actions list (only occurs on some devices). May cause some game slowdown, so the option is disabled by default.
+2. Added source path correction subroutine in case of minor HTML coding errors with <img> tags.
+3. More aggressive removal of unnecessary line breaks.
+4. More minor bug fixes.
+
 Version 1.6.4
 1. Fixed image bugs and a few crash problems
 2. Neutral image used when hiding images now conforms to the same general dimensions as the original image
