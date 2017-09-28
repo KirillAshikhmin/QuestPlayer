@@ -36,11 +36,14 @@
 					android:paddingRight="16dp"
 					android:background="@color/web_background"
 					android:textColor="@color/web_text"/>
-
+					android:>
 				<ListView
 					android:id="@+id/acts"
 					android:layout_width="fill_parent"
-					android:layout_height="wrap_content"/>
+					android:layout_height="wrap_content"
+					android:layout_margin="0dp"
+					android:paddingTop="0dp"
+					android:paddingBottom="0dp"/>
 			</LinearLayout>
 		</ScrollView>
 
