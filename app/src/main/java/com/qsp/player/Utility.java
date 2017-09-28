@@ -16,7 +16,9 @@ import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import android.app.ActivityManager;
 import android.app.AlertDialog;
+import android.app.Instrumentation;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.ContentResolver;
@@ -27,6 +29,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -39,6 +42,7 @@ import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.support.annotation.RequiresPermission;
 import android.support.v4.content.PermissionChecker;
+import android.test.ActivityUnitTestCase;
 import android.text.Editable;
 import android.text.Html;
 import android.text.Html.ImageGetter;
@@ -181,6 +185,24 @@ Utility.WriteLog("toWebView:\n"+ str);
         String newStr = str;
 
         //Remove <br> (and leading whitespace characters) at start
+        //Replace </center><br> with just </center>
+        //Remove extra breaks near tables, table rows, and div tags
+        Pattern pattern = Pattern.compile("^[\\s]*<br>|</center>[\\s]*<br>|<table.*><br>|</?t.><br>|</div><br>");
+        Matcher matcher = pattern.matcher(str);
+
+        while (matcher.find()) {
+            String group = matcher.group();
+
+            String newGroup = group.replace("<br>","");
+
+            newStr = newStr.replace(group,newGroup);
+        }
+
+        //Replace <br><br> (plus leading whitespace/intervening spaces) with single <br>
+        newStr = newStr.replaceAll("[\\s]*<br>[ ]*<br>","<br>");
+
+/*
+        //Remove <br> (and leading whitespace characters) at start
         newStr = newStr.replaceFirst("^[\\s]*<br>","");
 
         //Replace </center><br> with just </center>
@@ -192,7 +214,8 @@ Utility.WriteLog("toWebView:\n"+ str);
         //Remove extra breaks in tables and table rows
         newStr = newStr.replace("<table><br>","<table>");
         newStr = newStr.replace("<tr><br>","<tr>");
-
+        newStr = newStr.replace("</td><br>","</td>");
+*/
         return newStr;
     }
 
@@ -717,13 +740,15 @@ Utility.WriteLog("fixImagesSize: "+str);
                     if (group.toLowerCase().startsWith("src=")) {
                         if (group.length()>4) {
                             src = "src=" + group.substring(4);
+                            if (src.contains("\"") || src.contains("'"))
+                                src = GetFullSrc(curStr,src);
+
                             if (src.charAt(4)=='\'')
                                 quoteTag = "'";
-                            if (src.charAt(4) != quoteTag.charAt(0))
-                                src.replace("src=","src=\"");
+
+                            else if (src.charAt(4) != quoteTag.charAt(0))
+                                src = src.replace("src=", "src=\"");
                         }
-                        if (src.contains(quoteTag))
-                            src = GetFullSrc(curStr,src);
                     }
                     else if (group.toLowerCase().startsWith("width=")) {
                         widthBase = group;
@@ -746,7 +771,7 @@ Utility.WriteLog("fixImagesSize: "+str);
 
 
                 //Initial img string with src and map
-                curStr = "<img "+src+quoteTag+" "+" i"+(imgCount++)+">";
+                curStr = "<img "+src+quoteTag+" i"+(imgCount++)+">";
 
                 //if this is for a TextView, don't use a URL locator
                 if (isForTextView) {

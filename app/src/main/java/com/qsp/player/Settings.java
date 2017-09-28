@@ -16,6 +16,8 @@ import android.preference.SwitchPreference;
 import android.text.TextUtils;
 import android.widget.Toast;
 
+import com.att.preference.colorpicker.ColorPickerPreference;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -88,7 +90,6 @@ public class Settings extends PreferenceActivity implements Preference.OnPrefere
             }
         });
 
-
         //Directory picker for finding games path - setSummary, prepare for click
         Preference filePicker = (Preference) findPreference("relGamePath");
         filePicker.setSummary(sharedPref.getString("relGamePath",getString(R.string.defRelPath)));
@@ -121,7 +122,7 @@ public class Settings extends PreferenceActivity implements Preference.OnPrefere
 
     public boolean onPreferenceChange(Preference preference, Object newValue) { 
     	preference.setSummary((CharSequence)newValue);
-    	return true; 
+        return true;
     }
 
     private void SelectDirectory(String startpath, boolean start)

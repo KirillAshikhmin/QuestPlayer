@@ -126,8 +126,20 @@ public class QspGameStock extends TabActivity {
     public static final int ALL_TABNUM = 2;
     
     public static final String GAME_INFO_FILENAME = "gamestockInfo";
-    
-    private boolean isActive;
+
+	private static String defaultQSPtextColor = "#ffffff";
+	private static String defaultQSPbackColor = "#000000";
+	private static String defaultQSPlinkColor = "#0000ee";
+	private static String defaultQSPactsColor = "#ffffd7";
+	private static String defaultQSPfontTheme = "0";
+
+	private static String QSPtextColor = defaultQSPtextColor;
+	private static String QSPbackColor = defaultQSPbackColor;
+	private static String QSPlinkColor = defaultQSPlinkColor;
+	private static String QSPactsColor = defaultQSPactsColor;
+	private static String QSPfontTheme = defaultQSPfontTheme;
+
+	private boolean isActive;
     private boolean showProgressDialog;
 	
 	private String _zipFile; 
@@ -291,8 +303,8 @@ public class QspGameStock extends TabActivity {
 		RefreshLists();
 //end storage/directory settings
 
+		ApplyFontTheme();
 
-    	super.onResume();
     	isActive = true;
 
         //Refresh QspGameStock tabs if the user changed the language
@@ -318,8 +330,112 @@ public class QspGameStock extends TabActivity {
         else startingGSUp = false;*/
 
 
+		super.onResume();
         Utility.WriteLog("[G]onResume/");
     }
+
+	private void ApplyFontTheme () {
+		String newText = getString(R.string.deftextColor);
+		String newBack = getString(R.string.defbackColor);
+		String newLink = getString(R.string.deflinkColor);
+		String newActs = getString(R.string.defactsColor);
+
+		//Get current theme from settings (theme change overrides all color changes)
+		String newTheme = settings.getString("theme",getString(R.string.deftheme));
+		//if theme has changed AND is not custom (-1), apply colors and exit
+		Utility.WriteLog("QSPfonttheme: "+QSPfontTheme+", newTheme = "+newTheme);
+
+		if (!newTheme.equals(QSPfontTheme)) {
+			SharedPreferences.Editor ed = settings.edit();
+			QSPfontTheme = newTheme;
+			//If switching from Custom theme, save the color values for Custom
+			if (!newTheme.equals("-1")) {
+				ed.putInt("customtextColor",Color.parseColor(QSPtextColor));
+				ed.putInt("custombackColor",Color.parseColor(QSPbackColor));
+				ed.putInt("customlinkColor",Color.parseColor(QSPlinkColor));
+				ed.putInt("customactsColor",Color.parseColor(QSPactsColor));
+			}
+
+			switch (Integer.parseInt(newTheme)) {
+				//Default - already set values to default above
+				case 0:
+					break;
+				//Light Theme
+				case 1:
+					newText = getString(R.string.lighttextColor);
+					newBack = getString(R.string.lightbackColor);
+					newLink = getString(R.string.lightlinkColor);
+					newActs = getString(R.string.lightactsColor);
+					break;
+				//Desktop Theme
+				case 2:
+					newText = getString(R.string.desktextColor);
+					newBack = getString(R.string.deskbackColor);
+					newLink = getString(R.string.desklinkColor);
+					newActs = getString(R.string.deskactsColor);
+					break;
+				//Custom Theme - saves last user settings
+				case -1:
+					newText = String.format("#%06X",(0xFFFFFF & settings.getInt("customtextColor",Color.parseColor(getString(R.string.defcustomtextColor)))));
+					newBack = String.format("#%06X",(0xFFFFFF & settings.getInt("custombackColor", Color.parseColor(getString(R.string.defcustombackColor)))));
+					newLink = String.format("#%06X",(0xFFFFFF & settings.getInt("customlinkColor",Color.parseColor(getString(R.string.defcustomlinkColor)))));
+					newActs = String.format("#%06X",(0xFFFFFF & settings.getInt("customactsColor",Color.parseColor(getString(R.string.defcustomactsColor)))));
+					break;
+			}
+			QSPtextColor = newText;
+			QSPbackColor = newBack;
+			QSPlinkColor = newLink;
+			QSPactsColor = newActs;
+
+			ed.putInt("textColor",Color.parseColor(newText));
+			ed.putInt("backColor",Color.parseColor(newBack));
+			ed.putInt("linkColor",Color.parseColor(newLink));
+			ed.putInt("actsColor",Color.parseColor(newActs));
+			ed.apply();
+			Utility.WriteLog("theme change:\n"+
+					"new text: "+String.format("#%06X",(0xFFFFFF & settings.getInt("textColor",Color.parseColor(defaultQSPtextColor))))+
+					"\nnew back: "+String.format("#%06X",(0xFFFFFF & settings.getInt("backColor", Color.parseColor(defaultQSPbackColor))))+
+					"\nnew link: "+String.format("#%06X",(0xFFFFFF & settings.getInt("linkColor",Color.parseColor(defaultQSPlinkColor)))) +
+					"\nnew acts: "+String.format("#%06X",(0xFFFFFF & settings.getInt("actsColor",Color.parseColor(defaultQSPactsColor)))));
+			return;
+		}
+
+		//If not changed OR custom theme, get current colors from settings
+		newText = String.format("#%06X",(0xFFFFFF & settings.getInt("textColor",Color.parseColor(defaultQSPtextColor))));
+		newBack = String.format("#%06X",(0xFFFFFF & settings.getInt("backColor", Color.parseColor(defaultQSPbackColor))));
+		newLink = String.format("#%06X",(0xFFFFFF & settings.getInt("linkColor",Color.parseColor(defaultQSPlinkColor))));
+		newActs = String.format("#%06X",(0xFFFFFF & settings.getInt("actsColor",Color.parseColor(defaultQSPactsColor))));
+
+		//Compare to current theme colors; if any changed, change theme to "Custom"
+		boolean setCustom = false;
+		if (!newText.equals(QSPtextColor)) {
+			QSPtextColor = newText;
+			setCustom = true;
+		}
+		if (!newBack.equals(QSPbackColor)) {
+			QSPbackColor = newBack;
+			setCustom = true;
+		}
+		if (!newLink.equals(QSPlinkColor)) {
+			QSPlinkColor = newLink;
+			setCustom = true;
+		}
+		if (!newActs.equals(QSPactsColor)) {
+			QSPactsColor = newActs;
+			setCustom = true;
+		}
+		//Set theme to custom and then save all colors as "Custom" color values
+		if(setCustom && settings.getString("theme",getString(R.string.deftheme)) != getString(R.string.customtheme)) {
+			SharedPreferences.Editor ed = settings.edit();
+			ed.putString("theme", getString(R.string.customtheme));
+			ed.putInt("customtextColor",Color.parseColor(QSPtextColor));
+			ed.putInt("custombackColor",Color.parseColor(QSPbackColor));
+			ed.putInt("customlinkColor",Color.parseColor(QSPlinkColor));
+			ed.putInt("customactsColor",Color.parseColor(QSPactsColor));
+			ed.apply();
+		}
+	}
+
 
     //Call only if settings is initialized
     public String getFullGamesPath () {

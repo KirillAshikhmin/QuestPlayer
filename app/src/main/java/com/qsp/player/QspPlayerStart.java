@@ -2,11 +2,13 @@ package com.qsp.player;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Instrumentation;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -81,6 +83,12 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static android.content.ContentValues.TAG;
+import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT;
+import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
+import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 import static android.webkit.WebView.HitTestResult.IMAGE_TYPE;
 
 
@@ -107,6 +115,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     int currentWin;
     private boolean holdPanelAnimationsForFirstUpdate = false;
 
+    final private Activity myActivity = this;
     final private Context uiContext = this;
     final private ReentrantLock musicLock = new ReentrantLock();
 
@@ -119,6 +128,10 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private boolean videoSwitch = false;
     private boolean hideImg = false;
     private boolean imageDensity;
+    private boolean rotateOnChange = false;
+    private int origOrient;
+    private boolean returnOrientation = false;
+
     private String userSetLang;
     private String curLang = Locale.getDefault().getLanguage();
 
@@ -429,7 +442,7 @@ Utility.WriteLog("onPageFinished: "+url);
             setContentView(R.layout.main);
             res = getResources();
 
-        if (res.getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)
+        if (res.getConfiguration().orientation == ORIENTATION_LANDSCAPE)
             hideTitle();
 
         userSetLang = settings.getString("lang", "en");
@@ -561,6 +574,7 @@ Utility.WriteLog("playerHeightLimit: " + playerHeightLimit + ", tempImgPerScreen
         hotKeys = settings.getBoolean("acts_hot_keys", false);
         imageDensity = settings.getBoolean("image_density", true);
         highlightActs = settings.getBoolean("highlight_acts", true);
+        rotateOnChange = settings.getBoolean("rotate_key", false);
 
         //Reset to default display values if requested
         if (settings.getBoolean("resetAll",false)) {
@@ -586,7 +600,7 @@ Utility.WriteLog("playerHeightLimit: " + playerHeightLimit + ", tempImgPerScreen
         }
         //If not resetting to default, check for font color/theme changes
         else
-            ApplyFontTheme();
+            settingsChanged = ApplyFontTheme(settingsChanged);
 
 
         //Set the language if it has changed
@@ -738,7 +752,7 @@ Utility.WriteLog("FreeResources*");
         startActivityForResult(myIntent, ACTIVITY_SELECT_GAME);
     }
 
-    private void ApplyFontTheme () {
+    private boolean ApplyFontTheme (Boolean settingsChanged) {
         String newText = getString(R.string.deftextColor);
         String newBack = getString(R.string.defbackColor);
         String newLink = getString(R.string.deflinkColor);
@@ -801,7 +815,7 @@ Utility.WriteLog("QSPfonttheme: "+QSPfontTheme+", newTheme = "+newTheme);
                     "\nnew back: "+String.format("#%06X",(0xFFFFFF & settings.getInt("backColor", Color.parseColor(defaultQSPbackColor))))+
                     "\nnew link: "+String.format("#%06X",(0xFFFFFF & settings.getInt("linkColor",Color.parseColor(defaultQSPlinkColor)))) +
                     "\nnew acts: "+String.format("#%06X",(0xFFFFFF & settings.getInt("actsColor",Color.parseColor(defaultQSPactsColor)))));
-            return;
+            return true;
         }
 
         //If not changed OR custom theme, get current colors from settings
@@ -828,6 +842,9 @@ Utility.WriteLog("QSPfonttheme: "+QSPfontTheme+", newTheme = "+newTheme);
             QSPactsColor = newActs;
             setCustom = true;
         }
+
+        if (setCustom) settingsChanged = true;
+
         //Set theme to custom and then save all colors as "Custom" color values
         if(setCustom && settings.getString("theme",getString(R.string.deftheme)) != getString(R.string.customtheme)) {
             SharedPreferences.Editor ed = settings.edit();
@@ -838,6 +855,8 @@ Utility.WriteLog("QSPfonttheme: "+QSPfontTheme+", newTheme = "+newTheme);
             ed.putInt("customactsColor",Color.parseColor(QSPactsColor));
             ed.apply();
         }
+
+        return settingsChanged;
     }
 
     private void ApplyFontSettingsToTextView(TextView tv, int textColor) {
@@ -854,9 +873,10 @@ Utility.WriteLog("QSPfonttheme: "+QSPfontTheme+", newTheme = "+newTheme);
                 break;
         }
         tv.setTypeface(tf);
-        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, Float.parseFloat(settings.getString("fontsize", "16")));
+        String tempFontSize = settings.getString("fontsize", defaultQSPfontSize);
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, Float.parseFloat(tempFontSize));
 
-        QSPfontSize = ""+tv.getTextSize();
+        QSPfontSize = tempFontSize;
 
         tv.setBackgroundColor(Color.parseColor(QSPbackColor));
         tv.setTextColor(textColor);
@@ -2137,11 +2157,18 @@ Utility.WriteLog("original: "+newPage);
                     ListView lvAct = (ListView) findViewById(R.id.acts);
 
                     mActListAdapter = new QSPListAdapter(uiContext, R.layout.act_item, acts);
+
                     lvAct.setAdapter(mActListAdapter);
                     //Разворачиваем список действий
                     Utility.setListViewHeightBasedOnChildren(lvAct);
                     if (mActListAdapter != null)
                         mActListAdapter.notifyDataSetChanged();
+
+                    if (rotateOnChange) {
+                        origOrient = myActivity.getRequestedOrientation();
+                        RotateClear(myActivity);
+                        returnOrientation = true;
+                    }
                 }
             });
         }
@@ -2615,12 +2642,31 @@ Utility.WriteLog("obsELSE str1: "+objsResult.str1+", str2: "+objsResult.str2);
         }
     };
 
+    public void RotateClear(Activity myActivity) {
+        if (myActivity == null) return;
+
+        Configuration config = this.getResources().getConfiguration();
+
+        //landscape -> portrait -> reverse landscape -> reverse potrait
+        if (config.orientation == ORIENTATION_LANDSCAPE)
+            myActivity.setRequestedOrientation(SCREEN_ORIENTATION_PORTRAIT);
+        else if (config.orientation == ORIENTATION_PORTRAIT)
+            myActivity.setRequestedOrientation(SCREEN_ORIENTATION_LANDSCAPE);
+
+        Utility.WriteLog("origOrient: "+origOrient+", temp: "+myActivity.getRequestedOrientation());
+
+        if (returnOrientation) {
+            myActivity.setRequestedOrientation(origOrient);
+            Utility.WriteLog("Returning to origOrient: "+origOrient);
+        }
+    }
+
     @Override
     public void onConfigurationChanged (Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        //orientationRecreate = true;
+
         // Checks the orientation of the screen
-        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        if (newConfig.orientation == ORIENTATION_LANDSCAPE) {
 Utility.WriteLog("Config changed: landscape");
 //            Toast.makeText(this, "landscape", Toast.LENGTH_SHORT).show();
             hideTitle();
@@ -2635,17 +2681,11 @@ Utility.WriteLog("Config changed: portrait");
 //Utility.WriteLog("maxH: "+maxH+", maxW: "+maxW);
             RefreshMainDesc();
             RefreshVarsDesc();
-/*            if (settings.getBoolean("showLoadingPage",true))
-                vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
-            String tempVarsDesc = "";
-            if (isVarsDescHTML) {
-                if (curVarsDescHTML != null) tempVarsDesc = curVarsDescHTML;
-                vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", tempVarsDesc), "text/html", "UTF-8", "");
-            }
-            else {
-                if (curVarsDescHTML != null) tempVarsDesc = curVarsDescHTML;
-                vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", tempVarsDesc), "text/html", "UTF-8", "");
-            }*/
+       }
+
+        if (returnOrientation) {
+            RotateClear(myActivity);
+            returnOrientation = false;
         }
     }
 
