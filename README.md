@@ -9,6 +9,10 @@ TO DO:
 1. Finish translations of strings.xml and prefs.xml files for Russian, Simplified Chinese, and Traditional Chinese
 2. Fix any more bugs that show up
 
+Version 1.6.6
+1. Changed "auto-clear" subroutine as previous version did not correct problem.
+2. Fixed crash that occurred when changing colors while in portrait mode.
+
 Version 1.6.5
 1. "Auto-Clear" settings option: activate if large empty space that sometimes appears around the actions list (only occurs on some devices). May cause some game slowdown, so the option is disabled by default.
 2. Added source path correction subroutine in case of minor HTML coding errors with <img> tags.
