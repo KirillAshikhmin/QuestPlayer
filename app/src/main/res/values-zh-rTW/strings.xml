@@ -178,4 +178,8 @@
     <string name="spaceWarn">**警告!** 遊戲資料夾 或 qsp 檔名不能有空格, 請重新命名!\n</string>
     <string name="themeSumm">預設的顏色和樣式</string>
 
+    <string name="colorSumm">選擇新的顏色</string>
+
+    <string name="rotateTitle">自動清除</string>
+    <string name="rotateSumm">選用: 可能解決某些裝置上的空行問題</string>
 </resources>
