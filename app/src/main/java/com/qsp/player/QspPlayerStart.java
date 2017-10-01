@@ -128,7 +128,7 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
     private boolean videoSwitch = false;
     private boolean hideImg = false;
     private boolean imageDensity;
-    private boolean rotateOnChange = false;
+    private boolean clearOnChange = false;
     private int origOrient;
     private boolean returnOrientation = false;
 
@@ -489,8 +489,25 @@ Utility.WriteLog("onPageFinished: "+url);
                 }
             });
 
+        vars_desc.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
 
-            //Создаем объект для обработки ссылок
+                final WebView.HitTestResult result = main_desc.getHitTestResult();
+
+                if (result.getType() == IMAGE_TYPE) {
+                    String imageSrc = result.getExtra().replace("file:///", "/");
+//                    Utility.WriteLog(result.getExtra() + " -> " + imageSrc);
+                    ShowPicture(imageSrc);
+                    return true;
+                }
+
+                return true;
+            }
+        });
+
+
+        //Создаем объект для обработки ссылок
             qspLinkMovementMethod = QspLinkMovementMethod.getQspInstance();
             qspLinkMovementMethod.setCatcher(this);
 
@@ -574,7 +591,7 @@ Utility.WriteLog("playerHeightLimit: " + playerHeightLimit + ", tempImgPerScreen
         hotKeys = settings.getBoolean("acts_hot_keys", false);
         imageDensity = settings.getBoolean("image_density", true);
         highlightActs = settings.getBoolean("highlight_acts", true);
-        rotateOnChange = settings.getBoolean("rotate_key", false);
+        clearOnChange = settings.getBoolean("rotate_key", false);
 
         //Reset to default display values if requested
         if (settings.getBoolean("resetAll",false)) {
@@ -952,6 +969,32 @@ Utility.WriteLog("QSPfonttheme: "+QSPfontTheme+", newTheme = "+newTheme);
     }
 
     private void RefreshMainDesc () {
+        if (clearOnChange) {
+            main_desc = (WebView) findViewById(R.id.main_desc);
+
+            main_descClient = new QSPWebViewClient();
+            main_desc.setWebViewClient(main_descClient);
+            main_desc.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
+            main_desc.getSettings().setMediaPlaybackRequiresUserGesture(false);
+            main_desc.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+
+                    final WebView.HitTestResult result = main_desc.getHitTestResult();
+
+                    if (result.getType() == IMAGE_TYPE) {
+                        String imageSrc = result.getExtra().replace("file:///", "/");
+//                    Utility.WriteLog(result.getExtra() + " -> " + imageSrc);
+                        ShowPicture(imageSrc);
+                        return true;
+                    }
+
+                    return true;
+                }
+            });
+
+        }
+
         String tempHtml = "";
         if (isMainDescHTML) {
             int tempMaxH = maxH;
@@ -972,6 +1015,29 @@ Utility.WriteLog("QSPfonttheme: "+QSPfontTheme+", newTheme = "+newTheme);
     }
 
     private void RefreshVarsDesc () {
+        if (clearOnChange) {
+            vars_desc = (WebView) findViewById(R.id.vars_desc);
+            vars_descClient = new QSPWebViewClient();
+            vars_desc.setWebViewClient(vars_descClient);
+            vars_desc.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+
+                    final WebView.HitTestResult result = main_desc.getHitTestResult();
+
+                    if (result.getType() == IMAGE_TYPE) {
+                        String imageSrc = result.getExtra().replace("file:///", "/");
+//                    Utility.WriteLog(result.getExtra() + " -> " + imageSrc);
+                        ShowPicture(imageSrc);
+                        return true;
+                    }
+
+                    return true;
+                }
+            });
+        }
+
+
         String tempHtml = "";
 
         if (isVarsDescHTML) {
@@ -2164,11 +2230,11 @@ Utility.WriteLog("original: "+newPage);
                     if (mActListAdapter != null)
                         mActListAdapter.notifyDataSetChanged();
 
-                    if (rotateOnChange) {
-                        origOrient = myActivity.getRequestedOrientation();
-                        RotateClear(myActivity);
-                        returnOrientation = true;
-                    }
+//                    if (clearOnChange) {
+//                        origOrient = myActivity.getRequestedOrientation();
+//                        RotateClear(myActivity);
+//                        returnOrientation = true;
+//                    }
                 }
             });
         }
@@ -2683,10 +2749,10 @@ Utility.WriteLog("Config changed: portrait");
             RefreshVarsDesc();
        }
 
-        if (returnOrientation) {
-            RotateClear(myActivity);
-            returnOrientation = false;
-        }
+//        if (returnOrientation) {
+//            RotateClear(myActivity);
+//            returnOrientation = false;
+//        }
     }
 
     public void hideTitle() {

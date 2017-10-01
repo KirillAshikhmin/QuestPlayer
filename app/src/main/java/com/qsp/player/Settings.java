@@ -16,7 +16,7 @@ import android.preference.SwitchPreference;
 import android.text.TextUtils;
 import android.widget.Toast;
 
-import com.att.preference.colorpicker.ColorPickerPreference;
+import net.margaritov.preference.colorpicker.ColorPickerPreference;
 
 import java.io.File;
 import java.util.ArrayList;
