@@ -51,6 +51,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.AdapterView;
@@ -146,6 +147,11 @@ public class QspPlayerStart extends Activity implements UrlClickCatcher, OnGestu
 
     private static boolean isVarsDescHTML = false;
     private static String curVarsDescHTML = "";
+
+    private boolean cheatsActive = false;
+    private String cheatDesc = "INPUT COMMAND";
+    private String cheatAction = "dynamic input('"+cheatDesc+"')";
+    private String cheatActionTemplate = "dynamic input('REPLACETEXT')";
 
     private int maxW = 0;
     private int maxH = 0;
@@ -458,6 +464,10 @@ Utility.WriteLog("onPageFinished: "+url);
             vars_desc.setWebViewClient(vars_descClient);
             main_desc.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
             main_desc.getSettings().setMediaPlaybackRequiresUserGesture(false);
+            main_desc.getSettings().setAppCacheEnabled(false);
+            main_desc.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
+            main_desc.getSettings().setJavaScriptEnabled(false);
+            main_desc.clearCache(true);
 
             float imgPerScreen = Float.parseFloat(settings.getString("imgHeight", "1"));
             playerHeightLimit = 1 / imgPerScreen;
@@ -586,6 +596,12 @@ Utility.WriteLog("onPageFinished: "+url);
         if (playerHeightLimit != 1/tempImgPerScreen) settingsChanged = true;
 Utility.WriteLog("playerHeightLimit: " + playerHeightLimit + ", tempImgPerScreen: "+tempImgPerScreen);
 
+        boolean newCheats = settings.getString("cheats", " ").equals("uuddlrlrABs");
+        if (cheatsActive != newCheats) settingsChanged = true;
+        cheatsActive = newCheats;
+
+                cheatDesc = getString(R.string.cheatDesc);
+        cheatAction = cheatActionTemplate.replace("REPLACETEXT",cheatDesc);
 
         backAction = settings.getBoolean("back_action", false);
         hotKeys = settings.getBoolean("acts_hot_keys", false);
@@ -719,7 +735,11 @@ Utility.WriteLog("FreeResources*");
         if (currentWin == WIN_MAIN && keyCode >= KeyEvent.KEYCODE_1 && keyCode <= KeyEvent.KEYCODE_9) {
             int position = keyCode - KeyEvent.KEYCODE_1; //переводим код клавиши в индекс :)
             ListView lv = (ListView) findViewById(R.id.acts);
-            if (position < lv.getCount()) {
+            if (cheatsActive && (position == lv.getCount()-1)) {
+                lv.setSelection(position);
+                cheatExecute();
+            }
+            else if (position < lv.getCount()) {
                 lv.setSelection(position);
                 actionExecute(position);
             }
@@ -970,8 +990,25 @@ Utility.WriteLog("QSPfonttheme: "+QSPfontTheme+", newTheme = "+newTheme);
 
     private void RefreshMainDesc () {
         if (clearOnChange) {
+            //Set all aspects to null, clear everything, including databases and cache directories
+            main_desc.setWebChromeClient(null);
+            main_desc.setWebViewClient(null);
+            main_desc.clearCache(true);
+            main_desc.clearHistory();
+            uiContext.deleteDatabase("WebView.db");
+            uiContext.deleteDatabase("WebViewCache.db");
+            File cacheDir = uiContext.getCacheDir();
+            if (cacheDir.exists()) cacheDir.delete();
+
+            //Turn off Javascript, AppCache
+            main_desc.getSettings().setJavaScriptEnabled(false);
+            main_desc.getSettings().setAppCacheEnabled(false);
+            main_desc.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
+            main_desc.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
+
             main_desc = (WebView) findViewById(R.id.main_desc);
 
+            //Regenerate the web client
             main_descClient = new QSPWebViewClient();
             main_desc.setWebViewClient(main_descClient);
             main_desc.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
@@ -993,6 +1030,9 @@ Utility.WriteLog("QSPfonttheme: "+QSPfontTheme+", newTheme = "+newTheme);
                 }
             });
 
+            //Affirm the new setup with a blank page
+            main_desc.loadUrl("about:blank");
+            main_desc.reload();
         }
 
         String tempHtml = "";
@@ -1004,12 +1044,23 @@ Utility.WriteLog("QSPfonttheme: "+QSPfontTheme+", newTheme = "+newTheme);
             if (curMainDescHTML != null)
                 tempHtml = Utility.QspStrToWebView(curMainDescHTML, curGameDir, maxW, tempMaxH, settings.getBoolean("sound", true), bigImage, videoSwitch, hideImg, uiContext);
             Utility.WriteLog(tempHtml);
+
+            if(clearOnChange) {
+            }
+
             main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT",tempHtml), "text/html", "UTF-8", "");
         } else {
             if (settings.getBoolean("showLoadingPage",true))
                 main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
             if (curMainDescHTML != null)
                 tempHtml = Utility.QspStrToStr(curMainDescHTML);
+
+            if(clearOnChange) {
+                main_desc.clearCache(true);
+                main_desc.loadUrl("about:blank");
+                main_desc.reload();
+            }
+
             main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT",tempHtml), "text/html", "UTF-8", "");
         }
     }
@@ -2209,15 +2260,19 @@ Utility.WriteLog("original: "+newPage);
         //список действий
         if (QSPIsActionsChanged()) {
             int nActsCount = QSPGetActionsCount();
+            if (cheatsActive) nActsCount++;
             final QSPItem[] acts = new QSPItem[nActsCount];
+            if (cheatsActive) nActsCount--;
             for (int i = 0; i < nActsCount; i++) {
                 JniResult actsResult = (JniResult) QSPGetActionData(i);
+Utility.WriteLog("str1: "+actsResult.str1+"\nstr2: "+actsResult.str2);
                 if (html)
                     acts[i] = new QSPItem(imgGetter.getDrawable(actsResult.str2),
                             Utility.QspStrToHtml(actsResult.str1, imgGetter, curGameDir,maxW,maxH, bigImage, hideImg, uiContext));
                 else
                     acts[i] = new QSPItem(imgGetter.getDrawable(actsResult.str2), actsResult.str1);
             }
+            if (cheatsActive) acts[nActsCount] = new QSPItem(null,cheatDesc);
             runOnUiThread(new Runnable() {
                 public void run() {
                     ListView lvAct = (ListView) findViewById(R.id.acts);
@@ -2600,6 +2655,25 @@ Utility.WriteLog("obsELSE str1: "+objsResult.str1+", str2: "+objsResult.str2);
         });
     }
 
+    private void cheatExecute() {
+        if (libraryThreadIsRunning)
+            return;
+        libThreadHandler.post(new Runnable() {
+            public void run() {
+                if (libraryThreadIsRunning)
+                    return;
+                libraryThreadIsRunning = true;
+
+                String tempCode = Utility.prepareForExec(cheatAction);
+
+                boolean bExec = QSPExecString(tempCode, true);
+                CheckQspResult(bExec, "OnUrlClicked: QSPExecString");
+
+                libraryThreadIsRunning = false;
+            }
+        });
+    }
+
     public void OnUrlClicked(String href) {
 
         //Контекст UI
@@ -2656,7 +2730,10 @@ Utility.WriteLog("obsELSE str1: "+objsResult.str1+", str2: "+objsResult.str2);
         //Контекст UI
         @Override
         public void onItemClick(AdapterView<?> parent, View arg1, int position, long arg3) {
-            actionExecute(position);
+            if (cheatsActive && (position == parent.getCount() -1))
+                cheatExecute();
+            else
+                actionExecute(position);
         }
     };
 
@@ -2721,10 +2798,10 @@ Utility.WriteLog("obsELSE str1: "+objsResult.str1+", str2: "+objsResult.str2);
 
         Utility.WriteLog("origOrient: "+origOrient+", temp: "+myActivity.getRequestedOrientation());
 
-        if (returnOrientation) {
-            myActivity.setRequestedOrientation(origOrient);
-            Utility.WriteLog("Returning to origOrient: "+origOrient);
-        }
+//        if (returnOrientation) {
+//            myActivity.setRequestedOrientation(origOrient);
+//            Utility.WriteLog("Returning to origOrient: "+origOrient);
+//        }
     }
 
     @Override
