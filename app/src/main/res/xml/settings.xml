@@ -11,6 +11,7 @@
 -->
 		<!-- <ListPreference android:defaultValue="0" android:key="theme" android:title="@string/appTheme" android:entries="@array/themeName" android:entryValues="@array/fontValue"></ListPreference> -->
 <!--    <PreferenceCategory android:title="@string/setcat_img" android:key="pref_key_image_settings"> -->
+<!--    <EditTextPreference android:key="cheats" android:title="@string/cheatTitle" android:summary="@string/cheatSumm"/> -->
         <PreferenceScreen android:title="@string/setcat_img" android:key="pref_key_image_settings">
             <ListPreference android:key="imgHeight" android:summary="@string/imgHeightSum" android:title="@string/imgHeightTitle" android:entries="@array/imgHeightDesc" android:entryValues="@array/imgHeightValue" android:defaultValue="1"/>
             <CheckBoxPreference android:title="@string/opt_big_image" android:key="big_image" android:summary="@string/optdesc_big_image" />
