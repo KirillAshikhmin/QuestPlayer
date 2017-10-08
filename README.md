@@ -6,8 +6,13 @@ Quest Player: Android apk that runs QSP games.
 This is a fork of BOOMik's Quest Player, an Android port of Quest Soft Player, tested on a 7" Amazon Fire Tablet (Android 5.1.1) and a Nexus Galaxy (Android 4.4.4). Requires a minimum of Android 4.4 to function. 
 
 TO DO:
-1. Finish translations of strings.xml and prefs.xml files for Russian, Simplified Chinese, and Traditional Chinese
-2. Fix any more bugs that show up
+1. Add support for ADDQST and DELQST actions in Quest Soft Player library
+2. Find solution for Android OS Honeycomb creating blank space around main description panel
+3. Finish translations of strings.xml and prefs.xml files for Russian, Simplified Chinese, and Traditional Chinese
+4. Fix any more bugs that show up
+
+Version 1.6.7
+1. Fixed bug that showed "SD Card not connected" error when that was clearly not the case.
 
 Version 1.6.6
 1. Changed "auto-clear" subroutine as previous version did not correct problem.
