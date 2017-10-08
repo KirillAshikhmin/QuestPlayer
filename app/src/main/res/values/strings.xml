@@ -167,14 +167,25 @@
 	<li><b>Special Thanks:</b> Kevin Smarts and all those in <a href=\"https://tfgamessite.com/\">TFGamesSite Community</a></li>
 	<li><i>The Fifth World</i> painting by Noah Bradley (Creative Commons License; image scaled and cropped)</li>
 </ul>]]></string>
-    <string name="useVidTitle">Try to replace images with video?</string>
-    <string name="useVidSumm">Searches by prefix (i.e, akl.jpg -> akl.*)</string>
+    <string name="useVidTitle">Use video instead?</string>
+    <string name="useVidSumm">Replaces images with video file (akl.jpg -> akl.*)</string>
 
     <string name="hideImgTitle">Hide game graphics</string>
     <string name="hideImgSumm">Replaces game graphics with neutral scene</string>
 
     <string name="spaceWarn">**WARNING!** Space detected in game path! Please rename game folder and remove spaces!\n</string>
     <string name="themeSumm">Choose color scheme</string>
+
+    <string name="colorSumm">Press new color to apply</string>
+
+    <string name="rotateTitle">Auto-Clear</string>
+    <string name="rotateSumm">Optional: may clear empty space that occurs on some devices</string>
+
+    <string name="cheatTitle">Debugging Option</string>
+    <string name="cheatSumm">Enter code to activate debugging option</string>
+    <string name="cheatDesc">DEBUG: Input commandw</string>
+
+
 
     <!-- ***************************************** -->
     <!-- WARNING: DO NOT TRANSLATE BELOW THIS LINE -->
