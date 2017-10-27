@@ -11,6 +11,9 @@ TO DO:
 3. Finish translations of strings.xml and prefs.xml files for Russian, Simplified Chinese, and Traditional Chinese
 4. Fix any more bugs that show up
 
+Version 1.6.8
+1. When "Open Game File" command links to a non-existent directory, app will default to the base directory in that storage device (if possible) and display a brief alert.
+
 Version 1.6.7
 1. Fixed bug that showed "SD Card not connected" error when that was clearly not the case.
 
