@@ -1828,7 +1828,7 @@ Utility.WriteLog("finished vidStr = "+vidStr);
 
     public static String GetGamesPath(Context context) {
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
-        String path = settings.getString("compGamePath", context.getString(R.string.defGamePath));
+        String path = settings.getString("compGamePath", null);
         return (path != null && !TextUtils.isEmpty(path)) ? path : GetDefaultPath(context);
     }
 

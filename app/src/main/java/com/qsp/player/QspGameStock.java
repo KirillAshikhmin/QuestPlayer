@@ -116,6 +116,8 @@ public class QspGameStock extends TabActivity {
 	private boolean gameListIsLoading;
 	private boolean triedToLoadGameList;
 	private GameItem selectedGame;
+
+	private String SDPath;
 	
 	private boolean gameIsRunning;
     private boolean startingGSUp = true;
@@ -444,16 +446,19 @@ public class QspGameStock extends TabActivity {
 	}
 
 	public void setFullGamesPath () {
-		String SDPath = "";
-
 		//Get external SD card flag and get directory; set extSDCard false if no external SD card
 		boolean extSDCard = settings.getBoolean("storageType",true);
 		if (extSDCard) {
 			SDPath = System.getenv("SECONDARY_STORAGE");
-			if ((null == SDPath) || (SDPath.length() == 0)) {
+			if (null == SDPath)
 				SDPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
+			else if (SDPath.length() == 0)
+				SDPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
+			if (null == SDPath) {
+				SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+				extSDCard = false;
 			}
-			if ((null == SDPath) || (SDPath.length() == 0)) {
+			else if (SDPath.length() == 0) {
 				SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
 				extSDCard = false;
 			}
@@ -577,9 +582,10 @@ Utility.WriteLog("TEMP:"+SDPath);
                 else if (settings.getBoolean("storageType",true)) {
                 // ** begin replacement code for checking storage directory **
                     String strSDCardPath = System.getenv("SECONDARY_STORAGE");
-                    if ((null == strSDCardPath) || (strSDCardPath.length() == 0)) {
+                    if (null == strSDCardPath)
                         strSDCardPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
-                    }
+                    else if (strSDCardPath.length() == 0)
+						strSDCardPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
                     BrowseGame(strSDCardPath, true);
                 // ** end replacement code for checking storage directory **
                 }
@@ -1613,8 +1619,8 @@ Utility.WriteLog("qspGameDirs["+i+"]: "+qspGameDirs.get(i).getName()+
 			}
 		}    	
     };
-    
-    private void BrowseGame(String startpath, boolean start)
+
+	private void BrowseGame(String startpath, boolean start)
     {
     	if (startpath == null)
     		return;
@@ -1644,8 +1650,18 @@ Utility.WriteLog("qspGameDirs["+i+"]: "+qspGameDirs.get(i).getName()+
         File sdcardRoot = new File (startpath);
         if ((sdcardRoot == null) || !sdcardRoot.exists())
         {
-        	Utility.ShowError(uiContext, getString(R.string.pathNotFound).replace("-PATHNAME-",startpath));
-        	return;
+			String failedPath = ("/"+startpath.replace(SDPath,"")).replace("//","/");
+			//If at SDPath already and File is null/doesn't exist, ShowError and exit
+			if (startpath.equals(SDPath)) {
+				Utility.ShowError(uiContext, getString(R.string.pathNotFound).replace("-PATHNAME-", failedPath));
+				return;
+			}
+			//If not at SPath yet, ShowInfo and drop to lowest directory
+			else {
+				Utility.ShowInfo(uiContext,getString(R.string.pathNotFound).replace("-PATHNAME-", failedPath));
+				BrowseGame(SDPath,true);
+				return;
+			}
         }
         File[] sdcardFiles = sdcardRoot.listFiles();        
         qspGamesBrowseList = new ArrayList<File>();
