@@ -450,10 +450,38 @@ public class QspGameStock extends TabActivity {
 		boolean extSDCard = settings.getBoolean("storageType",true);
 		if (extSDCard) {
 			SDPath = System.getenv("SECONDARY_STORAGE");
+
+			//if SECONDARY_STORAGE fails, try EXTERNAL_SDCARD_STORAGE
 			if (null == SDPath)
 				SDPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
 			else if (SDPath.length() == 0)
 				SDPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
+
+			//if EXTERNAL_SDCARD_STORAGE fails, check all directories in /storage/ for usable path
+			if ((null == SDPath) || (SDPath.length() == 0)) {
+				Utility.WriteLog("internal DIR: "+Environment.getExternalStorageDirectory().getAbsolutePath());
+				File internalFileList[] = new File(Environment.getExternalStorageDirectory().getAbsolutePath()).listFiles();
+
+				File fileList[] = new File("/storage/").listFiles();
+				for (File file : fileList) {
+					Utility.WriteLog("storage DIR: "+file.getAbsolutePath());
+
+					//A suitable candidate (directory/readable/not internal) is found...
+					if (!file.getAbsolutePath().equalsIgnoreCase(Environment.getExternalStorageDirectory().getAbsolutePath()) && file.isDirectory() && file.canRead()) {
+
+						//Check that it is not the internal directory under another name
+						File emulatedFileList[] = file.listFiles();
+						if (directoriesAreEqual(internalFileList,emulatedFileList)) continue;
+
+						//if it is not the internal storage, it must be the external storage
+						SDPath = file.getAbsolutePath();
+						Utility.WriteLog("chosen DIR: "+file.getAbsolutePath());
+						break;
+					}
+				}
+			}
+
+			//if that fails, go to the internal directory and set extSDCard as false
 			if (null == SDPath) {
 				SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
 				extSDCard = false;
@@ -487,6 +515,28 @@ Utility.WriteLog("TEMP:"+SDPath);
 		Utility.WriteLog("relGamePath: "+settings.getString("relGamePath",getString(R.string.defRelPath)));
 		Utility.WriteLog("compGamePath: "+settings.getString("compGamePath",getString(R.string.defGamePath)));
 
+	}
+
+	//Compare the file names of two file lists to see if they are the same
+	private boolean directoriesAreEqual(File fileList1[], File fileList2[]) {
+		if ((fileList1 == null) || (fileList2 == null)) {
+			Utility.WriteLog("Null directory detected!");
+			return false;
+		}
+
+		if (fileList1.length == fileList2.length) {
+			for (int i=0; i<fileList1.length; i++) {
+				Utility.WriteLog(fileList1[i].getName()+" vs. "+fileList2[i].getName());
+				if (!fileList1[i].getName().equals(fileList2[i].getName())) {
+					Utility.WriteLog("Directories are slightly different!");
+					return false;
+				}
+			}
+			Utility.WriteLog("Directories are the same!");
+			return true;
+		}
+		Utility.WriteLog("Directories are totally different!");
+		return false;
 	}
 
     @Override
@@ -1653,7 +1703,8 @@ Utility.WriteLog("qspGameDirs["+i+"]: "+qspGameDirs.get(i).getName()+
 			String failedPath = ("/"+startpath.replace(SDPath,"")).replace("//","/");
 			//If at SDPath already and File is null/doesn't exist, ShowError and exit
 			if (startpath.equals(SDPath)) {
-				Utility.ShowError(uiContext, getString(R.string.pathNotFound).replace("-PATHNAME-", failedPath));
+				Utility.ShowInfo(uiContext, getString(R.string.SDpathNotFound).replace("-PATHNAME-", SDPath));
+				BrowseGame("/",true);
 				return;
 			}
 			//If not at SPath yet, ShowInfo and drop to lowest directory

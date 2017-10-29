@@ -37,9 +37,23 @@ public class Settings extends PreferenceActivity implements Preference.OnPrefere
         boolean extSDCard = sharedPref.getBoolean("storageType",true);
         if (extSDCard) {
             SDPath = System.getenv("SECONDARY_STORAGE");
+
+            //Check by "EXTERNAL_SDCARD_STORAGE"
             if ((null == SDPath) || (SDPath.length() == 0)) {
                 SDPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
             }
+
+            //If that fails, check all directories in /storage/ for usable path
+            if ((null == SDPath) || (SDPath.length() == 0)) {
+                File fileList[] = new File("/storage/").listFiles();
+                for (File file : fileList) {
+                    Utility.WriteLog("storage DIR: "+file.getAbsolutePath());
+                    if (!file.getAbsolutePath().equalsIgnoreCase(Environment.getExternalStorageDirectory().getAbsolutePath()) && file.isDirectory() && file.canRead())
+                        SDPath = file.getAbsolutePath();
+                }
+            }
+
+            //If there is still no usable path, don't use external SD Card
             if ((null == SDPath) || (SDPath.length() == 0)) {
                 SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
                 extSDCard = false;
@@ -47,7 +61,6 @@ public class Settings extends PreferenceActivity implements Preference.OnPrefere
         } else
             SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
         SDPath += "/";
-
     }
 
     public void setFullGamesPath (SharedPreferences sharedPref) {
