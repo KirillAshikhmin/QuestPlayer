@@ -8,8 +8,12 @@ This is a fork of BOOMik's Quest Player, an Android port of Quest Soft Player, t
 TO DO:
 1. Add support for ADDQST and DELQST actions in Quest Soft Player library
 2. Find solution for Android OS Honeycomb creating blank space around main description panel
-3. Finish translations of strings.xml and prefs.xml files for Russian, Simplified Chinese, and Traditional Chinese
+3. Finish translations of strings.xml and prefs.xml files for Simplified Chinese and Traditional Chinese
 4. Fix any more bugs that show up
+
+Version 1.6.9b
+1. Fixed problem where image was not properly sized when file name contained an empty space character (" ")
+2. Completed Russian translation
 
 Version 1.6.9
 1. Fixed bug that prevented some devices from accessing the External SD Card properly. Will still default to internal storage if unable to locate suitable external storage.
