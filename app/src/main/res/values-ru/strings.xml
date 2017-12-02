@@ -177,6 +177,17 @@
     <string name="spaceWarn">**Внимание** В названии игры обнаружены пробелы! Пожалуйста, переименуйте папку и уберите пробелы!\n</string>
     <string name="themeSumm">Выберите цветовую схему</string>
 
+    <string name="colorSumm">Укажите новый цвет</string>
+
+    <string name="rotateTitle">Автоочистка</string>
+    <string name="rotateSumm">Опционально: может убрать пустые строки, возникающие на некоторых устройствах</string>
+
+    <string name="cheatTitle">Опции отладчика</string>
+    <string name="cheatSumm">Введите код для активации опций отладчика</string>
+    <string name="cheatDesc">Отладка: Введите команду</string>
+
+    <string name="SDpathNotFound">Подходящий путь не найден: использование директории ROOT</string>
+
 </resources>
 
 
