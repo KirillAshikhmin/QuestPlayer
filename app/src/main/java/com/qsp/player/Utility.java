@@ -837,12 +837,14 @@ Utility.WriteLog("newSrc matches URI without file://");
                 //    BitmapFactory.decodeResource(res,R.drawable.hiddenimg,imgDim);
                 //}
 
-                if (newSrc.contains("file://"))
-                    if (new File(newSrc.substring(newSrc.indexOf("///") + 2)).exists())
-                        imgDim = getImageDimFromFile(newSrc.substring(newSrc.indexOf("///") + 2));
+                String fileNewSrc = newSrc.replace("%20"," ");
+
+                if (fileNewSrc.contains("file://"))
+                    if (new File(fileNewSrc.substring(fileNewSrc.indexOf("///") + 2)).exists())
+                        imgDim = getImageDimFromFile(fileNewSrc.substring(fileNewSrc.indexOf("///") + 2));
                 else
-                    if (new File(newSrc.replace("src="+quoteTag,"")).exists())
-                        imgDim = getImageDimFromURI(newSrc.replace("src="+quoteTag,""),uiContext);
+                    if (new File(fileNewSrc.replace("src="+quoteTag,"")).exists())
+                        imgDim = getImageDimFromURI(fileNewSrc.replace("src="+quoteTag,""),uiContext);
 
                 //Conceal the image if user is hiding graphics, but after checking size
                 if (hideImg) {
@@ -853,19 +855,21 @@ Utility.WriteLog("newSrc matches URI without file://");
                 if (imgDim == null) {
 //Utility.WriteLog("imgDim is null");
                     newStr += curStr + endOfStr;
+                    fisCycles++;
+                    continue;
                 }
+
+                int h = imgDim.outHeight;
+                int w = imgDim.outWidth;
 
 //Utility.WriteLog("imgDim.outWidth = " + imgDim.outWidth + ", imgDim.outHeight = " + imgDim.outHeight);
 
 
 //                if (isNullOrEmpty(widthS) && isNullOrEmpty(heightS)) {
 //                    newStr += curStr.replace(">","style=\"width: 100%; max-width: "+maxW+"px; height: auto; max-height: "+maxH+"; \">") + endOfStr;
-                    int h = imgDim.outHeight;
-                    int w = imgDim.outWidth;
-
 //                Utility.WriteLog("h: "+h+", maxH: "+maxH);
 
-                if (maxH > 0) {
+                if ((maxH > 0)) {
                         if ((fitToWidth && (w < maxW)) || (w > maxW)) {
                             h = Math.round(h * maxW / w);
                             w = maxW;
@@ -882,6 +886,7 @@ Utility.WriteLog("newSrc matches URI without file://");
 
                 //if there is a usemap tag AND image size has been changed, find the map and update
                 //the coordinates using the conversion factor.
+                if (imgDim != null)
                 if(!isNullOrEmpty(usemapImg) && ((h != imgDim.outHeight)||(w != imgDim.outWidth))) {
                     float tempW = new Float(w);
                     float tempDimW = new Float(imgDim.outWidth);
