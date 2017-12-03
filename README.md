@@ -13,7 +13,7 @@ TO DO:
 
 Version 1.6.9b
 1. Fixed problem where image was not properly sized when file name contained an empty space character (" ")
-2. Completed Russian translation
+2. Completed Russian and Chinese (Simplified+Traditional) translation
 
 Version 1.6.9
 1. Fixed bug that prevented some devices from accessing the External SD Card properly. Will still default to internal storage if unable to locate suitable external storage.
