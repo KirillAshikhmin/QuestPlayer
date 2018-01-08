@@ -10,14 +10,17 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -34,6 +37,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.app.TabActivity;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -46,6 +50,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.preference.Preference;
 import android.preference.PreferenceManager;
+import android.provider.DocumentsContract;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -66,6 +71,7 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.TabHost.OnTabChangeListener;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.support.v4.provider.DocumentFile;
 
 public class QspGameStock extends TabActivity {
 
@@ -126,8 +132,11 @@ public class QspGameStock extends TabActivity {
     public static final int DOWNLOADED_TABNUM = 0;
     public static final int STARRED_TABNUM = 1;
     public static final int ALL_TABNUM = 2;
-    
+    public static final int REQUEST_CODE_STORAGE_ACCESS = 42;
+
     public static final String GAME_INFO_FILENAME = "gamestockInfo";
+
+	public static DocumentFile downloadDir = null;
 
 	private static String defaultQSPtextColor = "#ffffff";
 	private static String defaultQSPbackColor = "#000000";
@@ -233,7 +242,11 @@ public class QspGameStock extends TabActivity {
 		curLang = userSetLang;
 		setGSLocale(userSetLang);
 
-		setFullGamesPath();
+		getDownloadDirFromSettings();
+
+		if (checkDownloadDirectory())
+			setFullGamesPath(true);
+		else setFullGamesPath(false);
 
         Intent gameStockIntent = getIntent();
         gameIsRunning = gameStockIntent.getBooleanExtra("game_is_running", false);
@@ -300,7 +313,13 @@ public class QspGameStock extends TabActivity {
 		usingSDcard = settings.getBoolean("storageType",true);
 
 		Utility.WriteLog("getFullGamesPath = "+getFullGamesPath());
-		setFullGamesPath();
+		getDownloadDirFromSettings();
+
+		if (downloadDir != null)
+			setFullGamesPath(true);
+		else {
+			setFullGamesPath(false);
+		}
 
 		RefreshLists();
 //end storage/directory settings
@@ -330,7 +349,24 @@ public class QspGameStock extends TabActivity {
             Utility.WriteLog("FreeResources*");
         }
         else startingGSUp = false;*/
+		if (downloadDir == null) {
+			runOnUiThread(new Runnable() {
+				public void run() {
+					Utility.WriteLog("downloadDir is null - notify user!");
+					String msg = getString(R.string.DDWarnMsg);
+					String desc = getString(R.string.DDWarnDesc);
 
+					desc = desc.replace("-MENUOPTS-", getString(R.string.menu_options));
+					desc = desc.replace("-SELECTDIRTITLE-", getString(R.string.selectDirTitle));
+					desc = desc.replace("-SHOWSDCARD-", getString(R.string.ShowSDCard));
+
+					if (isActive)
+						Utility.ShowError(uiContext, msg+"\n\n"+desc);
+					else
+						Notify(msg, desc);
+				}
+			});
+		}
 
 		super.onResume();
         Utility.WriteLog("[G]onResume/");
@@ -441,103 +477,134 @@ public class QspGameStock extends TabActivity {
 
     //Call only if settings is initialized
     public String getFullGamesPath () {
-		String tempPath = settings.getString("compGamePath", getString(R.string.defGamePath));
-		return tempPath;
+		return settings.getString("compGamePath", getString(R.string.defGamePath));
 	}
 
-	public void setFullGamesPath () {
-		//Get external SD card flag and get directory; set extSDCard false if no external SD card
-		boolean extSDCard = settings.getBoolean("storageType",true);
-		if (extSDCard) {
-			SDPath = System.getenv("SECONDARY_STORAGE");
+	public void setFullGamesPath (boolean useDownloadDir) {
+		if (!useDownloadDir) {
+			//Get external SD card flag and get directory; set extSDCard false if no external SD card
+			boolean extSDCard = settings.getBoolean("storageType", true);
+			if (extSDCard) {
+				SDPath = System.getenv("SECONDARY_STORAGE");
 
-			//if SECONDARY_STORAGE fails, try EXTERNAL_SDCARD_STORAGE
-			if (null == SDPath)
-				SDPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
-			else if (SDPath.length() == 0)
-				SDPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
+				//if SECONDARY_STORAGE fails, try EXTERNAL_SDCARD_STORAGE
+				if (null == SDPath)
+					SDPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
+				else if (SDPath.length() == 0)
+					SDPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
 
-			//if EXTERNAL_SDCARD_STORAGE fails, check all directories in /storage/ for usable path
-			if ((null == SDPath) || (SDPath.length() == 0)) {
-				Utility.WriteLog("internal DIR: "+Environment.getExternalStorageDirectory().getAbsolutePath());
-				File internalFileList[] = new File(Environment.getExternalStorageDirectory().getAbsolutePath()).listFiles();
+				//if EXTERNAL_SDCARD_STORAGE fails, check all directories in /storage/ for usable path
+				if ((null == SDPath) || (SDPath.length() == 0)) {
+					Utility.WriteLog("internal DIR: " + Environment.getExternalStorageDirectory().getAbsolutePath());
+					File internalFileList[] = new File(Environment.getExternalStorageDirectory().getAbsolutePath()).listFiles();
 
-				File fileList[] = new File("/storage/").listFiles();
-				for (File file : fileList) {
-					Utility.WriteLog("storage DIR: "+file.getAbsolutePath());
+					File fileList[] = new File("/storage/").listFiles();
+					for (File file : fileList) {
+						Utility.WriteLog("storage DIR: " + file.getAbsolutePath());
 
-					//A suitable candidate (directory/readable/not internal) is found...
-					if (!file.getAbsolutePath().equalsIgnoreCase(Environment.getExternalStorageDirectory().getAbsolutePath()) && file.isDirectory() && file.canRead()) {
+						//A suitable candidate (directory/readable/not internal) is found...
+						if (!file.getAbsolutePath().equalsIgnoreCase(Environment.getExternalStorageDirectory().getAbsolutePath()) && file.isDirectory() && file.canRead()) {
 
-						//Check that it is not the internal directory under another name
-						File emulatedFileList[] = file.listFiles();
-						if (directoriesAreEqual(internalFileList,emulatedFileList)) continue;
+							//Check that it is not the internal directory under another name
+							File emulatedFileList[] = file.listFiles();
+							if (Utility.directoriesAreEqual(internalFileList, emulatedFileList)) continue;
 
-						//if it is not the internal storage, it must be the external storage
-						SDPath = file.getAbsolutePath();
-						Utility.WriteLog("chosen DIR: "+file.getAbsolutePath());
-						break;
+							//if it is not the internal storage, it must be the external storage
+							SDPath = file.getAbsolutePath();
+							Utility.WriteLog("chosen DIR: " + file.getAbsolutePath());
+							break;
+						}
 					}
 				}
-			}
 
-			//if that fails, go to the internal directory and set extSDCard as false
-			if (null == SDPath) {
+				//if that fails, go to the internal directory and set extSDCard as false
+				if (null == SDPath) {
+					SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+					extSDCard = false;
+				} else if (SDPath.length() == 0) {
+					SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+					extSDCard = false;
+				}
+			} else
 				SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
-				extSDCard = false;
-			}
-			else if (SDPath.length() == 0) {
-				SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
-				extSDCard = false;
-			}
-		} else
-			SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
-Utility.WriteLog("TEMP:"+SDPath);
-		//Get the relative games path and merge the two directories
-		//Add a trailing "/" to relPath and remove change "//" to "/" if present
-		String relPath = settings.getString("relGamePath",getString(R.string.defRelPath));
-		if (!relPath.endsWith("/")) relPath +="/";
-		if (!relPath.startsWith("/")) relPath = "/" + relPath;
-		String fullGamesPath = SDPath + relPath;
-		relPath = relPath.replace("//","/");
-		fullGamesPath = fullGamesPath.replace("//","/");
+			SDPath += "/";
+			Utility.WriteLog("TEMP:" + SDPath);
+			//Get the relative games path and merge the two directories
+			//Add a trailing "/" to relPath and remove change "//" to "/" if present
+			String relPath = settings.getString("relGamePath", getString(R.string.defRelPath));
+			if (!relPath.endsWith("/")) relPath += "/";
+			if (!relPath.startsWith("/")) relPath = "/" + relPath;
+			String fullGamesPath = SDPath + relPath;
+			relPath = relPath.replace("//", "/");
+			fullGamesPath = fullGamesPath.replace("//", "/");
 
-		//Store adjusted storage type, relative path, and complete game directory
-		SharedPreferences.Editor editor = settings.edit();
-		editor.putBoolean("storageType", extSDCard);
-		editor.putString("relGamePath", relPath);
-		editor.putString("compGamePath", fullGamesPath);
-		editor.commit();
+			//Store adjusted storage type, relative path, and complete game directory
+			SharedPreferences.Editor editor = settings.edit();
+			editor.putBoolean("storageType", extSDCard);
+			editor.putString("relGamePath", relPath);
+			editor.putString("compGamePath", fullGamesPath);
+			editor.commit();
 
 
-
-		Utility.WriteLog("storageType: "+settings.getBoolean("storageType",true));
-		Utility.WriteLog("relGamePath: "+settings.getString("relGamePath",getString(R.string.defRelPath)));
-		Utility.WriteLog("compGamePath: "+settings.getString("compGamePath",getString(R.string.defGamePath)));
-
-	}
-
-	//Compare the file names of two file lists to see if they are the same
-	private boolean directoriesAreEqual(File fileList1[], File fileList2[]) {
-		if ((fileList1 == null) || (fileList2 == null)) {
-			Utility.WriteLog("Null directory detected!");
-			return false;
+			Utility.WriteLog("_NOT using downloadDir DocumentFile_");
+			Utility.WriteLog("storageType: " + settings.getBoolean("storageType", true));
+			Utility.WriteLog("relGamePath: " + settings.getString("relGamePath", getString(R.string.defRelPath)));
+			Utility.WriteLog("compGamePath: " + settings.getString("compGamePath", getString(R.string.defGamePath)));
 		}
 
-		if (fileList1.length == fileList2.length) {
-			for (int i=0; i<fileList1.length; i++) {
-				Utility.WriteLog(fileList1[i].getName()+" vs. "+fileList2[i].getName());
-				if (!fileList1[i].getName().equals(fileList2[i].getName())) {
-					Utility.WriteLog("Directories are slightly different!");
-					return false;
+		//if useDownloadDir is true...
+		else {
+
+			//**** START set SDPath/storageType ****
+			String newDownDirPath = getString(R.string.defDownDirPath);
+			if (downloadDir != null) {
+				newDownDirPath = FileUtil.getFullPathFromTreeUri(downloadDir.getUri(),uiContext);
+				if (!newDownDirPath.endsWith("/"))
+					newDownDirPath += "/";
+			}
+
+			String tempDir = FileUtil.getSdCardPath();
+			Boolean usingExtSDCard = false;
+			if (newDownDirPath.startsWith(tempDir)) {
+				Utility.WriteLog(newDownDirPath + " contains " + tempDir);
+				SDPath = tempDir;
+			}
+			else {
+				Utility.WriteLog(newDownDirPath+" doesn't contain "+tempDir);
+
+				ArrayList<String> extSDPaths = FileUtil.getExtSdCardPaths(uiContext);
+				for (int i=0; i<extSDPaths.size(); i++) {
+					tempDir = extSDPaths.get(i);
+					if (newDownDirPath.startsWith(tempDir)) {
+						Utility.WriteLog(newDownDirPath+" contains "+tempDir);
+						SDPath = tempDir;
+						usingExtSDCard = true;
+						break;
+					}
+					else Utility.WriteLog(newDownDirPath+" doesn't contain "+tempDir);
 				}
 			}
-			Utility.WriteLog("Directories are the same!");
-			return true;
+			//**** END set SDPath/storageType ****
+
+			//set String "relGamePath"; "compGamePath" is newDownDirPath
+			String relPath = newDownDirPath.replace(SDPath,"");
+
+			//Store adjusted storage type, relative path, and complete game directory
+			SharedPreferences.Editor editor = settings.edit();
+			editor.putBoolean("storageType", usingExtSDCard);
+			editor.putString("relGamePath", relPath);
+			editor.putString("compGamePath", newDownDirPath);
+			editor.putString("downDirPath", newDownDirPath);
+			editor.commit();
+
+			Utility.WriteLog("_Using downloadDir DocumentFile_");
+			Utility.WriteLog("storageType: " + settings.getBoolean("storageType", true));
+			Utility.WriteLog("relGamePath: " + settings.getString("relGamePath", getString(R.string.defRelPath)));
+			Utility.WriteLog("compGamePath: " + settings.getString("compGamePath", getString(R.string.defGamePath)));
+			Utility.WriteLog("downDirPath: " + settings.getString("downDirPath", getString(R.string.defDownDirPath)));
 		}
-		Utility.WriteLog("Directories are totally different!");
-		return false;
 	}
+
 
     @Override
     public void onPostResume()
@@ -836,13 +903,75 @@ Utility.WriteLog("GameStock Tab "+tabNum);
     			data.putExtra("file_name", selectedGame.game_file);
     			setResult(RESULT_OK, data);
     			finish();
-    		}else
-    			//иначе загружаем
-    			DownloadGame(selectedGame.file_url, selectedGame.file_size, selectedGame.game_id);						
+    		} else {
+                //иначе загружаем
+				checkDownloadDirectory();
+                DownloadGame(selectedGame.file_url, selectedGame.file_size, selectedGame.game_id);
+            }
     		return true;
     	}
     };
-    
+
+    private boolean checkDownloadDirectory() {
+        //Returns true if downloadDir is not null, exists, is a directory, and is writable
+        //returns false otherwise
+
+		if (downloadDir == null) {
+			getDownloadDirFromSettings();
+
+            if (downloadDir == null) return false;
+		}
+
+        //check if downloadDir exists, is a directory and is writable. If not, get it from Settings
+        if (downloadDir.exists() && downloadDir.isDirectory() && downloadDir.canWrite()) {
+			//Make sure to set the game path in case downloadDir hasn't been used to update
+			if (!FileUtil.getFullPathFromTreeUri(downloadDir.getUri(),uiContext).equals(getFullGamesPath()))
+				setFullGamesPath(true);
+			return true;
+		}
+        else {
+            getDownloadDirFromSettings();
+
+            if (downloadDir == null) return false;
+        }
+
+        return false;
+	}
+
+	private void getDownloadDirFromSettings() {
+		Uri treeUri = null;
+
+		//get treeUri from settings
+		String tempUri = settings.getString(getString(R.string.key_internal_uri_extsdcard),"");
+		if (!tempUri.isEmpty())
+			treeUri = Uri.parse(tempUri);
+
+		//if not null/empty, use for downloadDir
+		if (treeUri != null)
+			downloadDir = DocumentFile.fromTreeUri(uiContext, treeUri);
+
+		//if downloadDir is not a writable directory, clear downloadDir
+		//and set the R.string.key_internal_uri_extsdcard as an empty string
+		if (downloadDir == null) {
+			SharedPreferences.Editor editor = settings.edit();
+			editor.putString(getString(R.string.key_internal_uri_extsdcard), "");
+			editor.commit();
+			return;
+		}
+		else if (!downloadDir.exists() || !downloadDir.isDirectory() || !downloadDir.canWrite()) {
+			downloadDir = null;
+			SharedPreferences.Editor editor = settings.edit();
+			editor.putString(getString(R.string.key_internal_uri_extsdcard), "");
+			editor.commit();
+		}
+		else
+			setFullGamesPath(true);
+	}
+
+
+
+
+
     private void ShowGameInfo(String gameId)
     {
 		selectedGame = gamesMap.get(gameId);
@@ -897,15 +1026,17 @@ Utility.WriteLog("Dialog txt: "+txt);
 		String folderName = Utility.ConvertGameTitleToCorrectFolderName(gameToDownload.title);
 
 		final String urlToDownload = file_url;
-	final String unzipLocation = Utility.GetGamesPath(this).concat("/").concat(folderName).concat("/");
+	    final String unzipLocation = Utility.GetDownloadPath(this).concat("/").concat(folderName).concat("/");
     	final String gameId = game_id;
     	final String gameName = gameToDownload.title;
-	final String gamesPath = Utility.GetGamesPath(this);
+	    final String gamesPath = Utility.GetDownloadPath(this);
     	final int totalSize = file_size;
     	downloadProgressDialog = new ProgressDialog(uiContext);
     	downloadProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
     	downloadProgressDialog.setMax(totalSize);
     	downloadProgressDialog.setCancelable(false);
+
+
     	downloadThread = new Thread() {
             public void run() {
         		//set the path where we want to save the file
@@ -921,7 +1052,7 @@ Utility.WriteLog("Dialog txt: "+txt);
 								if ((null == strSDCardPath) || (strSDCardPath.length() == 0)) {
 					strSDCardPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
 				}
-        		File cacheDir = new File (strSDCardPath.concat("/Android/data/com.qsp.player/cache/"));
+        		File cacheDir = new File (Environment.getExternalStorageDirectory().getPath().concat("/Android/data/com.qsp.player/cache/"));
 				// ** end replacement code for checking storage directory **
         		
 				
@@ -1022,9 +1153,15 @@ Utility.WriteLog("Dialog txt: "+txt);
         				
         				if (!success)
         				{
-        					//Удаляем неудачно распакованную игру
-						File gameFolder = new File(gamesPath.concat("/").concat(Utility.ConvertGameTitleToCorrectFolderName(checkGameName)));
-        					Utility.DeleteRecursive(gameFolder);
+        					if (downloadDir == null) {
+								//Удаляем неудачно распакованную игру
+								File gameFolder = new File(gamesPath.concat("/").concat(Utility.ConvertGameTitleToCorrectFolderName(checkGameName)));
+								Utility.DeleteRecursive(gameFolder);
+							}
+							else {
+								DocumentFile gameFolder = downloadDir.findFile(Utility.ConvertGameTitleToCorrectFolderName(checkGameName));
+								if (gameFolder != null) Utility.DeleteDocFileRecursive(gameFolder);
+							}
         				}
         				
         				if (isActive)
@@ -1064,63 +1201,180 @@ Utility.WriteLog("Dialog txt: "+txt);
     
     private void Unzip(String zipFile, String location, String gameName)
     {
-    	_zipFile = zipFile;
-    	_location = location;
+		if (downloadDir != null) {
+			_zipFile = zipFile;
+			_location = location;
+			String folderName = Utility.ConvertGameTitleToCorrectFolderName(gameName);
 
-		runOnUiThread(new Runnable() {
-			public void run() {
-				downloadProgressDialog = new ProgressDialog(uiContext);
-				downloadProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-				downloadProgressDialog.setCancelable(false);
+			runOnUiThread(new Runnable() {
+				public void run() {
+					downloadProgressDialog = new ProgressDialog(uiContext);
+					downloadProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+					downloadProgressDialog.setCancelable(false);
+				}
+			});
+			updateSpinnerProgress(true, gameName, getString(R.string.unpackMsg), 0);
+
+			try {
+				FileInputStream fin = new FileInputStream(_zipFile);
+				ZipInputStream zin = new ZipInputStream(fin);
+				BufferedInputStream in = new BufferedInputStream(zin);
+				DocumentFile gameFolder = downloadDir.findFile(folderName);
+				if (gameFolder == null)
+					gameFolder = downloadDir.createDirectory(folderName);
+
+				ZipEntry ze = null;
+				while ((ze = zin.getNextEntry()) != null) {
+					Log.v(getString(R.string.decompMsg), getString(R.string.unzipMsg).replace("-FILENAME-", "\n" + ze.getName() + "\n"));
+
+Utility.WriteLog("ze.getName(): "+ze.getName());
+					if (ze.isDirectory()) {
+						_dirCheckerDD(gameFolder,ze.getName());
+					} else {
+						//if creating a file, use a DocumentFile that represents the directory where
+						//the file must be created
+						if (ze.getName().endsWith("/")) continue;
+						String filenameOnly = ze.getName();
+						if (filenameOnly.indexOf("/") > 0)
+							filenameOnly = filenameOnly.substring(filenameOnly.lastIndexOf("/")+1);
+						DocumentFile targetDir = getDFDirectory(gameFolder,ze.getName());
+						DocumentFile tempDocFile = targetDir.createFile(URLConnection.guessContentTypeFromName(filenameOnly),filenameOnly);
+						Uri tempUri = tempDocFile.getUri();
+						OutputStream fout = uiContext.getContentResolver().openOutputStream(tempUri);
+						if (fout == null) {
+							break;
+						}
+						BufferedOutputStream out = new BufferedOutputStream(fout);
+						byte b[] = new byte[1024];
+						int n;
+						while ((n = in.read(b, 0, 1024)) >= 0) {
+							out.write(b, 0, n);
+							updateSpinnerProgress(true, gameName, getString(R.string.unpackMsg), n);
+						}
+
+						zin.closeEntry();
+						out.close();
+						fout.close();
+					}
+
+				}
+				in.close();
+				zin.close();
+			} catch (Exception e) {
+				Log.e(getString(R.string.decompMsg), getString(R.string.unzipMsgShort), e);
 			}
-		});
-    	updateSpinnerProgress(true, gameName, getString(R.string.unpackMsg), 0);
 
-    	_dirChecker("");
+		}
+		else {
+			_zipFile = zipFile;
+			_location = location;
 
-    	try  { 
-    		FileInputStream fin = new FileInputStream(_zipFile); 
-    		ZipInputStream zin = new ZipInputStream(fin);
-    		BufferedInputStream in = new BufferedInputStream(zin);
+			runOnUiThread(new Runnable() {
+				public void run() {
+					downloadProgressDialog = new ProgressDialog(uiContext);
+					downloadProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+					downloadProgressDialog.setCancelable(false);
+				}
+			});
+			updateSpinnerProgress(true, gameName, getString(R.string.unpackMsg), 0);
 
-    		ZipEntry ze = null; 
-    		while ((ze = zin.getNextEntry()) != null) { 
-    			Log.v(getString(R.string.decompMsg), getString(R.string.unzipMsg).replace("-FILENAME-","\n"+ze.getName()+"\n"));
+			_dirChecker("");
 
-    			if(ze.isDirectory()) { 
-    				_dirChecker(ze.getName()); 
-    			} else { 
-    				FileOutputStream fout = new FileOutputStream(_location + ze.getName()); 
-    				BufferedOutputStream out = new BufferedOutputStream(fout);
-    				byte b[] = new byte[1024];
-    				int n;
-    				while ((n = in.read(b,0,1024)) >= 0) {
-    					out.write(b,0,n);
-    					updateSpinnerProgress(true, gameName, getString(R.string.unpackMsg), n);
-    				}
+			try {
+				FileInputStream fin = new FileInputStream(_zipFile);
+				ZipInputStream zin = new ZipInputStream(fin);
+				BufferedInputStream in = new BufferedInputStream(zin);
 
-    				zin.closeEntry();
-    				out.close();
-    				fout.close();
-    			} 
+				ZipEntry ze = null;
+				while ((ze = zin.getNextEntry()) != null) {
+					Log.v(getString(R.string.decompMsg), getString(R.string.unzipMsg).replace("-FILENAME-", "\n" + ze.getName() + "\n"));
 
-    		} 
-    		in.close();
-    		zin.close(); 
-    	} catch(Exception e) { 
-    		Log.e(getString(R.string.decompMsg), getString(R.string.unzipMsgShort), e);
-    	} 
+					if (ze.isDirectory()) {
+						_dirChecker(ze.getName());
+					} else {
+						FileOutputStream fout = new FileOutputStream(_location + ze.getName());
+						BufferedOutputStream out = new BufferedOutputStream(fout);
+						byte b[] = new byte[1024];
+						int n;
+						while ((n = in.read(b, 0, 1024)) >= 0) {
+							out.write(b, 0, n);
+							updateSpinnerProgress(true, gameName, getString(R.string.unpackMsg), n);
+						}
+
+						zin.closeEntry();
+						out.close();
+						fout.close();
+					}
+
+				}
+				in.close();
+				zin.close();
+			} catch (Exception e) {
+				Log.e(getString(R.string.decompMsg), getString(R.string.unzipMsgShort), e);
+			}
+		}
     }
     
     private void _dirChecker(String dir) { 
-    	File f = new File(_location + dir); 
+    	File f = new File(_location + dir);
 
-    	if(!f.isDirectory()) { 
-    		f.mkdirs(); 
+    	if(!f.isDirectory()) {
+    		downloadDir.createDirectory(dir);
     	} 
     }
-    
-    private void WriteGameInfo(String gameId)
+
+    //If using downloadDir, check if the directory exists and create it if it doesn't
+	private void _dirCheckerDD(DocumentFile baseDF, String dir) {
+Utility.WriteLog("1. dir = "+dir);
+		if (dir.endsWith("/")) {
+			if (dir.length() > 1) //remove the trailing "/" if present
+				dir = dir.substring(0,dir.length()-1);
+			else //skip if the directory is just root
+				return;
+		}
+Utility.WriteLog("2. dir = "+dir);
+
+		String[] allDirs = dir.split("/");
+
+		//If there are no directories to make, skip
+		if (allDirs.length == 0) return;
+
+		//Make the first directory in the list
+		DocumentFile df = baseDF.findFile(allDirs[0]);
+		if (df == null) {
+			baseDF.createDirectory(allDirs[0]);
+			df = baseDF.findFile(allDirs[0]);
+		}
+
+		//if there are more directories, repeat process
+		if (df.isDirectory())
+			if (allDirs.length > 1) {
+				_dirCheckerDD(df,dir.substring(dir.indexOf("/")+1));
+			}
+	}
+
+	private DocumentFile getDFDirectory (DocumentFile baseDF, String target) {
+		String[] allDirs = target.split("/");
+		if (allDirs.length < 2) return baseDF;
+		String newTarget = target.substring(target.indexOf("/")+1);
+Utility.WriteLog("last split("+allDirs.length+" segments): "+ allDirs[0]+" /.../ "+allDirs[allDirs.length-1]);
+Utility.WriteLog("target: "+target);
+Utility.WriteLog("newTarget: "+newTarget);
+
+		DocumentFile newBaseDF = baseDF.findFile(allDirs[0]);
+		if (newBaseDF == null) {
+			baseDF.createDirectory(allDirs[0]);
+			newBaseDF = baseDF.findFile(allDirs[0]);
+		}
+		else {
+Utility.WriteLog(newBaseDF.getName()+" exists.");
+		}
+		newBaseDF = getDFDirectory(newBaseDF,newTarget);
+
+		return newBaseDF;
+	}
+
+	private void WriteGameInfo(String gameId)
     {
     	//Записываем всю информацию об игре
 		GameItem game = gamesMap.get(gameId);
@@ -1220,17 +1474,66 @@ Utility.WriteLog("Dialog txt: "+txt);
     
     private boolean ScanDownloadedGames()
     {
-    	//Заполняем список скачанных игр
-	String path = Utility.GetGamesPath(this);
-		if (TextUtils.isEmpty(path))
+    	//Check that either downloadPath or path exist
+		String path = Utility.GetGamesPath(this);
+		String downloadPath = Utility.GetDownloadPath(this);
+Utility.WriteLog("downloadPath: "+downloadPath);
+Utility.WriteLog("path: "+path);
+
+		if (TextUtils.isEmpty(path) && TextUtils.isEmpty(downloadPath))
     		return false;
-    	
-        File gameStartDir = new File (path);
-        File[] sdcardFiles = gameStartDir.listFiles();        
+
+		File gameStartDir = null;
+		File downloadStartDir = null;
+
+		//if path exists, get gameStartDir as File
+		if (!TextUtils.isEmpty(path))
+			gameStartDir = new File (path);
+		//if downloadDir exists and is NOT same as path, get downloadDir as File
+		if (!TextUtils.isEmpty(downloadPath) && !path.equals(downloadPath))
+			downloadStartDir = new File (downloadPath);
+
+		//Create a complete list of all files in the download and game directories;
+		//exit function if there are no files
+		ArrayList<File> completeFileList = new ArrayList<File>();
+
+		//first check the main game directory
+		if (gameStartDir != null) {
+			if (gameStartDir.exists() && gameStartDir.isDirectory()) {
+				List<File> fileListGameStartDir = Arrays.asList(gameStartDir.listFiles());
+				if (!fileListGameStartDir.isEmpty())
+					completeFileList.addAll(fileListGameStartDir);
+			}
+		}
+Utility.WriteLog("games in gameStartDir: "+completeFileList.size());
+
+		//then the download directory
+		if (downloadStartDir != null) {
+			if (downloadStartDir.exists() && downloadStartDir.isDirectory()) {
+				List<File> fileListDownloadStartDir = Arrays.asList(downloadStartDir.listFiles());
+				if (!fileListDownloadStartDir.isEmpty())
+					completeFileList.addAll(Arrays.asList(downloadStartDir.listFiles()));
+			}
+		}
+Utility.WriteLog("games in both: "+completeFileList.size());
+
+		if (completeFileList.isEmpty()) return true;
+
+		//Compare each File(i) to File(i+1) in List; delete File(i) if somehow duplicated
+		if (completeFileList.size()>1)
+			for (int i=0; i<completeFileList.size()-1; i++) {
+				if (completeFileList.get(i).equals(completeFileList.get(i+1)))
+					completeFileList.remove(i);
+			}
+
+		//Convert completeFileList (ArrayList<File>) to simple array
+		File[] sdcardFiles = completeFileList.toArray(new File[completeFileList.size()]);
+		//File[] sdcardFiles = gameStartDir.listFiles();
         ArrayList<File> qspGameDirs = new ArrayList<File>();
         ArrayList<File> qspGameFiles = new ArrayList<File>();
 		ArrayList<Boolean> qspGamePack = new ArrayList<Boolean>();
-		String lastGame = "[ none ]"; //invalid file name for use in the first cycle
+		String lastGame = "[ ---- ]"; //placeholder in case no files are present
+
 
 		//Look at every directory in the QSP games folder after first sorting the list
 		if (sdcardFiles!=null) {
@@ -1760,8 +2063,12 @@ Utility.WriteLog("qspGameDirs["+i+"]: "+qspGameDirs.get(i).getName()+
     private void DeleteGames()
     {
         //Ищем папки в /qsp/games
+Utility.WriteLog("GetGamesPath() = "+Utility.GetGamesPath(this));
         File sdcardRoot = new File (Utility.GetGamesPath(this));
         File[] sdcardFiles = sdcardRoot.listFiles();
+Utility.WriteLog("total files: "+sdcardFiles.length);
+		for (File currentFile : sdcardFiles)
+			Utility.WriteLog("- "+currentFile.getPath());
         qspGamesToDeleteList = new ArrayList<File>();
         for (File currentFile : sdcardFiles)
         {
@@ -1794,7 +2101,13 @@ Utility.WriteLog("qspGameDirs["+i+"]: "+qspGameDirs.get(i).getName()+
     					public void onClick(DialogInterface dialog, int whichButton) {
     						if (whichButton==DialogInterface.BUTTON_POSITIVE)
     						{
-    		    				Utility.DeleteRecursive(f);
+								if (downloadDir != null) {
+									final DocumentFile df = downloadDir.findFile(f.getName());
+									Utility.DeleteDocFileRecursive(df);
+								}
+								else {
+									Utility.DeleteRecursive(f);
+								}
     		    				Utility.ShowInfo(uiContext, getString(R.string.gameFileDeleteSuccess));
     		    				RefreshLists();
     						}

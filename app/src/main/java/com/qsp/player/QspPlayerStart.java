@@ -33,6 +33,7 @@ import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.support.annotation.RequiresPermission;
 import android.support.v4.content.PermissionChecker;
+import android.support.v4.provider.DocumentFile;
 import android.text.format.DateFormat;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -51,6 +52,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -74,6 +76,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -462,6 +466,8 @@ Utility.WriteLog("onPageFinished: "+url);
             vars_descClient = new QSPWebViewClient();
             main_desc.setWebViewClient(main_descClient);
             vars_desc.setWebViewClient(vars_descClient);
+            main_desc.setWebChromeClient(new WebChromeClient());
+            vars_desc.setWebChromeClient(new WebChromeClient());
             main_desc.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
             main_desc.getSettings().setMediaPlaybackRequiresUserGesture(false);
             main_desc.getSettings().setAppCacheEnabled(false);
@@ -539,19 +545,20 @@ Utility.WriteLog("onPageFinished: "+url);
                     .setCancelable(false)
                     .create();
 
-            if (Utility.GetGamesPath(this) == null) {
+            if (Utility.GetDownloadPath(this) == null) {
                 sdcard_mounted = false;
                 Utility.ShowError(uiContext, getString(R.string.SDCardNotConnected));
+
             } else {
                 sdcard_mounted = true;
                 if (!gameIsRunning) {
                     //текущий вид - основное описание
                     invBack = 0; //нет фона
                     varBack = 0; //нет фона
-                    setCurrentWin(currentWin = WIN_MAIN);
-                    ShowGameStock();
                 }
             }
+        setCurrentWin(currentWin = WIN_MAIN);
+        ShowGameStock();
         if (savedInstanceState != null) {
 
         }
@@ -1011,6 +1018,7 @@ Utility.WriteLog("QSPfonttheme: "+QSPfontTheme+", newTheme = "+newTheme);
             //Regenerate the web client
             main_descClient = new QSPWebViewClient();
             main_desc.setWebViewClient(main_descClient);
+            main_desc.setWebChromeClient(new WebChromeClient());
             main_desc.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
             main_desc.getSettings().setMediaPlaybackRequiresUserGesture(false);
             main_desc.setOnLongClickListener(new View.OnLongClickListener() {
@@ -1039,21 +1047,25 @@ Utility.WriteLog("QSPfonttheme: "+QSPfontTheme+", newTheme = "+newTheme);
         if (isMainDescHTML) {
             int tempMaxH = maxH;
             if(playerHeightLimit == 1) tempMaxH = -1;
+            Utility.WriteLog("mainDescHTML1 ="+getMainDescHTML());
             if (settings.getBoolean("showLoadingPage",true))
                 main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
             if (curMainDescHTML != null)
                 tempHtml = Utility.QspStrToWebView(curMainDescHTML, curGameDir, maxW, tempMaxH, settings.getBoolean("sound", true), bigImage, videoSwitch, hideImg, uiContext);
-            Utility.WriteLog(tempHtml);
+            Utility.WriteLog("mainDescHTML2 ="+tempHtml);
 
             if(clearOnChange) {
             }
 
             main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT",tempHtml), "text/html", "UTF-8", "");
         } else {
+            Utility.WriteLog("mainDesc!HTML1 ="+getMainDescHTML());
             if (settings.getBoolean("showLoadingPage",true))
                 main_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
             if (curMainDescHTML != null)
                 tempHtml = Utility.QspStrToStr(curMainDescHTML);
+
+            Utility.WriteLog("mainDesc!HTML2 ="+tempHtml);
 
             if(clearOnChange) {
                 main_desc.clearCache(true);
@@ -1070,6 +1082,7 @@ Utility.WriteLog("QSPfonttheme: "+QSPfontTheme+", newTheme = "+newTheme);
             vars_desc = (WebView) findViewById(R.id.vars_desc);
             vars_descClient = new QSPWebViewClient();
             vars_desc.setWebViewClient(vars_descClient);
+            vars_desc.setWebChromeClient(new WebChromeClient());
             vars_desc.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
@@ -1092,16 +1105,22 @@ Utility.WriteLog("QSPfonttheme: "+QSPfontTheme+", newTheme = "+newTheme);
         String tempHtml = "";
 
         if (isVarsDescHTML) {
+            Utility.WriteLog("varDescHTML1 ="+getVarDescHTML());
             if (settings.getBoolean("showLoadingPage",true))
                 vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
             if(getVarDescHTML() != null)
                 tempHtml = Utility.QspStrToWebView(getVarDescHTML(),curGameDir,maxW,maxH,settings.getBoolean("sound",true), bigImage, videoSwitch, hideImg, uiContext);
+            Utility.WriteLog("varDescHTML2 ="+tempHtml);
+
             vars_desc.loadDataWithBaseURL("",freshPageURL.replace("REPLACETEXT",tempHtml),"text/html","UTF-8","");
         } else {
+            Utility.WriteLog("varDesc!HTML1 ="+getVarDescHTML());
             if (settings.getBoolean("showLoadingPage",true))
                 vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", getString(R.string.loadingURL)), "text/html", "UTF-8", "");
             if (getVarDescHTML() != null)
                 tempHtml = Utility.QspStrToStr(getVarDescHTML());
+            Utility.WriteLog("varDesc!HTML2 ="+tempHtml);
+
             vars_desc.loadDataWithBaseURL("", freshPageURL.replace("REPLACETEXT", tempHtml), "text/html", "UTF-8", "");
         }
     }
@@ -1268,7 +1287,7 @@ Utility.WriteLog("onRestoreInstanceState/");
     }
 */
 
-    private void LoadSlots(MenuItem rootItem, String name, boolean isLoad) {
+    private void LoadSlots (MenuItem rootItem, String name, boolean isLoad) {
         //Контекст UI
         if (rootItem == null)
             return;
@@ -1287,11 +1306,13 @@ Utility.WriteLog("onRestoreInstanceState/");
         }
 
         int position=0;
+
         for (int i = 0; i < SLOTS_MAX; i++) {
             String title = String.valueOf(i + 1).concat(": ");
-            String Slotname = "save" + String.valueOf(i + 1).concat(".sav");
+            String Slotname = savePrefix + String.valueOf(i + 1).concat(".sav");
 
             File checkSlot = new File(saveGameDir.concat(Slotname));
+
             if (checkSlot.exists()) {
                 String datetime = (String) DateFormat.format("yyyy-MM-dd kk:mm:ss", checkSlot.lastModified());
                 title = title.concat(datetime);
@@ -1305,19 +1326,20 @@ Utility.WriteLog("onRestoreInstanceState/");
         File[] files = currDir.listFiles(new FileFilter() {
             @Override
             public boolean accept(File pathname) {
+Utility.WriteLog("file: "+pathname.toString());
                 return (pathname.isFile() && pathname.toString().endsWith(".sav"));
             }
         });
         if (files.length>0) {
             for (File file : files) {
                 String fname = file.getName();
-Utility.WriteLog("fname1 = " + fname);
-                fname = "save" + fname.substring(fname.length()-5,fname.length()-4);
+Utility.WriteLog("fname = " + fname);
+//                fname = "save" + fname.substring(fname.length()-5,fname.length()-4);
 //Utility.WriteLog("fname2 = " + fname);
                 boolean isSlot = false;
                 for (int i = 0; i <= SLOTS_MAX+1; i++) {
 //Utility.WriteLog("test = \""+ fname+ "\" vs. \"save"+String.valueOf(i+1)+"\"");
-                    if (fname.equals("save"+String.valueOf(i+1))) {
+                    if (fname.startsWith(savePrefix+String.valueOf(i+1))) {
                         isSlot=true;
                         break;
                     }
@@ -1457,6 +1479,11 @@ Utility.WriteLog("fname1 = " + fname);
     }
 
     private void LoadSlot(String filename) {
+        if (curDownloadDir != null) {
+            LoadSlotDD(filename);
+            return;
+        }
+
         //Контекст UI
         String path = saveGameDir.concat(filename);
 //Utility.WriteLog("Opening: "+path);
@@ -1533,20 +1560,105 @@ Utility.WriteLog("fname1 = " + fname);
         });
     }
 
+    private void LoadSlotDD(String filename) {
+
+        //Контекст UI
+        DocumentFile df = curDownloadDir.findFile(filename);
+        if (!df.exists()) {
+            Utility.WriteLog(getString(R.string.LSF_fileNotFound));
+            return;
+        }
+
+        InputStream fIn;
+        int size;
+        try {
+            Uri tempUri = df.getUri();
+            fIn = uiContext.getContentResolver().openInputStream(tempUri);
+        } catch (FileNotFoundException e) {
+            Utility.ShowError(uiContext, getString(R.string.openFileFail));
+            e.printStackTrace();
+            return;
+        }
+
+        if (fIn == null) return;
+        try {
+            size = fIn.available();
+        } catch (IOException e) {
+            Utility.ShowError(uiContext, getString(R.string.accessFileFail));
+            e.printStackTrace();
+            try {
+                fIn.close();
+            } catch (IOException e1) {
+                Utility.ShowError(uiContext, getString(R.string.fileHandleReleaseFail));
+                e1.printStackTrace();
+            }
+            return;
+        }
+
+        final byte[] inputBuffer = new byte[size];
+        try {
+            fIn.read(inputBuffer);
+            fIn.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+        final int bufferSize = size;
+
+        //Останавливаем таймер
+        timerHandler.removeCallbacks(timerUpdateTask);
+        //Выключаем музыку
+        CloseFileUI(null);
+
+        libThreadHandler.post(new Runnable() {
+            public void run() {
+                if (libraryThreadIsRunning) {
+                    Utility.WriteLog(getString(R.string.LSF_libRun));
+                    return;
+                }
+                libraryThreadIsRunning = true;
+                holdPanelAnimationsForFirstUpdate = true;
+
+                boolean result = QSPOpenSavedGameFromData(inputBuffer, bufferSize, true);
+                CheckQspResult(result, "LoadSlot: QSPOpenSavedGameFromData");
+
+                libraryThreadIsRunning = false;
+
+                if (!result) {
+                    Utility.WriteLog(getString(R.string.LSF_dataBuff));
+                    return;
+                }
+
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        //Start the timer
+                        timerHandler.postDelayed(timerUpdateTask, timerInterval);
+                    }
+                });
+            }
+        });
+    }
+
     private void c(int index) {
         //Контекст UI
-        final String path = "save" + String.valueOf(index).concat(".sav");
+        final String path = savePrefix + String.valueOf(index).concat(".sav");
         SaveSlot(path);
     }
 
 
     private void SaveSlot(int index) {
         //Контекст UI
-        String path = "save" + String.valueOf(index).concat(".sav");
+        String path = savePrefix + String.valueOf(index).concat(".sav");
         SaveSlot(path);
     }
 
     private void SaveSlot(String filename) {
+        //Use downloadDir if present for saving games
+        if (curDownloadDir != null) {
+            SaveSlotDD(filename);
+            return;
+        }
+
         //Контекст UI
 //        final String path = saveGameDir.concat(filename);
         final String path = saveGameDir+filename;
@@ -1602,6 +1714,144 @@ Utility.WriteLog("fname1 = " + fname);
             }
         });
     }
+
+    private void SaveSlotDD (final String filename) {
+
+        libThreadHandler.post(new Runnable() {
+            public void run() {
+                if (libraryThreadIsRunning) {
+                    Utility.WriteLog(getString(R.string.SSF_libRun));
+                    return;
+                }
+                libraryThreadIsRunning = true;
+
+                final byte[] dataToSave = QSPSaveGameAsData(false);
+
+                if (dataToSave == null) {
+                    CheckQspResult(false, "SaveSlot: QSPSaveGameAsData");
+                    Utility.WriteLog(getString(R.string.SSF_noCreate));
+                    return;
+                }
+
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        DocumentFile df = curDownloadDir.findFile(filename.replace("/","_"));
+                        if (df != null) df.delete();
+                        df = curDownloadDir.createFile("application/octet-stream",filename);
+Utility.WriteLog("Saving to (DF): "+filename+" in "+FileUtil.getFullPathFromTreeUri(df.getUri(),uiContext) + " + "+df.getName());
+
+                        OutputStream fileOutput;
+                        try {
+                            Uri tempUri = df.getUri();
+                            fileOutput = uiContext.getContentResolver().openOutputStream(tempUri);
+//                            Utility.WriteLog("Open file: "+path);
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                            return;
+                        }
+                        if (fileOutput == null)
+                            return;
+                        try {
+                            fileOutput.write(dataToSave, 0, dataToSave.length);
+                            Utility.WriteLog("Writing to DF: "+filename);
+                            fileOutput.close();
+                            Utility.WriteLog("Closed DF: "+filename);
+                            MediaScannerConnection.scanFile(uiContext, new String[] {curGameDir+filename},null,null);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+//                        Utility.WriteLog("Saved to: "+path);
+
+                    }
+                });
+
+                libraryThreadIsRunning = false;
+            }
+        });
+    }
+
+    DocumentFile downloadDir = null;
+    DocumentFile curDownloadDir = null;
+
+    private void getDownloadDirFromSettings() {
+        Uri treeUri = null;
+
+        //get treeUri from settings
+        String tempUri = settings.getString(getString(R.string.key_internal_uri_extsdcard),"");
+        if (!tempUri.isEmpty())
+            treeUri = Uri.parse(tempUri);
+
+        //if not null/empty, use for downloadDir
+        if (treeUri != null)
+            downloadDir = DocumentFile.fromTreeUri(uiContext, treeUri);
+
+        //if downloadDir is not a writable directory, clear downloadDir
+        //and set the R.string.key_internal_uri_extsdcard as an empty string
+        if (downloadDir == null) {
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putString(getString(R.string.key_internal_uri_extsdcard), "");
+            editor.commit();
+            return;
+        }
+        else if (!downloadDir.exists() || !downloadDir.isDirectory() || !downloadDir.canWrite()) {
+            downloadDir = null;
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putString(getString(R.string.key_internal_uri_extsdcard), "");
+            editor.commit();
+        }
+        else
+            setFullGamesPath();
+    }
+
+    private void setFullGamesPath () {
+        //**** START set SDPath/storageType ****
+        String newDownDirPath = getString(R.string.defDownDirPath);
+        String SDPath = "";
+        if (downloadDir != null) {
+            newDownDirPath = FileUtil.getFullPathFromTreeUri(downloadDir.getUri(), uiContext);
+            if (!newDownDirPath.endsWith("/"))
+                newDownDirPath += "/";
+        }
+
+        String tempDir = FileUtil.getSdCardPath();
+        Boolean usingExtSDCard = false;
+        if (newDownDirPath.startsWith(tempDir)) {
+            Utility.WriteLog(newDownDirPath + " contains " + tempDir);
+            SDPath = tempDir;
+        } else {
+            Utility.WriteLog(newDownDirPath + " doesn't contain " + tempDir);
+
+            ArrayList<String> extSDPaths = FileUtil.getExtSdCardPaths(uiContext);
+            for (int i = 0; i < extSDPaths.size(); i++) {
+                tempDir = extSDPaths.get(i);
+                if (newDownDirPath.startsWith(tempDir)) {
+                    Utility.WriteLog(newDownDirPath + " contains " + tempDir);
+                    SDPath = tempDir;
+                    usingExtSDCard = true;
+                    break;
+                } else Utility.WriteLog(newDownDirPath + " doesn't contain " + tempDir);
+            }
+        }
+        //**** END set SDPath/storageType ****
+
+        //set String "relGamePath"; "compGamePath" is newDownDirPath
+        String relPath = newDownDirPath.replace(SDPath, "");
+
+        //Store adjusted storage type, relative path, and complete game directory
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putBoolean("storageType", usingExtSDCard);
+        editor.putString("relGamePath", relPath);
+        editor.putString("compGamePath", newDownDirPath);
+        editor.putString("downDirPath", newDownDirPath);
+        editor.commit();
+
+        Utility.WriteLog("_Using downloadDir DocumentFile_");
+        Utility.WriteLog("storageType: " + settings.getBoolean("storageType", true));
+        Utility.WriteLog("relGamePath: " + settings.getString("relGamePath", getString(R.string.defRelPath)));
+        Utility.WriteLog("compGamePath: " + settings.getString("compGamePath", getString(R.string.defGamePath)));
+        Utility.WriteLog("downDirPath: " + settings.getString("downDirPath", getString(R.string.defDownDirPath)));
+    }
+
 
     protected void onActivityResult(int requestCode, int resultCode,
                                     Intent data) {
@@ -1871,25 +2121,57 @@ Utility.WriteLog("runGame\\");
         String relGameDir = curGameDir.substring(0,curGameDir.lastIndexOf("/"));
         relGameDir = relGameDir.substring(relGameDir.lastIndexOf("/")+1);
         Utility.WriteLog("relGameDir: "+relGameDir);
+        curRelGameDir = relGameDir;
         curSaveTitle = Utility.safetyString(relGameDir);
 
+        //The prefix for the save file will be the game file name, without ".qsp", + "_"
+        //Default name is "save_"
+        //so, filename "/QSP/games/test/test.qsp" will make "test_" or "save_"
+        savePrefix = "save_";
+        int relGFIdx = curGameFile.lastIndexOf("/")+1;
+        if ((relGFIdx > 0) && (curGameFile.length() > relGFIdx)) {
+            String relGameFile = curGameFile.substring(relGFIdx);
+
+            int cgfEndIdx = relGameFile.toLowerCase().lastIndexOf(".qsp");
+            if (cgfEndIdx >= 0) savePrefix = relGameFile.substring(0, cgfEndIdx);
+
+            savePrefix += "_";
+        }
+
+        //Added to handle SAF save system
+        getDownloadDirFromSettings();
+        if (downloadDir != null) {
+            curDownloadDir = downloadDir.findFile(curRelGameDir);
+            Utility.WriteLog("curDownloadDir == null? " + (curDownloadDir == null));
+            Utility.WriteLog("curRelGameDir == " + curRelGameDir);
+
+            Uri tempUri = downloadDir.getUri();
+            saveGameDir = FileUtil.getFullPathFromTreeUri(tempUri,uiContext) + "/" + curRelGameDir + "/";
+
+            Utility.WriteLog("saveGameDir: "+saveGameDir);
+            Utility.WriteLog("downloadDir Uri: "+FileUtil.getFullPathFromTreeUri(downloadDir.getUri(),uiContext));
+            Utility.WriteLog("curDownloadDir Uri: "+FileUtil.getFullPathFromTreeUri(curDownloadDir.getUri(),uiContext));
+        }
+        else {
+
 //        saveGameDir = uiContext.getFilesDir().getAbsolutePath();
-        File tempSaveDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath()+"/QSP_saves/"+curSaveTitle);
+            File tempSaveDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath() + "/QSP_saves/" + curSaveTitle);
 //Utility.WriteLog("tempSaveDir = "+tempSaveDir.getAbsolutePath());
-        //if the the save directory doesn't exist, create it
-        if (!tempSaveDir.exists()) {
-            tempSaveDir.mkdirs();
+            //if the the save directory doesn't exist, create it
+            if (!tempSaveDir.exists()) {
+                tempSaveDir.mkdirs();
 //Utility.WriteLog("Doesn't exist, make a directory");
-        }
-        //if the save directory exists but is not a directory, delete it, then create it
-        else if (!tempSaveDir.isDirectory()) {
+            }
+            //if the save directory exists but is not a directory, delete it, then create it
+            else if (!tempSaveDir.isDirectory()) {
 //Utility.WriteLog("Exists, delete and make a directory");
-            tempSaveDir.delete();
-            tempSaveDir.mkdirs();
-        }
+                tempSaveDir.delete();
+                tempSaveDir.mkdirs();
+            }
 //Utility.WriteLog("Exists as a directory");
 
-        saveGameDir = tempSaveDir.getAbsolutePath() + "/";
+            saveGameDir = tempSaveDir.getAbsolutePath() + "/";
+        }
 
         float density = SetImageLimits();
         int padding = main_desc.getPaddingLeft() + main_desc.getPaddingRight();
@@ -2886,9 +3168,11 @@ Utility.WriteLog("Config changed: portrait");
     String curGameDir;
     String curGameFile;
     String curSaveTitle;
+    String savePrefix;
 
 // saveGameDir identifies internal data storage for app; resolves write-permission problem with Android SD Cards
     String saveGameDir;
+    String curRelGameDir;
 
     Vector<MusicContent> mediaPlayersList;
     Handler timerHandler;

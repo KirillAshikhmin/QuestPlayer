@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.CheckBoxPreference;
@@ -13,6 +14,8 @@ import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.preference.SwitchPreference;
+import android.provider.DocumentsContract;
+import android.support.v4.provider.DocumentFile;
 import android.text.TextUtils;
 import android.widget.Toast;
 
@@ -23,14 +26,162 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import static com.qsp.player.QspGameStock.REQUEST_CODE_STORAGE_ACCESS;
+import static com.qsp.player.QspGameStock.downloadDir;
+
 public class Settings extends PreferenceActivity implements Preference.OnPreferenceChangeListener {
 	final private Context uiContext = this;
     final int ACTIVITY_SELECT_DIRECTORY = 531;
+    final int REQUEST_CODE_STORAGE_ACCESS = 42;
+    SharedPreferences sharedPref = null;
     String SDPath;
     String backPath;
+    DocumentFile downloadDir = null;
     ArrayList<File> qspBrowseDir;
     String selectedDirectory;
     boolean usingSDCard;
+
+    public void setFullGamesPath (boolean useDownloadDir, SharedPreferences settings) {
+        if (!useDownloadDir) {
+            //Get external SD card flag and get directory; set extSDCard false if no external SD card
+            boolean extSDCard = settings.getBoolean("storageType", true);
+            if (extSDCard) {
+                SDPath = System.getenv("SECONDARY_STORAGE");
+
+                //if SECONDARY_STORAGE fails, try EXTERNAL_SDCARD_STORAGE
+                if (null == SDPath)
+                    SDPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
+                else if (SDPath.length() == 0)
+                    SDPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
+
+                //if EXTERNAL_SDCARD_STORAGE fails, check all directories in /storage/ for usable path
+                if ((null == SDPath) || (SDPath.length() == 0)) {
+                    Utility.WriteLog("internal DIR: " + Environment.getExternalStorageDirectory().getAbsolutePath());
+                    File internalFileList[] = new File(Environment.getExternalStorageDirectory().getAbsolutePath()).listFiles();
+
+                    File fileList[] = new File("/storage/").listFiles();
+                    for (File file : fileList) {
+                        Utility.WriteLog("storage DIR: " + file.getAbsolutePath());
+
+                        //A suitable candidate (directory/readable/not internal) is found...
+                        if (!file.getAbsolutePath().equalsIgnoreCase(Environment.getExternalStorageDirectory().getAbsolutePath()) && file.isDirectory() && file.canRead()) {
+
+                            //Check that it is not the internal directory under another name
+                            File emulatedFileList[] = file.listFiles();
+                            if (Utility.directoriesAreEqual(internalFileList, emulatedFileList)) continue;
+
+                            //if it is not the internal storage, it must be the external storage
+                            SDPath = file.getAbsolutePath();
+                            Utility.WriteLog("chosen DIR: " + file.getAbsolutePath());
+                            break;
+                        }
+                    }
+                }
+
+                //if that fails, go to the internal directory and set extSDCard as false
+                if (null == SDPath) {
+                    SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+                    extSDCard = false;
+                } else if (SDPath.length() == 0) {
+                    SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+                    extSDCard = false;
+                }
+            } else
+                SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+            SDPath += "/";
+            Utility.WriteLog("TEMP:" + SDPath);
+            //Get the relative games path and merge the two directories
+            //Add a trailing "/" to relPath and remove change "//" to "/" if present
+            String relPath = settings.getString("relGamePath", getString(R.string.defRelPath));
+            if (!relPath.endsWith("/")) relPath += "/";
+            if (!relPath.startsWith("/")) relPath = "/" + relPath;
+            String fullGamesPath = SDPath + relPath;
+            relPath = relPath.replace("//", "/");
+            fullGamesPath = fullGamesPath.replace("//", "/");
+            fullGamesPath = fullGamesPath.replace("//", "/");
+
+            //Store adjusted storage type, relative path, and complete game directory
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putBoolean("storageType", extSDCard);
+            editor.putString("relGamePath", relPath);
+            editor.putString("compGamePath", fullGamesPath);
+            editor.commit();
+
+            findPreference("downDirPath").setSummary(sharedPref.getString("downDirPath",getString(R.string.defDownDirPath)));
+            Preference filePicker = findPreference("relGamePath");
+            if (filePicker != null)
+                filePicker.setSummary(sharedPref.getString("relGamePath",getString(R.string.defRelPath)));
+
+            Utility.WriteLog("_NOT using downloadDir DocumentFile_");
+            Utility.WriteLog("storageType: " + settings.getBoolean("storageType", true));
+            Utility.WriteLog("relGamePath: " + settings.getString("relGamePath", getString(R.string.defRelPath)));
+            Utility.WriteLog("compGamePath: " + settings.getString("compGamePath", getString(R.string.defGamePath)));
+        }
+
+        //if useDownloadDir is true...
+        else {
+
+            //**** START set SDPath/storageType ****
+            String newDownDirPath = getString(R.string.defDownDirPath);
+            if (downloadDir != null) {
+                String tempDirPath = FileUtil.getFullPathFromTreeUri(downloadDir.getUri(),uiContext);
+                if (tempDirPath != null) {
+                    newDownDirPath = tempDirPath;
+                    if (!newDownDirPath.endsWith("/")) newDownDirPath += "/";
+                }
+                else
+                    downloadDir = null;
+            }
+
+            String tempDir = FileUtil.getSdCardPath();
+            Boolean usingExtSDCard = false;
+            if (newDownDirPath.startsWith(tempDir)) {
+                Utility.WriteLog(newDownDirPath + " contains " + tempDir);
+                SDPath = tempDir;
+            }
+            else {
+                Utility.WriteLog(newDownDirPath+" doesn't contain "+tempDir);
+
+                ArrayList<String> extSDPaths = FileUtil.getExtSdCardPaths(uiContext);
+                for (int i=0; i<extSDPaths.size(); i++) {
+                    tempDir = extSDPaths.get(i);
+                    if (newDownDirPath.startsWith(tempDir)) {
+                        Utility.WriteLog(newDownDirPath+" contains "+tempDir);
+                        SDPath = tempDir;
+                        usingExtSDCard = true;
+                        break;
+                    }
+                    else Utility.WriteLog(newDownDirPath+" doesn't contain "+tempDir);
+                }
+            }
+            //**** END set SDPath/storageType ****
+
+            if (SDPath == null) SDPath = "";
+
+            //set String "relGamePath"; "compGamePath" is newDownDirPath
+            String relPath = newDownDirPath.replace(SDPath,"");
+
+            //Store adjusted storage type, relative path, and complete game directory
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putBoolean("storageType", usingExtSDCard);
+            editor.putString("relGamePath", relPath);
+            editor.putString("compGamePath", newDownDirPath);
+            editor.putString("downDirPath", newDownDirPath);
+            editor.commit();
+
+            findPreference("downDirPath").setSummary(sharedPref.getString("downDirPath",getString(R.string.defDownDirPath)));
+
+            Preference filePicker = findPreference("relGamePath");
+            if (filePicker != null)
+                filePicker.setSummary(sharedPref.getString("relGamePath",getString(R.string.defRelPath)));
+
+            Utility.WriteLog("_Using downloadDir DocumentFile_");
+            Utility.WriteLog("storageType: " + settings.getBoolean("storageType", true));
+            Utility.WriteLog("relGamePath: " + settings.getString("relGamePath", getString(R.string.defRelPath)));
+            Utility.WriteLog("compGamePath: " + settings.getString("compGamePath", getString(R.string.defGamePath)));
+            Utility.WriteLog("downDirPath: " + settings.getString("downDirPath", getString(R.string.defDownDirPath)));
+        }
+    }
 
     private void setSDCard (SharedPreferences sharedPref) {
         //Get external SD card flag and get directory; set extSDCard false if no external SD card
@@ -88,52 +239,87 @@ public class Settings extends PreferenceActivity implements Preference.OnPrefere
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.settings);
-        final SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(uiContext);
+        sharedPref = PreferenceManager.getDefaultSharedPreferences(uiContext);
+
+        //Get the downloadDir DocumentFile from Settings if it is available and check that it is a
+        //usable DocumentsProvider Uri
+        String untestedUri = sharedPref.getString(getString(R.string.key_internal_uri_extsdcard), "");
+        if (!untestedUri.isEmpty()) {
+            downloadDir = DocumentFile.fromTreeUri(uiContext, Uri.parse(untestedUri));
+        }
+        else
+            downloadDir = null;
+
+        //if downloadDir is null, clear downloadDir from Settings
+        if (downloadDir == null) {
+            SharedPreferences.Editor ed = sharedPref.edit();
+            ed.putString(getString(R.string.key_internal_uri_extsdcard),"");
+            ed.apply();
+        }
 
         CheckBoxPreference prefSDCard = (CheckBoxPreference) findPreference("storageType");
-        prefSDCard.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(Preference preference) {
-                setSDCard(sharedPref);
-                setFullGamesPath(sharedPref);
+        if (prefSDCard != null) {
+            prefSDCard.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+                    setSDCard(sharedPref);
+                    setFullGamesPath(true, sharedPref);
 
-                String newPath = sharedPref.getString("compGamePath",getString(R.string.defGamePath));
+                    String newPath = sharedPref.getString("compGamePath", getString(R.string.defGamePath));
 
-                return true;
-            }
-        });
+                    return true;
+                }
+            });
+        }
 
         //Directory picker for finding games path - setSummary, prepare for click
-        Preference filePicker = (Preference) findPreference("relGamePath");
-        filePicker.setSummary(sharedPref.getString("relGamePath",getString(R.string.defRelPath)));
-        filePicker.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+        final Preference filePicker = (Preference) findPreference("relGamePath");
+        if (filePicker != null) {
+            filePicker.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+
+                    //Get external SD card flag and get directory; set extSDCard false if no external SD card
+                    boolean extSDCard = sharedPref.getBoolean("storageType", true);
+                    if (extSDCard) {
+                        SDPath = System.getenv("SECONDARY_STORAGE");
+                        if ((null == SDPath) || (SDPath.length() == 0)) {
+                            SDPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
+                        }
+                        if ((null == SDPath) || (SDPath.length() == 0)) {
+                            SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+                            extSDCard = false;
+                        }
+                    } else
+                        SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+                    SDPath += "/";
+
+                    String newPath = sharedPref.getString("compGamePath", getString(R.string.defGamePath));
+
+                    Utility.WriteLog("SelectDirectory()");
+                    SelectDirectory(newPath, false);
+                    return true;
+                }
+            });
+            filePicker.setSummary(sharedPref.getString("relGamePath", getString(R.string.defRelPath)));
+        }
+
+        //Writable directory picker for using Storage Access Framework to find a download directory
+        final Preference downloadPicker = (Preference) findPreference("downDirPath");
+        downloadPicker.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
             public boolean onPreferenceClick(Preference preference) {
 
-                //Get external SD card flag and get directory; set extSDCard false if no external SD card
-                boolean extSDCard = sharedPref.getBoolean("storageType",true);
-                if (extSDCard) {
-                    SDPath = System.getenv("SECONDARY_STORAGE");
-                    if ((null == SDPath) || (SDPath.length() == 0)) {
-                        SDPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
-                    }
-                    if ((null == SDPath) || (SDPath.length() == 0)) {
-                        SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
-                        extSDCard = false;
-                    }
-                } else
-                    SDPath = Environment.getExternalStorageDirectory().getAbsolutePath();
-                SDPath += "/";
-
-                String newPath = sharedPref.getString("compGamePath",getString(R.string.defGamePath));
-
-                SelectDirectory(newPath,false);
+                //Use Storage Access Framework to get a new download directory
+                Utility.WriteLog("getNewDownloadDir()");
+                getNewDownloadDir();
                 return true;
             }
         });
+        downloadPicker.setSummary(sharedPref.getString("downDirPath",getString(R.string.defDownDirPath)));
     }
 
-    public boolean onPreferenceChange(Preference preference, Object newValue) { 
+    public boolean onPreferenceChange(Preference preference, Object newValue) {
     	preference.setSummary((CharSequence)newValue);
         return true;
     }
@@ -180,6 +366,12 @@ public class Settings extends PreferenceActivity implements Preference.OnPrefere
         }
         File[] sdcardFiles = sdcardRoot.listFiles();
         qspBrowseDir = new ArrayList<File>();
+
+        //If sdcardFiles == null, there is no SD Card available!
+        if (sdcardFiles == null) {
+
+        }
+
         //Сначала добавляем все папки
         for (File currentFile : sdcardFiles)
         {
@@ -191,7 +383,8 @@ public class Settings extends PreferenceActivity implements Preference.OnPrefere
         int shift = 1;
         if (!start)
             shift++;
-        int total = qspBrowseDir.size() + shift;
+        int total = shift;
+        if (qspBrowseDir != null) total += qspBrowseDir.size();
         final CharSequence[] items = new String[total];
 Utility.WriteLog("startpathX: "+startpath);
         String tempStr;
@@ -308,5 +501,130 @@ Utility.WriteLog("startpathX: "+startpath);
         }
     };
 
+    //Choose a new directory for all Market downloads
+    public void getNewDownloadDir() {
+
+        Intent data = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+        startActivityForResult(data, REQUEST_CODE_STORAGE_ACCESS);
+
+    }
+
+    @Override
+    public void onActivityResult(int requestCode,int resultCode,Intent resultData) {
+        if ((requestCode == REQUEST_CODE_STORAGE_ACCESS)) {
+
+            if (resultCode == RESULT_OK) {
+                Uri treeUri = resultData.getData();
+
+                //Skip if the user exited the directory selection
+                if (treeUri == null)
+                    return;
+
+                grantUriPermission(getPackageName(), treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                getContentResolver().takePersistableUriPermission(treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+
+                //Save the treeUri as a string for later use
+                SharedPreferences.Editor ed = sharedPref.edit();
+                ed.putString(getString(R.string.key_internal_uri_extsdcard),treeUri.toString());
+                ed.apply();
+
+                //Get the downloadDir DocumentFile from Settings and check that it is a usable
+                //DocumentsProvider Uri
+                String untestedUri = sharedPref.getString(getString(R.string.key_internal_uri_extsdcard), "");
+                if (!untestedUri.isEmpty()) {
+                    downloadDir = DocumentFile.fromTreeUri(uiContext, Uri.parse(untestedUri));
+                }
+                else
+                    downloadDir = null;
+
+                if (downloadDir != null) {
+                    int takeFlags = resultData.getFlags();
+                    takeFlags &= (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                    uiContext.getContentResolver().takePersistableUriPermission(treeUri, takeFlags);
+                }
+            }
+
+            //if user cancels the downloadDir search, try to get the downloadDir from settings
+            else {
+                //Get the downloadDir DocumentFile from Settings and check that it is a usable
+                //DocumentsProvider Uri
+                String untestedUri = sharedPref.getString(getString(R.string.key_internal_uri_extsdcard), "");
+                if (!untestedUri.isEmpty()) {
+                    downloadDir = DocumentFile.fromTreeUri(uiContext, Uri.parse(untestedUri));
+                }
+                else
+                    downloadDir = null;
+
+            }
+
+            if (downloadDir == null) {
+                updatePrefFromDD();
+                return;
+            }
+            //If the current (or previous) downloadDir is not a writable directory, make it null
+            //and clear Settings
+            if (!downloadDir.exists() || !downloadDir.isDirectory() || !downloadDir.canWrite()) {
+                SharedPreferences.Editor ed = sharedPref.edit();
+                ed.putString(getString(R.string.key_internal_uri_extsdcard),"");
+                ed.apply();
+                downloadDir = null;
+            }
+
+            //Make sure to update everything after determining downloadDir as null or valid
+            updatePrefFromDD();
+        }
+    }
+
+    private void updatePrefFromDD() {
+        //if downloadDir is null, clear all relevant Settings info
+        if (downloadDir == null) {
+            SharedPreferences.Editor ed = sharedPref.edit();
+            ed.putString(getString(R.string.key_internal_uri_extsdcard),"");
+            ed.apply();
+            setFullGamesPath(true,sharedPref);
+            return;
+        }
+
+        //if there is a downloadDir, extract the path for use as "downDirPath"; use the
+        //default value if downloadDir is null
+        String newDownDirPath = getString(R.string.defDownDirPath);
+        if (downloadDir != null) {
+            newDownDirPath = FileUtil.getFullPathFromTreeUri(downloadDir.getUri(),uiContext);
+        }
+
+        if (newDownDirPath.startsWith(FileUtil.getSdCardPath())) {
+            Utility.WriteLog(newDownDirPath + " contains " + FileUtil.getSdCardPath());
+            newDownDirPath = newDownDirPath.replace(FileUtil.getSdCardPath(), "");
+            if (!newDownDirPath.endsWith("/")) newDownDirPath += "/";
+        }
+        else {
+            Utility.WriteLog(newDownDirPath+" doesn't contain "+FileUtil.getSdCardPath());
+
+            ArrayList<String> extSDPaths = FileUtil.getExtSdCardPaths(uiContext);
+            for (int i=0; i<extSDPaths.size(); i++) {
+                if (newDownDirPath.startsWith(extSDPaths.get(i))) {
+                    Utility.WriteLog(newDownDirPath+" contains "+extSDPaths.get(i));
+                    newDownDirPath = newDownDirPath.replace(extSDPaths.get(i),"");
+                    if (!newDownDirPath.endsWith("/")) newDownDirPath += "/";
+                    break;
+                }
+                else Utility.WriteLog(newDownDirPath+" doesn't contain "+extSDPaths.get(i));
+            }
+        }
+
+        //Store the new downDirPath value
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString("downDirPath", newDownDirPath);
+        editor.commit();
+
+        setFullGamesPath(true, sharedPref);
+
+        final Preference downloadPicker = (Preference) findPreference("downDirPath");
+        downloadPicker.setSummary(sharedPref.getString("downDirPath",getString(R.string.defDownDirPath)));
+
+        final Preference filePicker = (Preference) findPreference("relGamePath");
+        if (filePicker != null)
+            filePicker.setSummary(sharedPref.getString("relGamePath",getString(R.string.defRelPath)));
+    }
 
 }

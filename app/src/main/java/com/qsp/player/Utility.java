@@ -42,6 +42,7 @@ import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.support.annotation.RequiresPermission;
 import android.support.v4.content.PermissionChecker;
+import android.support.v4.provider.DocumentFile;
 import android.test.ActivityUnitTestCase;
 import android.text.Editable;
 import android.text.Html;
@@ -130,6 +131,9 @@ public class Utility {
         folder = folder.replace('<', '_');
         // Убираем знак "больше"
         folder = folder.replace('>', '_');
+
+        folder = folder.replace(' ', '_');
+        folder = folder.replace("__", "_");
         return folder;
     }
 
@@ -157,7 +161,7 @@ Utility.WriteLog("toHtml:\n"+ str);
 
     public static String QspStrToWebView(String str, String srcDir, int maxW, int maxH, boolean audioIsOn,boolean fitToWidth, boolean videoSwitch, boolean hideImg, Context uiContext) {
         if (str != null && str.length() > 0) {
-            Utility.WriteLog("Orig. Text: "+str);
+//            Utility.WriteLog("Orig. Text: "+str);
             str = str.replaceAll("\r", "<br>");
 
             str = minimizeBreaks(str);
@@ -172,7 +176,7 @@ Utility.WriteLog("toHtml:\n"+ str);
                 str = useVideoBeforeImages(str,audioIsOn,videoSwitch, uiContext);
 
 //            str = QspPlayerStart.freshPageURL.replace("REPLACETEXT", str);
-Utility.WriteLog("toWebView:\n"+ str);
+//Utility.WriteLog("toWebView:\n"+ str);
 
             return str;
 
@@ -190,14 +194,19 @@ Utility.WriteLog("toWebView:\n"+ str);
         Pattern pattern = Pattern.compile("^[\\s]*<br>|</center>[\\s]*<br>|<table.*><br>|</?t.><br>|</div><br>");
         Matcher matcher = pattern.matcher(str);
 
+        int i=0;
         while (matcher.find()) {
             String group = matcher.group();
 
-            String newGroup = group.replace("<br>","");
+            String newGroup = group.replaceFirst("<br>","");
 
-            newStr = newStr.replace(group,newGroup);
+            Utility.WriteLog("Matcher is"+(i++)+": "+group);
+            Utility.WriteLog("Changed to"+(i)+": "+newGroup);
+
+            newStr = newStr.replaceFirst(group,newGroup);
         }
 
+        Utility.WriteLog("Orig. Text2: "+newStr);
         //Replace <br><br> (plus leading whitespace/intervening spaces) with single <br>
         newStr = newStr.replaceAll("[\\s]*<br>[ ]*<br>","<br>");
 
@@ -467,6 +476,9 @@ Utility.WriteLog("toWebView:\n"+ str);
         tempCode = tempCode.replace("-SAFEPERCENT-", "%");
         tempCode = tempCode.replace("-SAFEPLUSSIGN-","+");
 
+        //Add spaces before and after "&" symbols
+        tempCode = addSpacesWithChar(tempCode,"&",true,true);
+
         //Replace all "<br>" in exec string with " & "
         tempCode = tempCode.replace("<br>"," & ");
 
@@ -589,8 +601,7 @@ Utility.WriteLog("prepareForExec: "+tempCode);
 
         do {
             execIndex = endOfExecStr.toLowerCase().indexOf("exec:");
-            newStr += addSpacesWithChar(replaceHrefPlusSymbols(endOfExecStr.substring(0, execIndex)),"&",true,true);
-
+            newStr += replaceHrefPlusSymbols(endOfExecStr.substring(0, execIndex));
 
             quoteIndex = endOfExecStr.indexOf("\"");
 
@@ -606,7 +617,8 @@ Utility.WriteLog("prepareForExec: "+tempCode);
             }
 
             //Replace all '+' with the URL-codable '+' and attach to newStr
-            newStr += addSpacesWithChar(replaceHrefPlusSymbols(execStr),"&",true,true);
+//            newStr += addSpacesWithChar(replaceHrefPlusSymbols(execStr),"&",true,true);
+            newStr += replaceHrefPlusSymbols(execStr);
 
             hasExec = endOfExecStr.contains("exec:");
         } while (hasExec);
@@ -625,7 +637,7 @@ Utility.WriteLog("prepareForExec: "+tempCode);
 
         int fisCycles = 0;
 
-Utility.WriteLog("fixImagesSize: "+str);
+//Utility.WriteLog("fixImagesSize: "+str);
 
         if (!hasImg) return str;
         Resources res = uiContext.getResources();
@@ -793,8 +805,10 @@ Utility.WriteLog("fixImagesSize: "+str);
                     if (newSrc.indexOf(quoteTag) > 3)
                         newSrc = newSrc.substring(0, newSrc.indexOf("src=") + 4) + newSrc.substring(newSrc.indexOf(quoteTag));
 
-                    //Change all the spaces within the link to %20 (%20 represents a space)
-                    newSrc = newSrc.replace(" ","%20");
+                //Change all the spaces within the link to %20 (%20 represents a space)
+                newSrc = newSrc.replace(" ","%20");
+                //Change all the "&" within the link to %26 (%26 represents an ampersand)
+                newSrc = newSrc.replace("&","%26");
 
                     //src is file URI without file://, then add file://
                     if ((newSrc.matches("^src=[\"'][/]?[[^/:][/]?]+[^/:]+"))) {
@@ -837,7 +851,7 @@ Utility.WriteLog("newSrc matches URI without file://");
                 //    BitmapFactory.decodeResource(res,R.drawable.hiddenimg,imgDim);
                 //}
 
-                String fileNewSrc = newSrc.replace("%20"," ");
+                String fileNewSrc = newSrc.replace("%20"," ").replace("%26","&");
 
                 if (fileNewSrc.contains("file://"))
                     if (new File(fileNewSrc.substring(fileNewSrc.indexOf("///") + 2)).exists())
@@ -1208,7 +1222,7 @@ Utility.WriteLog("tagName: "+tagName);
         }
 
         String tempFileName = imgFile.getName();
-        int fileSuffixIdx = tempFileName.indexOf(".");
+        int fileSuffixIdx = tempFileName.lastIndexOf(".");
         if (fileSuffixIdx < 0) {
             return newSrc;
         }
@@ -1796,23 +1810,31 @@ Utility.WriteLog("finished vidStr = "+vidStr);
         if (!android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED))
             return null;
 
-		// ** original code for checking games directory **
+        // ** original code for checking games directory **
         // File sdDir = Environment.getExternalStorageDirectory();
-		// ** begin replacement code for checking storage directory **
+        // ** begin replacement code for checking storage directory **
 
         File sdDir;
-		String strSDCardPath = System.getenv("SECONDARY_STORAGE");
-		if ((null == strSDCardPath) || (strSDCardPath.length() == 0)) {
-			strSDCardPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
-		}
+        String strSDCardPath = System.getenv("SECONDARY_STORAGE");
+        Utility.WriteLog("1. " + strSDCardPath);
+        if ((null == strSDCardPath) || (strSDCardPath.length() == 0)) {
+            strSDCardPath = System.getenv("EXTERNAL_SDCARD_STORAGE");
+            Utility.WriteLog("2. " + strSDCardPath);
+        }
         if ((null == strSDCardPath) || (strSDCardPath.length() == 0)) {
             strSDCardPath = Environment.getExternalStorageDirectory().getPath();
+            Utility.WriteLog("3. " + strSDCardPath);
         }
-		// ** end replacement code for checking storage directory **
+        // ** end replacement code for checking storage directory **
 
-        sdDir = new File (strSDCardPath);
+        sdDir = new File(strSDCardPath);
+        if (sdDir.canRead())
+            Utility.WriteLog("- sdDir.canRead() = true");
+        if (sdDir.exists())
+            Utility.WriteLog("- sdDir.exists() = true");
 
-        if (sdDir.exists() && sdDir.canWrite()) {
+        if (sdDir.exists() && sdDir.canRead()) {
+            Utility.WriteLog("4.");
             String flashCard = sdDir.getPath();
             String tryFull1 = flashCard + "/qsp/games";
             String tryFull2 = tryFull1 + "/";
@@ -1825,16 +1847,25 @@ Utility.WriteLog("finished vidStr = "+vidStr);
                 if (f.mkdirs()) {
                     CheckNoMedia(noMedia);
                     return tryFull2;
-                }
+                } else
+                    return strSDCardPath;
             }
         }
+
         return null;
     }
 
     public static String GetGamesPath(Context context) {
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
         String path = settings.getString("compGamePath", null);
+Utility.WriteLog("GetGamesPath() - [path == null] is "+(path==null));
         return (path != null && !TextUtils.isEmpty(path)) ? path : GetDefaultPath(context);
+    }
+
+    public static String GetDownloadPath(Context context) {
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
+        String path = settings.getString("downDirPath", null);
+        return (path != null && !TextUtils.isEmpty(path)) ? path : "";
     }
 
     public static void WriteLog(String msg) {
@@ -1881,6 +1912,18 @@ Utility.WriteLog("finished vidStr = "+vidStr);
                 DeleteRecursive(currentFile);
         }
         f.delete();
+    }
+
+    public static void DeleteDocFileRecursive (DocumentFile df) {
+        if (!df.exists()) return;
+        if (df.isDirectory()) {
+            DocumentFile[] docFiles = df.listFiles();
+            //if there are files in the directory, delete them first
+            if (docFiles != null)
+                for (DocumentFile currentDocFile : docFiles)
+                    DeleteDocFileRecursive(currentDocFile);
+        }
+        df.delete();
     }
 
     static final String DEBUGKEY =
@@ -2031,4 +2074,27 @@ Utility.WriteLog("finished vidStr = "+vidStr);
 
         return sortedFiles;
     }
+
+    //Compare the file names of two file lists to see if they are the same
+    public static boolean directoriesAreEqual(File fileList1[], File fileList2[]) {
+        if ((fileList1 == null) || (fileList2 == null)) {
+            Utility.WriteLog("Null directory detected!");
+            return false;
+        }
+
+        if (fileList1.length == fileList2.length) {
+            for (int i=0; i<fileList1.length; i++) {
+                Utility.WriteLog(fileList1[i].getName()+" vs. "+fileList2[i].getName());
+                if (!fileList1[i].getName().equals(fileList2[i].getName())) {
+                    Utility.WriteLog("Directories are slightly different!");
+                    return false;
+                }
+            }
+            Utility.WriteLog("Directories are the same!");
+            return true;
+        }
+        Utility.WriteLog("Directories are totally different!");
+        return false;
+    }
+
 }
