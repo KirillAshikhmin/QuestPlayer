@@ -11,6 +11,11 @@ TO DO:
 3. Finish translations of strings.xml and prefs.xml files for Simplified Chinese and Traditional Chinese
 4. Fix any more bugs that show up
 
+Version 2.0
+1. "File" code replaced with "DocumentFile" and Storage Access Framework
+2. Downloading games working again!
+3. Save files now located to relevant game directory - if you have old save files, just move them into the game directory.
+
 Version 1.6.9b
 1. Fixed problem where image was not properly sized when file name contained an empty space character (" ")
 2. Completed Russian and Chinese (Simplified+Traditional) translation
