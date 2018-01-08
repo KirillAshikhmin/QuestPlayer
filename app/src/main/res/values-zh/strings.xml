@@ -193,4 +193,11 @@
 
     <string name="rotateTitle">自动清除</string>
     <string name="rotateSumm">选用: 可能解决某些装置上的空行问题</string>
+
+    <string name="cheatTitle">除错模式</string>
+    <string name="cheatSumm">输入密碼以启用除错模式</string>
+    <string name="cheatDesc">DEBUG: 输入指令</string>
+
+    <string name="SDpathNotFound">未发现适合的路径: 使用根目录</string>
+
 </resources>

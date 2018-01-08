@@ -3,7 +3,7 @@
 
 <resources>
     <string-array name="fontName">
-        <item>DEFAULT</item>
+        <item>По умолчанию</item>
         <item>SANS_SERIF</item>
         <item>SERIF</item>
         <item>MONOSPACE</item>
@@ -21,7 +21,7 @@
         <item>22</item>
     </string-array>
     <string-array name="themeName">
-        <item>Темная (Default)</item>
+        <item>Темная (По умолчанию)</item>
         <item>Светлая</item>
         <item>Рабочий стол</item>
         <item>Custom</item>
@@ -41,12 +41,12 @@
 <!--    <item>custom-region-code</item> -->
     </string-array>
     <string-array name="imgHeightDesc">
-        <item>Full height</item>
-        <item>2/3 of screen height</item>
-        <item>1/2 of screen height</item>
-        <item>1/3 of screen height</item>
-        <item>1/4 of screen height</item>
-        <item>1/5 of screen height</item>
-        <item>1/10 of screen height</item>
+        <item>Полная высота</item>
+        <item>2/3 от высоты экрана</item>
+        <item>1/2 от высоты экрана</item>
+        <item>1/3 от высоты экрана</item>
+        <item>1/4 от высоты экрана</item>
+        <item>1/5 от высоты экрана</item>
+        <item>1/10 от высоты экрана</item>
     </string-array>
 </resources>
