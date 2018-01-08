@@ -183,9 +183,17 @@
 
     <string name="cheatTitle">Debugging Option</string>
     <string name="cheatSumm">Enter code to activate debugging option</string>
-    <string name="cheatDesc">DEBUG: Input commandw</string>
+    <string name="cheatDesc">DEBUG: Input command</string>
 
+    <string name="SDpathNotFound">No suitable path found: using ROOT directory</string>
 
+    <string name="selDownDirTitle">Select downloads directory</string>
+
+    <string name="intCard">Internal SD Card: </string>
+    <string name="extCard">External SD Card: </string>
+    <string name="DDWarnMsg">NO GAME DIRECTORY FOUND!</string>
+    <string name="DDWarnDesc">\"-SELECTDIRTITLE-\" in Settings. When selecting a directory, first use the menus to \"-SHOWSDCARD-\" and then choose your SD Card.\n\nThis application will not operate properly until this task is complete.</string>
+    <string name="ShowSDCard">Show SD Card</string>
 
     <!-- ***************************************** -->
     <!-- WARNING: DO NOT TRANSLATE BELOW THIS LINE -->
@@ -235,6 +243,8 @@
 
     <string name="defGamePath">/storage/sdcard1/QSP/games/</string>
     <string name="defRelPath">/QSP/games/</string>
+    <string name="defDownDirPath">-----</string>
+    <string name="key_internal_uri_extsdcard">keyToDownloadDirUri</string>
 
     <!-- ***************************************** -->
     <!-- ******** END UNTRANSLATED REGION ******** -->
