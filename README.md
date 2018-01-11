@@ -1,12 +1,11 @@
 # QuestPlayer
-Fork of BOOMik's Quest Player for Android
-
-Quest Player: Android apk that runs QSP games.
-Requirements:
-    Android 4.4 - use Version 1.6.9b
-    Android 5.0 and higher - use Version 2.0.0
+Fork of BOOMik's Quest Player for Android, an apk that runs QSP games.
 
 This is a fork of BOOMik's Quest Player, an Android port of Quest Soft Player, tested on a 7" Amazon Fire Tablet (Android 5.1.1) and a Nexus Galaxy (Android 4.4.4). Requires a minimum of Android 4.4 (KitKat). 
+
+# Requirements:
+Android 4.4 - use Version 1.6.9b
+Android 5.0 and higher - use Version 2.0.0
 
 TO DO:
 1. Add support for ADDQST and DELQST actions in Quest Soft Player library
