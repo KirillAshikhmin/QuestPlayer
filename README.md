@@ -4,8 +4,7 @@ Fork of BOOMik's Quest Player for Android, an apk that runs QSP games.
 This is a fork of BOOMik's Quest Player, an Android port of Quest Soft Player, tested on a 7" Amazon Fire Tablet (Android 5.1.1) and a Nexus Galaxy (Android 4.4.4). Requires a minimum of Android 4.4 (KitKat). 
 
 # Requirements:
-Android 4.4 - use Version 1.6.9b
-Android 5.0 and higher - use Version 2.0.0
+Android 4.4 for Version 1.6.9b; Android 5.0 for Version 2.0.0+
 
 TO DO:
 1. Add support for ADDQST and DELQST actions in Quest Soft Player library
@@ -13,12 +12,14 @@ TO DO:
 3. Finish translations of strings.xml and prefs.xml files for Simplified Chinese and Traditional Chinese
 4. Fix any more bugs that show up
 
-Version 2.0.0
+# Version History
+
+Version 2.0.0 (Android 5.0)
 1. "File" code replaced with "DocumentFile" and Storage Access Framework
 2. Downloading games working again!
 3. Save files now located to relevant game directory - if you have old save files, just move them into the game directory.
 
-Version 1.6.9b
+Version 1.6.9b (Android 4.4)
 1. Fixed problem where image was not properly sized when file name contained an empty space character (" ")
 2. Completed Russian and Chinese (Simplified+Traditional) translation
 
