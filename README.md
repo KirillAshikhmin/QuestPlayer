@@ -19,6 +19,7 @@ Version 2.0.0 (Android 5.0)
 2. Downloading games working again!
 3. Save files now located to relevant game directory - if you have old save files, just move them into the game directory.
 Update Jan 12, 2018: code fix to correct save/load crash bug
+Update Jan 13, 2018: Select Directory option added to "No Game Directory" dialog
 
 Version 1.6.9b (Android 4.4)
 1. Fixed problem where image was not properly sized when file name contained an empty space character (" ")
