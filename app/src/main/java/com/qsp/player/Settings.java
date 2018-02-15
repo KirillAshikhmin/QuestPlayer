@@ -26,8 +26,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import static com.qsp.player.QspGameStock.REQUEST_CODE_STORAGE_ACCESS;
-import static com.qsp.player.QspGameStock.downloadDir;
 
 public class Settings extends PreferenceActivity implements Preference.OnPreferenceChangeListener {
 	final private Context uiContext = this;
@@ -369,7 +367,7 @@ public class Settings extends PreferenceActivity implements Preference.OnPrefere
 
         //If sdcardFiles == null, there is no SD Card available!
         if (sdcardFiles == null) {
-
+            return;
         }
 
         //Сначала добавляем все папки
@@ -558,7 +556,7 @@ Utility.WriteLog("startpathX: "+startpath);
             }
 
             if (downloadDir == null) {
-                updatePrefFromDD();
+                updatePrefFromDD(uiContext);
                 return;
             }
             //If the current (or previous) downloadDir is not a writable directory, make it null
@@ -571,11 +569,13 @@ Utility.WriteLog("startpathX: "+startpath);
             }
 
             //Make sure to update everything after determining downloadDir as null or valid
-            updatePrefFromDD();
-        }
+            updatePrefFromDD(uiContext);
+        } // end requestCode == REQUEST_CODE_STORAGE_ACCESS
     }
 
-    private void updatePrefFromDD() {
+    private void updatePrefFromDD(Context uiContext) {
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(uiContext);
+
         //if downloadDir is null, clear all relevant Settings info
         if (downloadDir == null) {
             SharedPreferences.Editor ed = sharedPref.edit();
@@ -590,6 +590,13 @@ Utility.WriteLog("startpathX: "+startpath);
         String newDownDirPath = getString(R.string.defDownDirPath);
         if (downloadDir != null) {
             newDownDirPath = FileUtil.getFullPathFromTreeUri(downloadDir.getUri(),uiContext);
+            if (newDownDirPath == null) {
+                SharedPreferences.Editor ed = sharedPref.edit();
+                ed.putString(getString(R.string.key_internal_uri_extsdcard),"");
+                ed.apply();
+                setFullGamesPath(true,sharedPref);
+                return;
+            }
         }
 
         if (newDownDirPath.startsWith(FileUtil.getSdCardPath())) {

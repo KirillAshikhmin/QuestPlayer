@@ -244,9 +244,7 @@ public class QspGameStock extends TabActivity {
 
 		getDownloadDirFromSettings();
 
-		if (checkDownloadDirectory())
-			setFullGamesPath(true);
-		else setFullGamesPath(false);
+		setFullGamesPath(checkDownloadDirectory());
 
         Intent gameStockIntent = getIntent();
         gameIsRunning = gameStockIntent.getBooleanExtra("game_is_running", false);
@@ -336,36 +334,8 @@ public class QspGameStock extends TabActivity {
 		}
 
 
-		/*
-		    Utility.WriteLog("startingUpQSP: "+startingGSUp+", langChanged: "+langChanged);
-        if ((!startingGSUp) && (langChanged)) {
-			Utility.WriteLog("RECREATE*");
-			setTitle(getString(R.string.menu_gamestock));
-			recreate();
-			Utility.WriteLog("RECREATE/");
-
-            Utility.WriteLog("FreeResources*");
-
-            Utility.WriteLog("FreeResources*");
-        }
-        else startingGSUp = false;*/
 		if (downloadDir == null) {
-			runOnUiThread(new Runnable() {
-				public void run() {
-					Utility.WriteLog("downloadDir is null - notify user!");
-					String msg = getString(R.string.DDWarnMsg);
-					String desc = getString(R.string.DDWarnDesc);
-
-					desc = desc.replace("-MENUOPTS-", getString(R.string.menu_options));
-					desc = desc.replace("-SELECTDIRTITLE-", getString(R.string.selectDirTitle));
-					desc = desc.replace("-SHOWSDCARD-", getString(R.string.ShowSDCard));
-
-					if (isActive)
-						Utility.ShowError(uiContext, msg+"\n\n"+desc);
-					else
-						Notify(msg, desc);
-				}
-			});
+			ShowNoDownloadDir();
 		}
 
 		super.onResume();
@@ -2163,4 +2133,163 @@ Utility.WriteLog("total files: "+sdcardFiles.length);
             return v;
         }
     }
+
+	//Choose a new directory for all Market downloads
+	public void getNewDownloadDir() {
+Utility.WriteLog("getNewDownloadDir()");
+		Intent data = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+		startActivityForResult(data, REQUEST_CODE_STORAGE_ACCESS);
+
+	}
+
+	@Override
+	public void onActivityResult(int requestCode,int resultCode,Intent resultData) {
+		if ((requestCode == REQUEST_CODE_STORAGE_ACCESS)) {
+
+			if (resultCode == RESULT_OK) {
+				Uri treeUri = resultData.getData();
+
+				//Skip if the user exited the directory selection
+				if (treeUri == null)
+					return;
+
+				grantUriPermission(getPackageName(), treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+				getContentResolver().takePersistableUriPermission(treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+
+				//Save the treeUri as a string for later use
+				SharedPreferences.Editor ed = settings.edit();
+				ed.putString(getString(R.string.key_internal_uri_extsdcard),treeUri.toString());
+				ed.apply();
+
+				//Get the downloadDir DocumentFile from Settings and check that it is a usable
+				//DocumentsProvider Uri
+				String untestedUri = settings.getString(getString(R.string.key_internal_uri_extsdcard), "");
+				if (!untestedUri.isEmpty()) {
+					downloadDir = DocumentFile.fromTreeUri(uiContext, Uri.parse(untestedUri));
+				}
+				else
+					downloadDir = null;
+
+				if (downloadDir != null) {
+					int takeFlags = resultData.getFlags();
+					takeFlags &= (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+					uiContext.getContentResolver().takePersistableUriPermission(treeUri, takeFlags);
+				}
+			}
+
+			//if user cancels the downloadDir search, try to get the downloadDir from settings
+			else {
+				//Get the downloadDir DocumentFile from Settings and check that it is a usable
+				//DocumentsProvider Uri
+				String untestedUri = settings.getString(getString(R.string.key_internal_uri_extsdcard), "");
+				if (!untestedUri.isEmpty()) {
+					downloadDir = DocumentFile.fromTreeUri(uiContext, Uri.parse(untestedUri));
+				}
+				else
+					downloadDir = null;
+
+			}
+
+			if (downloadDir == null) {
+				updatePrefFromDD(uiContext);
+				return;
+			}
+			//If the current (or previous) downloadDir is not a writable directory, make it null
+			//and clear Settings
+			if (!downloadDir.exists() || !downloadDir.isDirectory() || !downloadDir.canWrite()) {
+				SharedPreferences.Editor ed = settings.edit();
+				ed.putString(getString(R.string.key_internal_uri_extsdcard),"");
+				ed.apply();
+				downloadDir = null;
+			}
+
+			//Make sure to update everything after determining downloadDir as null or valid
+			updatePrefFromDD(uiContext);
+		}
+	}
+
+	private void updatePrefFromDD(Context uiContext) {
+		SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(uiContext);
+
+		//if downloadDir is null, clear all relevant Settings info
+		if (downloadDir == null) {
+			SharedPreferences.Editor ed = sharedPref.edit();
+			ed.putString(getString(R.string.key_internal_uri_extsdcard),"");
+			ed.apply();
+			setFullGamesPath(false);
+			return;
+		}
+
+		//if there is a downloadDir, extract the path for use as "downDirPath"; use the
+		//default value if downloadDir is null
+		String newDownDirPath = getString(R.string.defDownDirPath);
+		if (downloadDir != null) {
+			newDownDirPath = FileUtil.getFullPathFromTreeUri(downloadDir.getUri(),uiContext);
+
+			if (newDownDirPath == null) {
+				downloadDir = null;
+				SharedPreferences.Editor ed = sharedPref.edit();
+				ed.putString(getString(R.string.key_internal_uri_extsdcard), "");
+				ed.apply();
+				setFullGamesPath(false);
+				return;
+			}
+		}
+
+		if (newDownDirPath.startsWith(FileUtil.getSdCardPath())) {
+			Utility.WriteLog(newDownDirPath + " contains " + FileUtil.getSdCardPath());
+			newDownDirPath = newDownDirPath.replace(FileUtil.getSdCardPath(), "");
+			if (!newDownDirPath.endsWith("/")) newDownDirPath += "/";
+		}
+		else {
+			Utility.WriteLog(newDownDirPath+" doesn't contain "+FileUtil.getSdCardPath());
+
+			ArrayList<String> extSDPaths = FileUtil.getExtSdCardPaths(uiContext);
+			for (int i=0; i<extSDPaths.size(); i++) {
+				if (newDownDirPath.startsWith(extSDPaths.get(i))) {
+					Utility.WriteLog(newDownDirPath+" contains "+extSDPaths.get(i));
+					newDownDirPath = newDownDirPath.replace(extSDPaths.get(i),"");
+					if (!newDownDirPath.endsWith("/")) newDownDirPath += "/";
+					break;
+				}
+				else Utility.WriteLog(newDownDirPath+" doesn't contain "+extSDPaths.get(i));
+			}
+		}
+
+		//Store the new downDirPath value
+		SharedPreferences.Editor editor = sharedPref.edit();
+		editor.putString("downDirPath", newDownDirPath);
+		editor.commit();
+
+		setFullGamesPath(true);
+
+	}
+
+	private void ShowNoDownloadDir()
+	{
+		Utility.WriteLog("downloadDir is null - notify user! [ShowNoDownloadDir()]");
+		String msg = getString(R.string.DDWarnMsg);
+		String desc = getString(R.string.DDWarnDesc);
+
+		desc = desc.replace("-MENUOPTS-", getString(R.string.menu_options));
+		desc = desc.replace("-SELECTDIRTITLE-", getString(R.string.selectDirTitle));
+		desc = desc.replace("-SHOWSDCARD-", getString(R.string.ShowSDCard));
+		AlertDialog.Builder bld = new AlertDialog.Builder(uiContext).setMessage(desc)
+				.setTitle(getString(R.string.DDWarnMsg))
+				.setIcon(R.drawable.icon)
+				.setPositiveButton(getString(R.string.alertChoose), new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+							getNewDownloadDir();
+					}
+				})
+				.setNegativeButton(getString(R.string.alertCancel), new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						dialog.cancel();
+					}
+				});
+		bld.create().show();
+
+	}
 }

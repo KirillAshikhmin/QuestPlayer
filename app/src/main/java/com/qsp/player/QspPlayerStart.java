@@ -568,7 +568,8 @@ Utility.WriteLog("onPageFinished: "+url);
 
     @Override
     public void onResume() {
-        Utility.WriteLog("onResume\\");
+
+            Utility.WriteLog("onResume\\");
         //Контекст UI
         super.onResume();
 
@@ -1474,7 +1475,7 @@ Utility.WriteLog("fname = " + fname);
 
     private void LoadSlot(int index) {
         //Контекст UI
-        String path = "save" + String.valueOf(index).concat(".sav");
+        String path = savePrefix + String.valueOf(index).concat(".sav");
         LoadSlot(path);
     }
 
@@ -1808,7 +1809,10 @@ Utility.WriteLog("Saving to (DF): "+filename+" in "+FileUtil.getFullPathFromTree
         String newDownDirPath = getString(R.string.defDownDirPath);
         String SDPath = "";
         if (downloadDir != null) {
-            newDownDirPath = FileUtil.getFullPathFromTreeUri(downloadDir.getUri(), uiContext);
+            String untestedDirPath = FileUtil.getFullPathFromTreeUri(downloadDir.getUri(), uiContext);
+            if (untestedDirPath != null)
+                newDownDirPath = untestedDirPath;
+
             if (!newDownDirPath.endsWith("/"))
                 newDownDirPath += "/";
         }
@@ -2133,9 +2137,10 @@ Utility.WriteLog("runGame\\");
             String relGameFile = curGameFile.substring(relGFIdx);
 
             int cgfEndIdx = relGameFile.toLowerCase().lastIndexOf(".qsp");
-            if (cgfEndIdx >= 0) savePrefix = relGameFile.substring(0, cgfEndIdx);
+            if (cgfEndIdx >= 0) savePrefix = relGameFile.substring(0, cgfEndIdx)+"_";
+            else savePrefix = relGameFile + "_";
 
-            savePrefix += "_";
+            savePrefix = savePrefix.replace("__","_");
         }
 
         //Added to handle SAF save system
@@ -2204,8 +2209,8 @@ Utility.WriteLog("runGame\\");
         main_desc.getSettings().setAllowFileAccess(true);
         vars_desc.getSettings().setAllowFileAccess(true);
 
-        main_desc.getSettings().setUseWideViewPort(true);
-        vars_desc.getSettings().setUseWideViewPort(true);
+        main_desc.getSettings().setUseWideViewPort(false);
+        vars_desc.getSettings().setUseWideViewPort(false);
         main_desc.getSettings().setLoadWithOverviewMode(true);
         vars_desc.getSettings().setLoadWithOverviewMode(true);
 
