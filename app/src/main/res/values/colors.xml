@@ -5,5 +5,11 @@
     <color name="title_text">#ffffffff</color>
     <color name="title_background2">#ff000000</color>
     <color name="title_separator">#40ffffff</color>
+    <color name="web_text">#ffffffff</color>
+    <color name="web_background">#ff000000</color>
+    <item name="defTextColor" type="color">#ffffff</item>
+    <item name="defBackColor" type="color">#000000</item>
+    <item name="defLinkColor" type="color">#0000ee</item>
+    <item name="defActsColor" type="color">#ffffd7</item>
 
 </resources>

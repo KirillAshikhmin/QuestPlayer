@@ -23,6 +23,7 @@ public class QspImageBox extends Activity implements OnClickListener {
 
     boolean isBtnClosed;
     static boolean helpShowed;
+    static boolean basicHelpShowed;
     PhotoViewAttacher mAttacher;
 
     private OnClickListener zoomClick = new OnClickListener() {
@@ -37,7 +38,7 @@ public class QspImageBox extends Activity implements OnClickListener {
             box.setOnClickListener(null);
             mAttacher = new PhotoViewAttacher(box);
             if (!helpShowed) {
-                Toast.makeText(QspImageBox.this,"Теперь вы можете масштабировать изображение. Для закрытия окна нажмите еще раз на эту кнопку", Toast.LENGTH_LONG).show();
+                Toast.makeText(QspImageBox.this,getString(R.string.scaleImgHelp1), Toast.LENGTH_LONG).show();
                 helpShowed=true;
             }
             isBtnClosed=true;
@@ -86,6 +87,10 @@ public class QspImageBox extends Activity implements OnClickListener {
 
         //assign to view
         box.setImageDrawable(drawable);
+        if (!basicHelpShowed) {
+            Toast.makeText(QspImageBox.this,getString(R.string.scaleImgHelp2), Toast.LENGTH_LONG).show();
+            basicHelpShowed = true;
+        }
     }
 
     @Override
